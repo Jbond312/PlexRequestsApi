@@ -4,6 +4,7 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <ProjectReference Include="..\PlexRequestsApi.Plex\PlexRequestsApi.Plex.csproj" />
     <ProjectReference Include="..\PlexRequestsApi.Store\PlexRequestsApi.Store.csproj" />
   </ItemGroup>
 
