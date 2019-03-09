@@ -6,6 +6,7 @@ COPY src/*.sln .
 COPY src/PlexRequestsApi/*.csproj ./PlexRequestsApi/
 COPY src/PlexRequestsApi.Core/*.csproj ./PlexRequestsApi.Core/
 COPY src/PlexRequestsApi.Store/*.csproj ./PlexRequestsApi.Store/
+COPY src/PlexRequestsApi.Plex/*.csproj ./PlexRequestsApi.Plex/
 RUN dotnet restore
 
 # copy everything else and build app
