@@ -9,9 +9,9 @@ namespace PlexRequestsApi.Controllers
     {
         // GET api/values
         [HttpGet]
-        public ActionResult<IEnumerable<string>> Get()
+        public ActionResult<List<string>> Get()
         {
-            return new string[] { "value1", "value2" };
+            return new List<string> {"value1", "value2"};
         }
 
         // GET api/values/5
@@ -23,8 +23,10 @@ namespace PlexRequestsApi.Controllers
 
         // POST api/values
         [HttpPost]
-        public void Post([FromBody] string value)
+        public void Post()
         {
+
+
         }
 
         // PUT api/values/5
