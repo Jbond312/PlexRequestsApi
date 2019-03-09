@@ -2,7 +2,7 @@
 using Microsoft.AspNetCore;
 using Microsoft.AspNetCore.Hosting;
 
-namespace PlexRequestsApi
+namespace PlexRequests
 {
     public class Program
     {
