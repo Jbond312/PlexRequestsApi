@@ -35,10 +35,10 @@ namespace PlexRequests
 
             services.AddSwaggerGen(options =>
             {
-                options.SwaggerDoc("V1", new Info
+                options.SwaggerDoc("v1", new Info
                 {
                     Title = "Plex Requests Api",
-                    Version = "V1"
+                    Version = "v1"
                 });
             });
 
