@@ -2,6 +2,7 @@
 using System.Net.Http;
 using System.Threading.Tasks;
 using Newtonsoft.Json;
+using Newtonsoft.Json.Serialization;
 
 namespace PlexRequests.Api
 {
@@ -46,7 +47,30 @@ namespace PlexRequests.Api
         {
             var httpRequestMessage = new HttpRequestMessage(request.HttpMethod, request.FullUri);
             AddRequestHeaders(httpRequestMessage, request.RequestHeaders);
+
+            if (request.Body != null)
+            {
+                SetJsonBody(httpRequestMessage, request.Body);
+            }
+
             return httpRequestMessage;
+        }
+
+        private static void SetJsonBody(HttpRequestMessage httpRequestMessage, object body)
+        {
+            var contractResolver = new DefaultContractResolver
+            {
+                NamingStrategy = new CamelCaseNamingStrategy()
+            };
+
+            var jsonBody = JsonConvert.SerializeObject(body, new JsonSerializerSettings
+            {
+                ContractResolver = contractResolver,
+                Formatting = Formatting.Indented
+            });
+
+            httpRequestMessage.Content = new StringContent(jsonBody, System.Text.Encoding.UTF8, "application/json");
+            httpRequestMessage.Content.Headers.ContentType = new System.Net.Http.Headers.MediaTypeHeaderValue("application/json");
         }
     }
 }

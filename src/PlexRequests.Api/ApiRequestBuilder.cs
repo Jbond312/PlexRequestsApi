@@ -10,6 +10,7 @@ namespace PlexRequests.Api
         private readonly HttpMethod _httpMethod;
         private readonly Dictionary<string, string> _requestHeaders;
         private readonly Dictionary<string, string> _contentHeaders;
+        public object _body { get; set; }
 
         public ApiRequestBuilder(string baseUri, string endpoint, HttpMethod httpMethod)
         {
@@ -38,6 +39,12 @@ namespace PlexRequests.Api
             return this;
         }
 
+        public ApiRequestBuilder AddJsonBody(object body)
+        {
+            _body = body;
+            return this;
+        }
+
         private void AddSingleHeader(string key, string value)
         {
             var headers = _requestHeaders ?? new Dictionary<string, string>();
@@ -55,7 +62,7 @@ namespace PlexRequests.Api
 
         public ApiRequest Build()
         {
-            return new ApiRequest(_endpoint, _baseUri, _httpMethod, _requestHeaders, _contentHeaders);
+            return new ApiRequest(_endpoint, _baseUri, _httpMethod, _requestHeaders, _contentHeaders, _body);
         }
     }
 }
