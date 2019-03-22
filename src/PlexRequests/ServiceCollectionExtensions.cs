@@ -1,6 +1,7 @@
 ﻿using System;
 using Microsoft.Extensions.DependencyInjection;
 using PlexRequests.Api;
+using PlexRequests.Helpers;
 using PlexRequests.Plex;
 using PlexRequests.Settings;
 using PlexRequests.Store;
@@ -19,6 +20,7 @@ namespace PlexRequests
         {
             services.AddTransient<IPlexApi, PlexApi>();
             services.AddSingleton<IApiService, ApiService>();
+            services.AddTransient<ICacheService, CacheService>();
             services.AddTransient<ISettingsService, SettingsService>();
             services.AddSingleton<IPlexRequestsHttpClient, PlexRequestsHttpClient>();
         }

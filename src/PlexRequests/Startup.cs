@@ -45,6 +45,8 @@ namespace PlexRequests
                 });
             });
 
+            services.AddMemoryCache();
+
             MongoDefaults.AssignIdOnInsert = true;
 
             services.RegisterDependencies();
