@@ -1,5 +1,6 @@
 ﻿using System.Collections.Generic;
 using System.Net.Http;
+using System.Runtime.InteropServices.ComTypes;
 
 namespace PlexRequests.Api
 {
@@ -10,6 +11,8 @@ namespace PlexRequests.Api
         private readonly HttpMethod _httpMethod;
         private readonly Dictionary<string, string> _requestHeaders;
         private readonly Dictionary<string, string> _contentHeaders;
+        private readonly Dictionary<string, string> _queryParams;
+
         public object _body { get; set; }
 
         public ApiRequestBuilder(string baseUri, string endpoint, HttpMethod httpMethod)
@@ -19,6 +22,7 @@ namespace PlexRequests.Api
             _httpMethod = httpMethod;
             _requestHeaders = new Dictionary<string, string>();
             _contentHeaders = new Dictionary<string, string>();
+            _queryParams = new Dictionary<string, string>();
         }
 
         public ApiRequestBuilder AddRequestHeaders(Dictionary<string, string> headers)
@@ -30,6 +34,18 @@ namespace PlexRequests.Api
         public ApiRequestBuilder AddHeader(string key, string value)
         {
             AddSingleHeader(key, value);
+            return this;
+        }
+
+        public ApiRequestBuilder AddQueryParams(Dictionary<string, string> queryParams)
+        {
+            AddMultipleQueryParams(queryParams);
+            return this;
+        }
+
+        public ApiRequestBuilder AddQueryParam(string key, string value)
+        {
+            AddSingleQueryParam(key, value);
             return this;
         }
 
@@ -54,15 +70,30 @@ namespace PlexRequests.Api
 
         private void AddMultipleHeaders(Dictionary<string, string> headers)
         {
-            foreach (var header in headers)
+            foreach (var (key, value) in headers)
             {
-                AddSingleHeader(header.Key, header.Value);
+                AddSingleHeader(key, value);
             }
+        }
+
+        private void AddMultipleQueryParams(Dictionary<string, string> queryParams)
+        {
+            foreach (var (key, value) in queryParams)
+            {
+                AddSingleQueryParam(key, value);
+            }
+        }
+
+        private void AddSingleQueryParam(string key, string value)
+        {
+            var queryParams = _queryParams ?? new Dictionary<string, string>();
+
+            queryParams.Add(key, value);
         }
 
         public ApiRequest Build()
         {
-            return new ApiRequest(_endpoint, _baseUri, _httpMethod, _requestHeaders, _contentHeaders, _body);
+            return new ApiRequest(_endpoint, _baseUri, _httpMethod, _requestHeaders, _contentHeaders, _body, _queryParams);
         }
     }
 }

@@ -1,10 +1,13 @@
-﻿using Microsoft.AspNetCore.Builder;
+﻿using System;
+using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
+using MongoDB.Driver;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Serialization;
+using PlexRequests.Settings;
 using Swashbuckle.AspNetCore.Swagger;
 
 namespace PlexRequests
@@ -42,6 +45,8 @@ namespace PlexRequests
                 });
             });
 
+            MongoDefaults.AssignIdOnInsert = true;
+
             services.RegisterDependencies();
         }
 
@@ -58,6 +63,8 @@ namespace PlexRequests
                 app.UseHsts();
             }
 
+            PrimeSettings(app);
+
             app.UseSwagger();
             app.UseSwaggerUI(c =>
             {
@@ -66,6 +73,27 @@ namespace PlexRequests
 
             app.UseHttpsRedirection();
             app.UseMvc(routes => { routes.MapRoute("default", "api/{controller}/{action}"); });
+        }
+
+        private static void PrimeSettings(IApplicationBuilder app)
+        {
+            var settingsService = app.ApplicationServices.GetService<ISettingsService>();
+
+            var envOverwriteSettings = Environment.GetEnvironmentVariable(EnvironmentVariableKeys.OverwriteSettings);
+
+            var overwrite = false;
+            if (!string.IsNullOrEmpty(envOverwriteSettings))
+            {
+                bool.TryParse(envOverwriteSettings, out overwrite);
+            }
+
+            var applicationName = Environment.GetEnvironmentVariable(EnvironmentVariableKeys.ApplicationName);
+
+            settingsService.PrimeSettings(new Store.Models.Settings
+            {
+                ApplicationName = string.IsNullOrEmpty(applicationName) ? "PlexRequests" : applicationName,
+                PlexClientId = Guid.NewGuid()
+            }, overwrite);
         }
     }
 }

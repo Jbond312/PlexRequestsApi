@@ -37,9 +37,9 @@ namespace PlexRequests.Api
 
         private static void AddRequestHeaders(HttpRequestMessage httpRequestMessage, Dictionary<string, string> headers)
         {
-            foreach (var header in headers)
+            foreach (var (key, value) in headers)
             {
-                httpRequestMessage.Headers.Add(header.Key, header.Value);
+                httpRequestMessage.Headers.Add(key, value);
             }
         }
 

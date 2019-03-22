@@ -1,28 +1,32 @@
-﻿using System;
+﻿using System.Collections.Generic;
 using System.Net.Http;
 using System.Threading.Tasks;
 using PlexRequests.Api;
 using PlexRequests.Plex.Models;
 using PlexRequests.Plex.Models.OAuth;
+using PlexRequests.Settings;
 
 namespace PlexRequests.Plex
 {
     public class PlexApi : IPlexApi
     {
         private readonly IApiService _apiService;
+        private readonly ISettingsService _settingsService;
         private string _baseUri = "https://plex.tv/api/v2/";
 
-        public PlexApi(IApiService apiService)
+        public PlexApi(IApiService apiService, ISettingsService settingsService)
         {
             _apiService = apiService;
+            _settingsService = settingsService;
         }
 
         public async Task<OAuthPin> CreatePin()
         {
             var apiRequest =
-                new ApiRequestBuilder(_baseUri, "pins?strong=true", HttpMethod.Post)
+                new ApiRequestBuilder(_baseUri, "pins", HttpMethod.Post)
                     .AcceptJson()
-                    .AddHeader("X-Plex-Client-Identifier", Guid.NewGuid().ToString("N"))
+                    .AddQueryParam("strong", "true")
+                    .AddRequestHeaders(await GetPlexHeaders())
                     .Build();
 
             var oauthPin = await _apiService.InvokeApiAsync<OAuthPin>(apiRequest);
@@ -35,7 +39,7 @@ namespace PlexRequests.Plex
             var apiRequest =
                 new ApiRequestBuilder(_baseUri, $"pins/{pinId}", HttpMethod.Get)
                     .AcceptJson()
-                    .AddHeader("X-Plex-Client-Identifier", Guid.NewGuid().ToString("N"))
+                    .AddRequestHeaders(await GetPlexHeaders())
                     .Build();
 
             var oauthPin = await _apiService.InvokeApiAsync<OAuthPin>(apiRequest);
@@ -56,7 +60,7 @@ namespace PlexRequests.Plex
 
             var apiRequest =
                 new ApiRequestBuilder("https://plex.tv/users/sign_in.json", "", HttpMethod.Post)
-                    .AddHeader("X-Plex-Client-Identifier", Guid.NewGuid().ToString("N"))
+                    .AddRequestHeaders(await GetPlexHeaders())
                     .AcceptJson()
                     .AddJsonBody(signInRequest)
                     .Build();
@@ -64,6 +68,18 @@ namespace PlexRequests.Plex
             var account = await _apiService.InvokeApiAsync<SignInAccount>(apiRequest);
 
             return account?.User;
+        }
+
+        private async Task<Dictionary<string, string>> GetPlexHeaders()
+        {
+            var plexSettings = await _settingsService.Get();
+
+            var plexHeaders = new Dictionary<string, string>
+            {
+                ["X-Plex-Client-Identifier"] = plexSettings.PlexClientId.ToString("N")
+            };
+
+            return plexHeaders;
         }
     }
 }
