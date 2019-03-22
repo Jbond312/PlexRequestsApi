@@ -15,6 +15,8 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "PlexRequests.Api", "PlexReq
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "PlexRequests.Settings", "PlexRequests.Settings\PlexRequests.Settings.csproj", "{2C0D6A51-DFCA-422A-8210-419DF689F1A2}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "PlexRequests.Helpers", "PlexRequests.Helpers\PlexRequests.Helpers.csproj", "{A83FEB44-85AE-4E15-AB36-25E4A021CD83}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -45,6 +47,10 @@ Global
 		{2C0D6A51-DFCA-422A-8210-419DF689F1A2}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{2C0D6A51-DFCA-422A-8210-419DF689F1A2}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{2C0D6A51-DFCA-422A-8210-419DF689F1A2}.Release|Any CPU.Build.0 = Release|Any CPU
+		{A83FEB44-85AE-4E15-AB36-25E4A021CD83}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{A83FEB44-85AE-4E15-AB36-25E4A021CD83}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{A83FEB44-85AE-4E15-AB36-25E4A021CD83}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{A83FEB44-85AE-4E15-AB36-25E4A021CD83}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
