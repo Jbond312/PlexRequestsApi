@@ -38,12 +38,5 @@ namespace PlexRequests.Controllers
         {
             return await _plexApi.SignIn(username, password);
         }
-
-        [HttpGet]
-        [Route("Friends")]
-        public async Task<List<Friend>> GetFriends([FromQuery] string authToken)
-        {
-            return await _plexApi.GetFriends(authToken);
-        }
     }
 }
