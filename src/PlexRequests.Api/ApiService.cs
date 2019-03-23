@@ -1,6 +1,8 @@
 ﻿using System.Collections.Generic;
+using System.IO;
 using System.Net.Http;
 using System.Threading.Tasks;
+using System.Xml.Serialization;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Serialization;
 
@@ -31,8 +33,27 @@ namespace PlexRequests.Api
 
                 var contentResponse = await httpResponse.Content.ReadAsStringAsync();
 
-                return JsonConvert.DeserializeObject<T>(contentResponse);
+                var response = DeserialiseResponse<T>(httpResponse, contentResponse);
+
+                return response;
             }
+        }
+
+        private static T DeserialiseResponse<T>(HttpResponseMessage httpResponse, string contentResponse)
+        {
+            T response;
+            if (httpResponse.Content?.Headers?.ContentType?.MediaType == "application/xml")
+            {
+                var serializer = new XmlSerializer(typeof(T));
+                var reader = new StringReader(contentResponse);
+                response = (T) serializer.Deserialize(reader);
+            }
+            else
+            {
+                response = JsonConvert.DeserializeObject<T>(contentResponse);
+            }
+
+            return response;
         }
 
         private static void AddRequestHeaders(HttpRequestMessage httpRequestMessage, Dictionary<string, string> headers)

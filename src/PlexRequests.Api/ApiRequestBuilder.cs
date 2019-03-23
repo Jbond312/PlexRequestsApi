@@ -37,6 +37,12 @@ namespace PlexRequests.Api
             return this;
         }
 
+        public ApiRequestBuilder AddPlexToken(string authToken)
+        {
+            AddSingleHeader("X-Plex-Token", authToken);
+            return this;
+        }
+
         public ApiRequestBuilder AddQueryParams(Dictionary<string, string> queryParams)
         {
             AddMultipleQueryParams(queryParams);

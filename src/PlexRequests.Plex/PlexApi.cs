@@ -1,4 +1,5 @@
 ﻿using System.Collections.Generic;
+using System.Linq;
 using System.Net.Http;
 using System.Threading.Tasks;
 using PlexRequests.Api;
@@ -8,6 +9,7 @@ using PlexRequests.Settings;
 
 namespace PlexRequests.Plex
 {
+    //https://github.com/Arcanemagus/plex-api/wiki/Plex.tv
     public class PlexApi : IPlexApi
     {
         private readonly IApiService _apiService;
@@ -68,6 +70,42 @@ namespace PlexRequests.Plex
             var account = await _apiService.InvokeApiAsync<SignInAccount>(apiRequest);
 
             return account?.User;
+        }
+
+        public async Task<User> GetAccount(string authToken)
+        {
+            var apiRequest = new ApiRequestBuilder("https://plex.tv/users/account.json", "", HttpMethod.Get)
+                .AddPlexToken(authToken)
+                .AddRequestHeaders(await GetPlexHeaders())
+                .Build();
+
+            var account = await _apiService.InvokeApiAsync<SignInAccount>(apiRequest);
+
+            return account?.User;
+        }
+
+        public async Task<List<Server>> GetServers(string authToken)
+        {
+            var apiRequest = new ApiRequestBuilder("https://plex.tv/pms/servers.xml", "", HttpMethod.Get)
+                .AddPlexToken(authToken)
+                .AddRequestHeaders(await GetPlexHeaders())
+                .Build();
+
+            var serverContainer = await _apiService.InvokeApiAsync<ServerContainer>(apiRequest);
+
+            return serverContainer?.Servers;
+        }
+
+        public async Task<List<Friend>> GetFriends(string authToken)
+        {
+            var apiRequest = new ApiRequestBuilder("https://plex.tv/pms/friends/all", "", HttpMethod.Get)
+                .AddPlexToken(authToken)
+                .AddRequestHeaders(await GetPlexHeaders())
+                .Build();
+
+            var friendContainer = await _apiService.InvokeApiAsync<FriendContainer>(apiRequest);
+
+            return friendContainer?.Friends.ToList();
         }
 
         private async Task<Dictionary<string, string>> GetPlexHeaders()
