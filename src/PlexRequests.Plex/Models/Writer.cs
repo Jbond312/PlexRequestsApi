@@ -1,6 +1,6 @@
-﻿namespace PlexRequests.Plex.Models
+namespace PlexRequests.Plex.Models
 {
-    public class Genre
+    public class Writer
     {
         public int Id { get; set; }
         public string Filter { get; set; }
