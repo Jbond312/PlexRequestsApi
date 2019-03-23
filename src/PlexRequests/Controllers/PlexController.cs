@@ -18,13 +18,6 @@ namespace PlexRequests.Controllers
             _plexApi = plexApi;
         }
 
-        [HttpGet]
-        [Route("")]
-        public async Task<List<string>> Get()
-        {
-            return new List<string> { "value1", "value2" };
-        }
-
         [HttpPost]
         [Route("Pins")]
         public async Task<OAuthPin> CreatePin()
@@ -44,6 +37,13 @@ namespace PlexRequests.Controllers
         public async Task<User> SignIn(string username, string password)
         {
             return await _plexApi.SignIn(username, password);
+        }
+
+        [HttpGet]
+        [Route("Friends")]
+        public async Task<List<Friend>> GetFriends([FromQuery] string authToken)
+        {
+            return await _plexApi.GetFriends(authToken);
         }
     }
 }

@@ -20,7 +20,7 @@ namespace PlexRequests.Plex.Models
         public string AuthToken { get; set; }
         public string Authentication_Token { get; set; }
         public Subscription Subscription { get; set; }
-        public Role Roles { get; set; }
+        public UserRole Roles { get; set; }
         public List<string> Entitlements { get; set; }
         public string ConfirmedAt { get; set; }
         public int? ForumId { get; set; }
