@@ -23,5 +23,6 @@ namespace PlexRequests.Plex.Models
         public int CreatedAt { get; set; }
         public int ScannedAt { get; set; }
         public List<Location> Location { get; set; }
+        public int Count { get; set; }
     }
 }
