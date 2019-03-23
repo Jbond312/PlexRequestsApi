@@ -108,6 +108,19 @@ namespace PlexRequests.Plex
             return friendContainer?.Friends.ToList();
         }
 
+        public async Task<PlexMediaContainer> GetLibrarySections(string authToken, string plexServerHost)
+        {
+            var apiRequest = new ApiRequestBuilder(plexServerHost, "library/sections", HttpMethod.Get)
+                .AddPlexToken(authToken)
+                .AddRequestHeaders(await GetPlexHeaders())
+                .AcceptJson()
+                .Build();
+
+            var plexMediaContainer = await _apiService.InvokeApiAsync<PlexMediaContainer>(apiRequest);
+
+            return plexMediaContainer;
+        }
+
         private async Task<Dictionary<string, string>> GetPlexHeaders()
         {
             var plexSettings = await _settingsService.Get();

@@ -46,7 +46,7 @@ namespace PlexRequests.Api
             {
                 var serializer = new XmlSerializer(typeof(T));
                 var reader = new StringReader(contentResponse);
-                response = (T) serializer.Deserialize(reader);
+                response = (T)serializer.Deserialize(reader);
             }
             else
             {
