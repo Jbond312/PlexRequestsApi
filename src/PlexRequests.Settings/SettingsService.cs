@@ -32,11 +32,11 @@ namespace PlexRequests.Settings
             });
         }
 
-        public async Task PrimeSettings(Store.Models.Settings settings, bool overwrite)
+        public async Task PrimeSettings(Store.Models.Settings settings)
         {
             await _cacheService.GetOrCreate(CacheKey, async () =>
             {
-                await _settingsRepository.PrimeSettings(settings, overwrite);
+                await _settingsRepository.PrimeSettings(settings, settings.OverwriteSettings);
                 return await _settingsRepository.GetSettings();
             });  
         }

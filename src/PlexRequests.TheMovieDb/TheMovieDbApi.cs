@@ -163,7 +163,7 @@ namespace PlexRequests.TheMovieDb
         {
             var settings = await _settingsService.Get();
 
-            return settings.TheMobieDbApiKey;
+            return settings.TheMovieDbApiKey;
         }
 
         private static string GetPage(int? page)

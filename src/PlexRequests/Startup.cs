@@ -14,12 +14,14 @@ namespace PlexRequests
 {
     public class Startup
     {
+        private const string SettingsKey = "PlexRequests";
+
+        private IConfiguration Configuration { get; }
+
         public Startup(IConfiguration configuration)
         {
             Configuration = configuration;
         }
-
-        public IConfiguration Configuration { get; }
 
         // This method gets called by the runtime. Use this method to add services to the container.
         public void ConfigureServices(IServiceCollection services)
@@ -49,7 +51,9 @@ namespace PlexRequests
 
             MongoDefaults.AssignIdOnInsert = true;
 
-            services.RegisterDependencies();
+            var settings = Configuration.GetSection(SettingsKey).Get<Store.Models.Settings>();
+
+            services.RegisterDependencies(settings);
         }
 
         // This method gets called by the runtime. Use this method to configure the HTTP request pipeline.
@@ -65,7 +69,7 @@ namespace PlexRequests
                 app.UseHsts();
             }
 
-            PrimeSettings(app);
+            PrimeSettings(app, Configuration);
 
             app.UseSwagger();
             app.UseSwaggerUI(c =>
@@ -77,25 +81,18 @@ namespace PlexRequests
             app.UseMvc(routes => { routes.MapRoute("default", "api/{controller}/{action}"); });
         }
 
-        private static void PrimeSettings(IApplicationBuilder app)
+        private static void PrimeSettings(IApplicationBuilder app, IConfiguration configuration)
         {
             var settingsService = app.ApplicationServices.GetService<ISettingsService>();
 
-            var envOverwriteSettings = Environment.GetEnvironmentVariable(EnvironmentVariableKeys.OverwriteSettings);
+            var settings = configuration.GetSection(SettingsKey).Get<Store.Models.Settings>();
 
-            var overwrite = false;
-            if (!string.IsNullOrEmpty(envOverwriteSettings))
-            {
-                bool.TryParse(envOverwriteSettings, out overwrite);
-            }
+            settings.ApplicationName = string.IsNullOrEmpty(settings.ApplicationName)
+                ? SettingsKey
+                : settings.ApplicationName;
+            settings.PlexClientId = Guid.NewGuid();
 
-            var applicationName = Environment.GetEnvironmentVariable(EnvironmentVariableKeys.ApplicationName);
-
-            settingsService.PrimeSettings(new Store.Models.Settings
-            {
-                ApplicationName = string.IsNullOrEmpty(applicationName) ? "PlexRequests" : applicationName,
-                PlexClientId = Guid.NewGuid()
-            }, overwrite);
+            settingsService.PrimeSettings(settings);
         }
     }
 }

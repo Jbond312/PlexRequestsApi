@@ -1,5 +1,4 @@
-﻿using System;
-using Microsoft.Extensions.DependencyInjection;
+﻿using Microsoft.Extensions.DependencyInjection;
 using PlexRequests.Api;
 using PlexRequests.Helpers;
 using PlexRequests.Plex;
@@ -11,10 +10,10 @@ namespace PlexRequests
 {
     public static class ServiceCollectionExtensions
     {
-        public static void RegisterDependencies(this IServiceCollection services)
+        public static void RegisterDependencies(this IServiceCollection services, Store.Models.Settings settings)
         {
             RegisterServices(services);
-            RegisterRepositories(services);
+            RegisterRepositories(services, settings);
         }
 
         private static void RegisterServices(IServiceCollection services)
@@ -27,15 +26,12 @@ namespace PlexRequests
             services.AddSingleton<IPlexRequestsHttpClient, PlexRequestsHttpClient>();
         }
 
-        private static void RegisterRepositories(IServiceCollection services)
+        private static void RegisterRepositories(IServiceCollection services, Store.Models.Settings settings)
         {
-            var databaseName = Environment.GetEnvironmentVariable(EnvironmentVariableKeys.MongoDatabaseName);
-            var server = Environment.GetEnvironmentVariable(EnvironmentVariableKeys.MongoServerName);
-
-            var connectionString = $"mongodb://{server}:27017";
+            var connectionString = $"mongodb://{settings.DatabaseServer}:27017";
 
             services.AddTransient<ISettingsRepository>(settingsRepo =>
-                new SettingsRepository(connectionString, databaseName));
+                new SettingsRepository(connectionString, settings.DatabaseName));
         }
     }
 }
