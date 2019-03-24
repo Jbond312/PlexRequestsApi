@@ -6,6 +6,6 @@ namespace PlexRequests.Settings
     {
         Task<Store.Models.Settings> Get();
         Task Save(Store.Models.Settings settings);
-        Task PrimeSettings(Store.Models.Settings settings, bool overwrite);
+        Task PrimeSettings(Store.Models.Settings settings);
     }
 }
