@@ -5,6 +5,7 @@ using PlexRequests.Helpers;
 using PlexRequests.Plex;
 using PlexRequests.Settings;
 using PlexRequests.Store;
+using PlexRequests.TheMovieDb;
 
 namespace PlexRequests
 {
@@ -19,6 +20,7 @@ namespace PlexRequests
         private static void RegisterServices(IServiceCollection services)
         {
             services.AddTransient<IPlexApi, PlexApi>();
+            services.AddTransient<ITheMovieDbApi, TheMovieDbApi>();
             services.AddSingleton<IApiService, ApiService>();
             services.AddTransient<ICacheService, CacheService>();
             services.AddTransient<ISettingsService, SettingsService>();

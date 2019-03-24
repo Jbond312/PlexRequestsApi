@@ -9,5 +9,6 @@ namespace PlexRequests.Store.Models
         public Guid Id { get; set; }
         public string ApplicationName { get; set; }
         public Guid PlexClientId { get; set; }
+        public string TheMobieDbApiKey { get; set; }
     }
 }

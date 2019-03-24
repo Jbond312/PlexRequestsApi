@@ -12,6 +12,7 @@
 
   <ItemGroup>
     <ProjectReference Include="..\PlexRequests.Core\PlexRequests.Core.csproj" />
+    <ProjectReference Include="..\PlexRequests.TheMovieDb\PlexRequests.TheMovieDb.csproj" />
   </ItemGroup>
 
 </Project>

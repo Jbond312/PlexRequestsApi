@@ -1,6 +1,5 @@
 ﻿using System.Collections.Generic;
 using System.Net.Http;
-using System.Runtime.InteropServices.ComTypes;
 
 namespace PlexRequests.Api
 {
@@ -12,8 +11,7 @@ namespace PlexRequests.Api
         private readonly Dictionary<string, string> _requestHeaders;
         private readonly Dictionary<string, string> _contentHeaders;
         private readonly Dictionary<string, string> _queryParams;
-
-        public object _body { get; set; }
+        private object Body { get; set; }
 
         public ApiRequestBuilder(string baseUri, string endpoint, HttpMethod httpMethod)
         {
@@ -63,7 +61,7 @@ namespace PlexRequests.Api
 
         public ApiRequestBuilder AddJsonBody(object body)
         {
-            _body = body;
+            Body = body;
             return this;
         }
 
@@ -99,7 +97,7 @@ namespace PlexRequests.Api
 
         public ApiRequest Build()
         {
-            return new ApiRequest(_endpoint, _baseUri, _httpMethod, _requestHeaders, _contentHeaders, _body, _queryParams);
+            return new ApiRequest(_endpoint, _baseUri, _httpMethod, _requestHeaders, _contentHeaders, Body, _queryParams);
         }
     }
 }

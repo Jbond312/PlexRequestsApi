@@ -9,7 +9,7 @@ namespace PlexRequests.Plex.Models
         public string Key { get; set; }
         public string Guid { get; set; }
         public string LibrarySectionTitle { get; set; }
-        public int LibrarySectionID { get; set; }
+        public int LibrarySectionId { get; set; }
         public string LibrarySectionKey { get; set; }
         public string Studio { get; set; }
         public string Type { get; set; }
