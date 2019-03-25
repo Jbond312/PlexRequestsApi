@@ -8,14 +8,14 @@ namespace PlexRequests.Plex.Models.OAuth
         public string Code { get; set; }
         public bool Trusted { get; set; }
         public string ClientIdentifier { get; set; }
-        public Location Location { get; set; }
+        public OAuthLocation Location { get; set; }
         public int ExpiresIn { get; set; }
         public DateTime CreatedAt { get; set; }
         public DateTime ExpiresAt { get; set; }
         public string AuthToken { get; set; }
     }
 
-    public class Location
+    public class OAuthLocation
     {
         public string Code { get; set; }
         public string Country { get; set; }
