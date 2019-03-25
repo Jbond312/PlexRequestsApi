@@ -1,0 +1,12 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>netcoreapp2.2</TargetFramework>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\PlexRequests.Helpers\PlexRequests.Helpers.csproj" />
+    <ProjectReference Include="..\PlexRequests.Store\PlexRequests.Store.csproj" />
+  </ItemGroup>
+
+</Project>
