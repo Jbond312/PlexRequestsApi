@@ -1,6 +1,7 @@
 ﻿using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations;
 using System.Threading.Tasks;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using PlexRequests.TheMovieDb;
 using PlexRequests.TheMovieDb.Models;
@@ -9,6 +10,7 @@ namespace PlexRequests.Controllers
 {
     [Route("api/[controller]")]
     [ApiController]
+    [Authorize]
     public class TheMovieDbController : Controller
     {
         private readonly ITheMovieDbApi _theMovieDbApi;
