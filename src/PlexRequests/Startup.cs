@@ -5,12 +5,13 @@ using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Logging;
 using MongoDB.Driver;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Serialization;
 using PlexRequests.Settings;
+using Serilog;
 using Swashbuckle.AspNetCore.Swagger;
-using Settings = PlexRequests.Store.Models.Settings;
 
 namespace PlexRequests
 {
@@ -19,10 +20,10 @@ namespace PlexRequests
         private IConfiguration Configuration { get; }
         private IHostingEnvironment Environment { get; }
 
-        public Startup(IConfiguration configuration, IHostingEnvironment env)
+        public Startup(IHostingEnvironment env, IConfiguration configuration)
         {
-            Configuration = configuration;
             Environment = env;
+            Configuration = configuration;
         }
 
         // This method gets called by the runtime. Use this method to add services to the container.
@@ -64,6 +65,8 @@ namespace PlexRequests
                 options.AddSecurityRequirement(security);
             });
 
+            ConfigureLogging();
+
             services.AddMemoryCache();
 
             services.Configure<AuthenticationSettings>(Configuration.GetSection(nameof(AuthenticationSettings)));
@@ -77,8 +80,26 @@ namespace PlexRequests
             MongoDefaults.AssignIdOnInsert = true;
         }
 
+        private void ConfigureLogging()
+        {
+            var loggerConfiguration = new LoggerConfiguration()
+                .MinimumLevel.Debug()
+                .WriteTo.RollingFile("logs\\log-{Date}.txt");
+
+            if (Environment.IsProduction())
+            {
+                loggerConfiguration.MinimumLevel.Information();
+            }
+            else
+            {
+                loggerConfiguration.MinimumLevel.Debug();
+            }
+
+            Log.Logger = loggerConfiguration.CreateLogger();
+        }
+
         // This method gets called by the runtime. Use this method to configure the HTTP request pipeline.
-        public void Configure(IApplicationBuilder app, IHostingEnvironment env)
+        public void Configure(IApplicationBuilder app, IHostingEnvironment env, ILoggerFactory loggerFactory)
         {
             if (env.IsDevelopment())
             {
@@ -90,8 +111,10 @@ namespace PlexRequests
                 app.UseHsts();
             }
 
-            PrimeSettings(app, Configuration);
+            loggerFactory.AddSerilog();
 
+            PrimeSettings(app, Configuration);
+            
             app.UseSwagger();
             app.UseSwaggerUI(c =>
             {
@@ -100,7 +123,6 @@ namespace PlexRequests
 
             app.UseAuthentication();
 
-            app.UseHttpsRedirection();
             app.UseMvc(routes => { routes.MapRoute("default", "api/{controller}/{action}"); });
         }
 
