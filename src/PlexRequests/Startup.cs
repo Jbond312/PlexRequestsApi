@@ -128,9 +128,12 @@ namespace PlexRequests
 
         private static void PrimeSettings(IApplicationBuilder app, IConfiguration configuration)
         {
+            var logger = app.ApplicationServices.GetService<ILogger<Startup>>();
             var settingsService = app.ApplicationServices.GetService<ISettingsService>();
 
             var settings = configuration.GetSection(nameof(Settings)).Get<Store.Models.Settings>();
+
+            logger.LogDebug($"Persisting settings to database. Overwrite: {settings.OverwriteSettings}");
 
             settings.ApplicationName = string.IsNullOrEmpty(settings.ApplicationName)
                 ? "PlexRequests"

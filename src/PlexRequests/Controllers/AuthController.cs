@@ -7,6 +7,7 @@ using System.Text;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using Microsoft.IdentityModel.Tokens;
 using PlexRequests.Core;
@@ -26,12 +27,18 @@ namespace PlexRequests.Controllers
         private readonly IUserService _userService;
         private readonly IPlexApi _plexApi;
         private readonly AuthenticationSettings _authSettings;
+        private readonly ILogger<AuthController> _logger;
 
-        public AuthController(IUserService userService, IPlexApi plexApi, IOptions<AuthenticationSettings> authSettings)
+        public AuthController(
+            IUserService userService,
+            IPlexApi plexApi,
+            IOptions<AuthenticationSettings> authSettings,
+            ILogger<AuthController> logger)
         {
             _userService = userService;
             _plexApi = plexApi;
             _authSettings = authSettings.Value;
+            _logger = logger;
         }
 
         [HttpPost]
@@ -39,19 +46,29 @@ namespace PlexRequests.Controllers
         [AllowAnonymous]
         public async Task<IActionResult> Login(UserLoginRequest request)
         {
+            _logger.LogDebug("Attemping Plex SignIn");
+
             var plexUser = await _plexApi.SignIn(request.Username, request.Password);
 
             if (plexUser == null)
             {
+                _logger.LogDebug("Invalid PlexCredentials");
                 return BadRequest("Unable to login to Plex with the given credentials");
             }
+
+            _logger.LogDebug("Plex SignIn Successful");
+
+            _logger.LogDebug("Getting PlexRequests User from PlexAccountId");
 
             var plexRequestsUser = await _userService.GetUserFromPlexId(plexUser.Id);
 
             if (plexRequestsUser == null)
             {
+                _logger.LogInformation("Attempted login by unknown user.");
                 return Unauthorized();
             }
+
+            _logger.LogDebug("Found matching PlexRequests User");
 
             plexRequestsUser.LastLogin = DateTime.UtcNow;
 
@@ -71,17 +88,25 @@ namespace PlexRequests.Controllers
         public async Task<IActionResult> AddPlexAdmin([FromQuery] [Required] string username,
             [FromQuery] [Required] string password)
         {
+            _logger.LogDebug("Attempting to create first Admin account");
+
             if (await _userService.IsAdminCreated())
             {
+                _logger.LogInformation("Attempt to create Admin account when one already exists");
                 return BadRequest("An Admin account has already been created");
             }
+
+            _logger.LogDebug("No existing Admin account, attemping Plex SignIn");
 
             var plexUser = await _plexApi.SignIn(username, password);
 
             if (plexUser == null)
             {
+                _logger.LogDebug("Invalid PlexCredentials");
                 return BadRequest("Unable to login to Plex with the given credentials");
             }
+
+            _logger.LogDebug("Plex SignIn Successful");
 
             var adminUser = new User
             {
@@ -91,6 +116,8 @@ namespace PlexRequests.Controllers
                 IsAdmin = true,
                 Roles = new List<string> { PlexRequestRoles.Admin, PlexRequestRoles.User }
             };
+
+            _logger.LogInformation("Creating Admin account");
 
             await _userService.CreateUser(adminUser);
 
