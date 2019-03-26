@@ -11,6 +11,7 @@ using Newtonsoft.Json;
 using Newtonsoft.Json.Serialization;
 using PlexRequests.Settings;
 using Serilog;
+using Serilog.Events;
 using Swashbuckle.AspNetCore.Swagger;
 
 namespace PlexRequests
@@ -89,6 +90,7 @@ namespace PlexRequests
             if (Environment.IsProduction())
             {
                 loggerConfiguration.MinimumLevel.Information();
+                loggerConfiguration.MinimumLevel.Override("Microsoft", LogEventLevel.Error);
             }
             else
             {
