@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using PlexRequests.Attributes;
 using PlexRequests.Core;
 using PlexRequests.Helpers;
 using PlexRequests.Models;
@@ -26,7 +27,7 @@ namespace PlexRequests.Controllers
 
         [HttpPost]
         [Route("ImportUsers")]
-        [Authorize(Roles = "Admin")]
+        [Admin]
         public async Task ImportUsers(ImportUserRequest importUserRequest)
         {
             var friends = await _plexApi.GetFriends(importUserRequest.PlexToken);
