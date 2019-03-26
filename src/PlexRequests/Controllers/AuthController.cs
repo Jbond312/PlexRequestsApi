@@ -46,7 +46,7 @@ namespace PlexRequests.Controllers
         [AllowAnonymous]
         public async Task<IActionResult> Login(UserLoginRequest request)
         {
-            _logger.LogDebug("Attemping Plex SignIn");
+            _logger.LogDebug("Attempting Plex SignIn");
 
             var plexUser = await _plexApi.SignIn(request.Username, request.Password);
 
@@ -85,8 +85,7 @@ namespace PlexRequests.Controllers
         [HttpPost]
         [Route("CreateAdmin")]
         [AllowAnonymous]
-        public async Task<IActionResult> AddPlexAdmin([FromQuery] [Required] string username,
-            [FromQuery] [Required] string password)
+        public async Task<IActionResult> AddPlexAdmin(UserLoginRequest request)
         {
             _logger.LogDebug("Attempting to create first Admin account");
 
@@ -96,9 +95,9 @@ namespace PlexRequests.Controllers
                 return BadRequest("An Admin account has already been created");
             }
 
-            _logger.LogDebug("No existing Admin account, attemping Plex SignIn");
+            _logger.LogDebug("No existing Admin account, attempting Plex SignIn");
 
-            var plexUser = await _plexApi.SignIn(username, password);
+            var plexUser = await _plexApi.SignIn(request.Username, request.Password);
 
             if (plexUser == null)
             {

@@ -13,7 +13,7 @@ namespace PlexRequests
 
         public static IWebHostBuilder CreateWebHostBuilder(string[] args) =>
             WebHost.CreateDefaultBuilder(args)
-                .ConfigureLogging(builder => builder.ClearProviders())
+                .ConfigureLogging((context, logging) => { logging.ClearProviders(); })
                 .UseStartup<Startup>();
     }
 }
