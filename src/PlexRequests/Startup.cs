@@ -9,6 +9,7 @@ using Microsoft.Extensions.Logging;
 using MongoDB.Driver;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Serialization;
+using PlexRequests.Middleware;
 using PlexRequests.Settings;
 using Serilog;
 using Serilog.Events;
@@ -116,7 +117,9 @@ namespace PlexRequests
             loggerFactory.AddSerilog();
 
             PrimeSettings(app, Configuration);
-            
+
+            app.UseMiddleware<ExceptionMiddleware>();
+
             app.UseSwagger();
             app.UseSwaggerUI(c =>
             {
