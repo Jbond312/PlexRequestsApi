@@ -1,7 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.ComponentModel.DataAnnotations;
 using System.IdentityModel.Tokens.Jwt;
+using System.Linq;
 using System.Security.Claims;
 using System.Text;
 using System.Threading.Tasks;
@@ -25,17 +25,20 @@ namespace PlexRequests.Controllers
     public class AuthController : Controller
     {
         private readonly IUserService _userService;
+        private readonly IPlexService _plexService;
         private readonly IPlexApi _plexApi;
         private readonly AuthenticationSettings _authSettings;
         private readonly ILogger<AuthController> _logger;
 
         public AuthController(
             IUserService userService,
+            IPlexService plexService,
             IPlexApi plexApi,
             IOptions<AuthenticationSettings> authSettings,
             ILogger<AuthController> logger)
         {
             _userService = userService;
+            _plexService = plexService;
             _plexApi = plexApi;
             _authSettings = authSettings.Value;
             _logger = logger;
@@ -96,7 +99,6 @@ namespace PlexRequests.Controllers
             }
 
             _logger.LogDebug("No existing Admin account, attempting Plex SignIn");
-
             var plexUser = await _plexApi.SignIn(request.Username, request.Password);
 
             if (plexUser == null)
@@ -117,8 +119,32 @@ namespace PlexRequests.Controllers
             };
 
             _logger.LogInformation("Creating Admin account");
-
             await _userService.CreateUser(adminUser);
+            
+            _logger.LogDebug("Getting PlexServers");
+            var servers = await _plexApi.GetServers(plexUser.AuthToken);
+
+            var adminServer = servers.FirstOrDefault(x => x.Owned == "1");
+
+            if (adminServer != null)
+            {
+                _logger.LogInformation("Found a PlexServer owned by the Admin account");
+                var plexServer = new PlexServer
+                {
+                    AccessToken = adminServer.AccessToken,
+                    Name = adminServer.Name,
+                    MachineIdentifier = adminServer.MachineIdentifier,
+                    Port = Convert.ToInt32(adminServer.Port),
+                    Scheme = adminServer.Scheme,
+                    Ip = adminServer.LocalAddresses.Split(",").FirstOrDefault()
+                };
+
+                await _plexService.Create(plexServer);
+            }
+            else
+            {
+                _logger.LogInformation("No PlexServer found that is owned by the Admin account");
+            }
 
             var result = new CreateAdminResult
             {
