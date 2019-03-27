@@ -1,11 +1,13 @@
 ﻿using System.Collections.Generic;
 using System.IO;
+using System.Net;
 using System.Net.Http;
 using System.Threading.Tasks;
 using System.Xml.Serialization;
 using Microsoft.Extensions.Logging;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Serialization;
+using PlexRequests.Helpers;
 
 namespace PlexRequests.Api
 {
@@ -114,11 +116,14 @@ namespace PlexRequests.Api
         {
             _logger.LogInformation($"StatusCode: {httpResponse.StatusCode}. Request Uri: {request.FullUri}");
 
+            var rawResponse = await httpResponse.Content.ReadAsStringAsync();
+
             if (_logger.IsEnabled(LogLevel.Debug))
             {
-                var rawResponse = await httpResponse.Content.ReadAsStringAsync();
                 _logger.LogDebug(rawResponse);
             }
+
+            throw new PlexRequestException("Unsuccessful response from 3rd Party API", httpResponse.StatusCode.ToString(), HttpStatusCode.FailedDependency);
         }
     }
 }
