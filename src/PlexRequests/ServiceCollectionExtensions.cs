@@ -54,6 +54,7 @@ namespace PlexRequests
             services.AddTransient<ICacheService, CacheService>();
             services.AddTransient<ISettingsService, SettingsService>();
             services.AddTransient<IUserService, UserService>();
+            services.AddTransient<IPlexService, PlexService>();
             services.AddSingleton<IPlexRequestsHttpClient, PlexRequestsHttpClient>();
         }
 
@@ -65,6 +66,8 @@ namespace PlexRequests
                 new SettingsRepository(connectionString, settings.DatabaseName));
             services.AddTransient<IUserRepository>(repo =>
                 new UserRepository(connectionString, settings.DatabaseName));
+            services.AddTransient<IPlexServerRepository>(repo =>
+                new PlexServerRepository(connectionString, settings.DatabaseName));
         }
     }
 }

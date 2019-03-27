@@ -11,6 +11,7 @@ COPY src/PlexRequests.Plex/*.csproj ./PlexRequests.Plex/
 COPY src/PlexRequests.TheMovieDb/*.csproj ./PlexRequests.TheMovieDb/
 COPY src/PlexRequests.Settings/*.csproj ./PlexRequests.Settings/
 COPY src/PlexRequests.Helpers/*.csproj ./PlexRequests.Helpers/
+COPY src/PlexRequests.Sync/*.csproj ./PlexRequests.Sync/
 RUN dotnet restore
 
 # copy everything else and build app
