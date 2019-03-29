@@ -1,5 +1,6 @@
 ﻿using Microsoft.AspNetCore;
 using Microsoft.AspNetCore.Hosting;
+using Microsoft.Extensions.Logging;
 
 namespace PlexRequests
 {
@@ -12,6 +13,7 @@ namespace PlexRequests
 
         public static IWebHostBuilder CreateWebHostBuilder(string[] args) =>
             WebHost.CreateDefaultBuilder(args)
+                .ConfigureLogging((context, logging) => { logging.ClearProviders(); })
                 .UseStartup<Startup>();
     }
 }
