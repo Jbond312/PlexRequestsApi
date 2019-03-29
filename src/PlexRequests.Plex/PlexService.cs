@@ -1,6 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Threading.Tasks;
+﻿using System.Threading.Tasks;
 using PlexRequests.Store;
 using PlexRequests.Store.Models;
 
@@ -15,14 +13,9 @@ namespace PlexRequests.Plex
             _plexServerRepository = plexServerRepository;
         }
 
-        public async Task<List<PlexServer>> GetServers()
+        public async Task<PlexServer> GetServer()
         {
-            return await _plexServerRepository.GetAll();
-        }
-
-        public async Task<PlexServer> GetServer(Guid id)
-        {
-            return await _plexServerRepository.Get(id);
+            return await _plexServerRepository.Get();
         }
 
         public async Task<PlexServer> Create(PlexServer server)
@@ -30,14 +23,9 @@ namespace PlexRequests.Plex
             return await _plexServerRepository.Create(server);
         }
 
-        public async Task<PlexServer> Update(PlexServer server)
+        public async Task Update(PlexServer server)
         {
-            return await _plexServerRepository.Update(server);
-        }
-
-        public async Task DeleteServer(Guid id)
-        {
-            await _plexServerRepository.Delete(id);
+            await _plexServerRepository.Update(server);
         }
     }
 }
