@@ -1,6 +1,5 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.ComponentModel.DataAnnotations;
 using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
 using System.Text;
@@ -41,8 +40,7 @@ namespace PlexRequests.Controllers
             _logger = logger;
         }
 
-        [HttpPost]
-        [Route("Login")]
+        [HttpPost("Login")]
         [AllowAnonymous]
         public async Task<IActionResult> Login(UserLoginRequest request)
         {
@@ -82,8 +80,7 @@ namespace PlexRequests.Controllers
             return Ok(result);
         }
 
-        [HttpPost]
-        [Route("CreateAdmin")]
+        [HttpPost("CreateAdmin")]
         [AllowAnonymous]
         public async Task<IActionResult> AddPlexAdmin(UserLoginRequest request)
         {
