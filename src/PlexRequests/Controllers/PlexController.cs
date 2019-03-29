@@ -13,6 +13,7 @@ using PlexRequests.Models;
 using PlexRequests.Plex;
 using PlexRequests.Settings;
 using PlexRequests.Store.Models;
+using PlexRequests.Sync;
 using User = PlexRequests.Store.Models.User;
 
 namespace PlexRequests.Controllers
@@ -27,19 +28,22 @@ namespace PlexRequests.Controllers
         private readonly IUserService _userService;
         private readonly IPlexService _plexService;
         private readonly PlexSettings _plexSettings;
+        private readonly IPlexSync _plexSync;
 
         public PlexController(
             IMapper mapper,
             IPlexApi plexApi, 
             IUserService userService,
             IPlexService plexService,
-            IOptions<PlexSettings> plexSettings)
+            IOptions<PlexSettings> plexSettings,
+            IPlexSync plexSync)
         {
             _mapper = mapper;
             _plexApi = plexApi;
             _userService = userService;
             _plexService = plexService;
             _plexSettings = plexSettings.Value;
+            _plexSync = plexSync;
         }
 
         [HttpPost]
@@ -118,6 +122,13 @@ namespace PlexRequests.Controllers
             return _mapper.Map<List<PlexServerLibraryModel>>(server.Libraries);
         }
 
+        [HttpPost]
+        [Route("SyncContent")]
+        [AllowAnonymous]
+        public async Task SyncContent()
+        {
+            await _plexSync.Synchronise();
+        }
 
         [HttpGet]
         [Route("Server")]

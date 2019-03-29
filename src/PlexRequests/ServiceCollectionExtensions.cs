@@ -9,6 +9,7 @@ using PlexRequests.Helpers;
 using PlexRequests.Plex;
 using PlexRequests.Settings;
 using PlexRequests.Store;
+using PlexRequests.Sync;
 using PlexRequests.TheMovieDb;
 
 namespace PlexRequests
@@ -55,6 +56,7 @@ namespace PlexRequests
             services.AddTransient<ISettingsService, SettingsService>();
             services.AddTransient<IUserService, UserService>();
             services.AddTransient<IPlexService, PlexService>();
+            services.AddTransient<IPlexSync, PlexSync>();
             services.AddSingleton<IPlexRequestsHttpClient, PlexRequestsHttpClient>();
         }
 
