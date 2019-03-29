@@ -1,4 +1,5 @@
-﻿using System.Threading.Tasks;
+﻿using System.Collections.Generic;
+using System.Threading.Tasks;
 using PlexRequests.Store.Models;
 
 namespace PlexRequests.Plex
@@ -8,5 +9,6 @@ namespace PlexRequests.Plex
         Task<PlexServer> GetServer();
         Task<PlexServer> Create(PlexServer server);
         Task Update(PlexServer server);
+        Task CreateMany(IEnumerable<PlexMediaItem> mediaItems);
     }
 }

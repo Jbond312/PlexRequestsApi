@@ -5,33 +5,32 @@ using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using PlexRequests.Plex;
 using PlexRequests.Settings;
-using PlexRequests.Store;
 
 namespace PlexRequests.Sync
 {
     public class PlexSync : IPlexSync
     {
         private readonly IPlexApi _plexApi;
-        private readonly IPlexServerRepository _plexServerRepository;
+        private readonly IPlexService _plexService;
         private readonly PlexSettings _plexSettings;
         private readonly ILogger<PlexSync> _logger;
 
         public PlexSync(
             IPlexApi plexApi,
-            IPlexServerRepository plexServerRepository,
+            IPlexService plexService,
             IOptions<PlexSettings> plexSettings,
             ILogger<PlexSync> logger
             )
         {
             _plexApi = plexApi;
-            _plexServerRepository = plexServerRepository;
+            _plexService = plexService;
             _plexSettings = plexSettings.Value;
             _logger = logger;
         }
 
         public async Task Synchronise()
         {
-            var plexServer = await _plexServerRepository.Get();
+            var plexServer = await _plexService.GetServer();
 
             var librariesToSync = plexServer.Libraries.Where(x => x.IsEnabled).ToList();
 
@@ -71,7 +70,9 @@ namespace PlexRequests.Sync
 
                 }
 
-                await syncProcessor.SyncMedia(libraryToSync);
+                var mediaItems = await syncProcessor.SyncMedia(libraryToSync);
+
+                await _plexService.CreateMany(mediaItems);
             }
 
         }
