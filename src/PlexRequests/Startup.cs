@@ -74,6 +74,7 @@ namespace PlexRequests
             services.AddAutoMapper();
 
             services.Configure<AuthenticationSettings>(Configuration.GetSection(nameof(AuthenticationSettings)));
+            services.Configure<PlexSettings>(Configuration.GetSection(nameof(PlexSettings)));
 
             var authSettings = Configuration.GetSection(nameof(AuthenticationSettings)).Get<AuthenticationSettings>();
             var appSettings = Configuration.GetSection(nameof(Settings)).Get<Store.Models.Settings>();
