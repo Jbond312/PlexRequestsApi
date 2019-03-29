@@ -27,7 +27,7 @@ namespace PlexRequests.Controllers
 
         [HttpPost("ImportUsers")]
         [Admin]
-        public async Task ImportUsers(ImportUserRequest importUserRequest)
+        public async Task<ActionResult> ImportUsers(ImportUserRequest importUserRequest)
         {
             var friends = await _plexApi.GetFriends(importUserRequest.PlexToken);
 
@@ -51,6 +51,8 @@ namespace PlexRequests.Controllers
                     await _userService.CreateUser(user);
                 }
             }
+
+            return Ok();
         }
     }
 }

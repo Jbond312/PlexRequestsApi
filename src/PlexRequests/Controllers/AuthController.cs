@@ -42,7 +42,7 @@ namespace PlexRequests.Controllers
 
         [HttpPost("Login")]
         [AllowAnonymous]
-        public async Task<IActionResult> Login(UserLoginRequest request)
+        public async Task<ActionResult<UserLoginResult>> Login(UserLoginRequest request)
         {
             _logger.LogDebug("Attempting Plex SignIn");
 
@@ -77,19 +77,19 @@ namespace PlexRequests.Controllers
                 AccessToken = CreateToken(plexRequestsUser)
             };
 
-            return Ok(result);
+            return result;
         }
 
         [HttpPost("CreateAdmin")]
         [AllowAnonymous]
-        public async Task<IActionResult> AddPlexAdmin(UserLoginRequest request)
+        public async Task<ActionResult<CreateAdminResult>> AddPlexAdmin(UserLoginRequest request)
         {
             _logger.LogDebug("Attempting to create first Admin account");
 
             if (await _userService.IsAdminCreated())
             {
                 _logger.LogInformation("Attempt to create Admin account when one already exists");
-                return BadRequest("An Admin account has already been created");
+                throw new PlexRequestException("Unable to add Plex Admin", "An Admin account has already been created");
             }
 
             _logger.LogDebug("No existing Admin account, attempting Plex SignIn");
@@ -122,7 +122,7 @@ namespace PlexRequests.Controllers
                 AccessToken = CreateToken(adminUser)
             };
 
-            return Ok(result);
+            return result;
         }
 
         private string CreateToken(User user)
