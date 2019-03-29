@@ -72,6 +72,7 @@ namespace PlexRequests
             services.AddMemoryCache();
 
             services.Configure<AuthenticationSettings>(Configuration.GetSection(nameof(AuthenticationSettings)));
+            services.Configure<TheMovieDbSettings>(Configuration.GetSection(nameof(TheMovieDbSettings)));
 
             var authSettings = Configuration.GetSection(nameof(AuthenticationSettings)).Get<AuthenticationSettings>();
             var appSettings = Configuration.GetSection(nameof(Settings)).Get<Store.Models.Settings>();
