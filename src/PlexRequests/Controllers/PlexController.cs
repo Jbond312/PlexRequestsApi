@@ -25,8 +25,7 @@ namespace PlexRequests.Controllers
             _userService = userService;
         }
 
-        [HttpPost]
-        [Route("ImportUsers")]
+        [HttpPost("ImportUsers")]
         [Admin]
         public async Task ImportUsers(ImportUserRequest importUserRequest)
         {
