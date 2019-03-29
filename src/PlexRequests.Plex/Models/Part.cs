@@ -10,7 +10,7 @@ namespace PlexRequests.Plex.Models
         public string File { get; set; }
         public long Size { get; set; }
         public string Container { get; set; }
-        public bool Has64bitOffsets { get; set; }
+        public bool Has64BitOffsets { get; set; }
         public bool OptimizedForStreaming { get; set; }
         public string VideoProfile { get; set; }
         public List<Stream> Stream { get; set; }

@@ -1,22 +1,14 @@
 ﻿using System.Threading.Tasks;
-using MongoDB.Bson;
 using MongoDB.Driver;
 using PlexRequests.Store.Models;
 
 namespace PlexRequests.Store
 {
-    public class SettingsRepository : ISettingsRepository
+    public class SettingsRepository : BaseRepository<Settings>, ISettingsRepository
     {
-        private readonly IMongoCollection<Settings> _collection;
-
-        public SettingsRepository(string connectionString, string databaseName)
+        public SettingsRepository(string connectionString, string databaseName) : 
+            base(connectionString, databaseName, "Settings")
         {
-            var client = new MongoClient(connectionString);
-            var database = client.GetDatabase(databaseName, new MongoDatabaseSettings
-            {
-                GuidRepresentation = GuidRepresentation.Standard
-            });
-            _collection = database.GetCollection<Settings>("Settings");
         }
 
         public async Task<Settings> GetSettings()
@@ -30,12 +22,12 @@ namespace PlexRequests.Store
 
             if (firstSetting == null)
             {
-                await _collection.InsertOneAsync(settings);
+                await Collection.InsertOneAsync(settings);
             }
             else
             {
                 settings.Id = firstSetting.Id;
-                await _collection.ReplaceOneAsync(x => x.Id == firstSetting.Id, settings);
+                await Collection.ReplaceOneAsync(x => x.Id == firstSetting.Id, settings);
             }
         }
 
@@ -45,18 +37,18 @@ namespace PlexRequests.Store
 
             if (firstSetting == null)
             {
-                await _collection.InsertOneAsync(settings);
+                await Collection.InsertOneAsync(settings);
             }
             else if (overwrite)
             {
                 settings.Id = firstSetting.Id;
-                await _collection.ReplaceOneAsync(x => x.Id == firstSetting.Id, settings);
+                await Collection.ReplaceOneAsync(x => x.Id == firstSetting.Id, settings);
             }
         }
 
         private async Task<Settings> GetExistingSettings()
         {
-            var findCursor = await _collection.FindAsync(FilterDefinition<Settings>.Empty);
+            var findCursor = await Collection.FindAsync(FilterDefinition<Settings>.Empty);
             return await findCursor.FirstOrDefaultAsync();
         }
     }

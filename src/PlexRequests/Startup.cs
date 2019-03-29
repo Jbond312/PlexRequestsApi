@@ -1,31 +1,39 @@
 ﻿using System;
+using System.Collections.Generic;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Logging;
 using MongoDB.Driver;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Serialization;
+using PlexRequests.Middleware;
 using PlexRequests.Settings;
+using Serilog;
+using Serilog.Events;
 using Swashbuckle.AspNetCore.Swagger;
 
 namespace PlexRequests
 {
     public class Startup
     {
-        public Startup(IConfiguration configuration)
+        private IConfiguration Configuration { get; }
+        private IHostingEnvironment Environment { get; }
+
+        public Startup(IHostingEnvironment env, IConfiguration configuration)
         {
+            Environment = env;
             Configuration = configuration;
         }
-
-        public IConfiguration Configuration { get; }
 
         // This method gets called by the runtime. Use this method to add services to the container.
         public void ConfigureServices(IServiceCollection services)
         {
             services
                 .AddMvcCore()
+                .AddAuthorization()
                 .AddJsonFormatters()
                 .AddApiExplorer()
                 .AddJsonOptions(
@@ -43,17 +51,59 @@ namespace PlexRequests
                     Title = "Plex Requests Api",
                     Version = "v1"
                 });
+
+                options.AddSecurityDefinition("Bearer", new ApiKeyScheme
+                {
+                    Description = "JWT Authorization header using the Bearer scheme. Example: \"Authorization: Bearer {token}\"",
+                    Name = "Authorization",
+                    In = "header",
+                    Type = "apiKey"
+                });
+
+                var security = new Dictionary<string, IEnumerable<string>>
+                {
+                    {"Bearer", new string[] { }},
+                };
+                options.AddSecurityRequirement(security);
             });
+
+            ConfigureLogging();
 
             services.AddMemoryCache();
 
-            MongoDefaults.AssignIdOnInsert = true;
+            services.Configure<AuthenticationSettings>(Configuration.GetSection(nameof(AuthenticationSettings)));
+            services.Configure<TheMovieDbSettings>(Configuration.GetSection(nameof(TheMovieDbSettings)));
 
-            services.RegisterDependencies();
+            var authSettings = Configuration.GetSection(nameof(AuthenticationSettings)).Get<AuthenticationSettings>();
+            var appSettings = Configuration.GetSection(nameof(Settings)).Get<Store.Models.Settings>();
+            
+            services.RegisterDependencies(appSettings);
+            services.ConfigureJwtAuthentication(authSettings, Environment.IsProduction());
+
+            MongoDefaults.AssignIdOnInsert = true;
+        }
+
+        private void ConfigureLogging()
+        {
+            var loggerConfiguration = new LoggerConfiguration()
+                .MinimumLevel.Debug()
+                .WriteTo.RollingFile("logs\\log-{Date}.txt");
+
+            if (Environment.IsProduction())
+            {
+                loggerConfiguration.MinimumLevel.Information();
+                loggerConfiguration.MinimumLevel.Override("Microsoft", LogEventLevel.Error);
+            }
+            else
+            {
+                loggerConfiguration.MinimumLevel.Debug();
+            }
+
+            Log.Logger = loggerConfiguration.CreateLogger();
         }
 
         // This method gets called by the runtime. Use this method to configure the HTTP request pipeline.
-        public void Configure(IApplicationBuilder app, IHostingEnvironment env)
+        public void Configure(IApplicationBuilder app, IHostingEnvironment env, ILoggerFactory loggerFactory)
         {
             if (env.IsDevelopment())
             {
@@ -65,7 +115,11 @@ namespace PlexRequests
                 app.UseHsts();
             }
 
-            PrimeSettings(app);
+            loggerFactory.AddSerilog();
+
+            PrimeSettings(app, Configuration);
+
+            app.UseMiddleware<ExceptionMiddleware>();
 
             app.UseSwagger();
             app.UseSwaggerUI(c =>
@@ -73,29 +127,26 @@ namespace PlexRequests
                 c.SwaggerEndpoint("/swagger/v1/swagger.json", "Plex Requests Api");
             });
 
-            app.UseHttpsRedirection();
+            app.UseAuthentication();
+
             app.UseMvc(routes => { routes.MapRoute("default", "api/{controller}/{action}"); });
         }
 
-        private static void PrimeSettings(IApplicationBuilder app)
+        private static void PrimeSettings(IApplicationBuilder app, IConfiguration configuration)
         {
+            var logger = app.ApplicationServices.GetService<ILogger<Startup>>();
             var settingsService = app.ApplicationServices.GetService<ISettingsService>();
 
-            var envOverwriteSettings = Environment.GetEnvironmentVariable(EnvironmentVariableKeys.OverwriteSettings);
+            var settings = configuration.GetSection(nameof(Settings)).Get<Store.Models.Settings>();
 
-            var overwrite = false;
-            if (!string.IsNullOrEmpty(envOverwriteSettings))
-            {
-                bool.TryParse(envOverwriteSettings, out overwrite);
-            }
+            logger.LogDebug($"Persisting settings to database. Overwrite: {settings.OverwriteSettings}");
 
-            var applicationName = Environment.GetEnvironmentVariable(EnvironmentVariableKeys.ApplicationName);
+            settings.ApplicationName = string.IsNullOrEmpty(settings.ApplicationName)
+                ? "PlexRequests"
+                : settings.ApplicationName;
+            settings.PlexClientId = Guid.NewGuid();
 
-            settingsService.PrimeSettings(new Store.Models.Settings
-            {
-                ApplicationName = string.IsNullOrEmpty(applicationName) ? "PlexRequests" : applicationName,
-                PlexClientId = Guid.NewGuid()
-            }, overwrite);
+            settingsService.PrimeSettings(settings).GetAwaiter().GetResult();
         }
     }
 }

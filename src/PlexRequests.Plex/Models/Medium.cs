@@ -18,7 +18,7 @@ namespace PlexRequests.Plex.Models
         public string Container { get; set; }
         public string VideoFrameRate { get; set; }
         public int OptimizedForStreaming { get; set; }
-        public bool Has64bitOffsets { get; set; }
+        public bool Has64BitOffsets { get; set; }
         public string VideoProfile { get; set; }
         public List<Part> Part { get; set; }
 
