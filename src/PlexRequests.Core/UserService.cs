@@ -1,6 +1,5 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Linq;
 using System.Threading.Tasks;
 using PlexRequests.Store;
 using PlexRequests.Store.Models;
@@ -49,9 +48,9 @@ namespace PlexRequests.Core
 
         public async Task<bool> IsAdminCreated()
         {
-            var users = await _userRepository.GetAllUsers();
+            var adminUser = await _userRepository.GetAdmin();
 
-            return users.Any(x => x.IsAdmin);
+            return adminUser != null;
         }
     }
 }

@@ -70,6 +70,8 @@ namespace PlexRequests
                 new UserRepository(connectionString, settings.DatabaseName));
             services.AddTransient<IPlexServerRepository>(repo =>
                 new PlexServerRepository(connectionString, settings.DatabaseName));
+            services.AddTransient<IPlexMediaRepository>(repo =>
+                new PlexMediaRepository(connectionString, settings.DatabaseName));
         }
     }
 }
