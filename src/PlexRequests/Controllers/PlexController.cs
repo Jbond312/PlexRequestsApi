@@ -27,27 +27,26 @@ namespace PlexRequests.Controllers
         private readonly IPlexApi _plexApi;
         private readonly IUserService _userService;
         private readonly IPlexService _plexService;
-        private readonly PlexSettings _plexSettings;
         private readonly IPlexSync _plexSync;
+        private readonly PlexSettings _plexSettings;
 
         public PlexController(
             IMapper mapper,
             IPlexApi plexApi, 
             IUserService userService,
             IPlexService plexService,
-            IOptions<PlexSettings> plexSettings,
-            IPlexSync plexSync)
+            IPlexSync plexSync,
+            IOptions<PlexSettings> plexSettings)
         {
             _mapper = mapper;
             _plexApi = plexApi;
             _userService = userService;
             _plexService = plexService;
-            _plexSettings = plexSettings.Value;
             _plexSync = plexSync;
+            _plexSettings = plexSettings.Value;
         }
 
-        [HttpPost]
-        [Route("SyncUsers")]
+        [HttpPost("SyncUsers")]
         [Admin]
         public async Task SyncUsers()
         {

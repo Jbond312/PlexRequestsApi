@@ -8,6 +8,7 @@ namespace PlexRequests.Store
     public interface IUserRepository
     {
         Task<List<User>> GetAllUsers();
+        Task<User> GetAdmin();
         Task<User> GetUser(Guid id);
         Task<User> GetUser(int plexAccountId);
         Task<User> GetUser(string userName);

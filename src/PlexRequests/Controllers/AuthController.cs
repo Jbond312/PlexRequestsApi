@@ -28,8 +28,8 @@ namespace PlexRequests.Controllers
         private readonly IPlexService _plexService;
         private readonly IPlexApi _plexApi;
         private readonly AuthenticationSettings _authSettings;
-        private readonly ILogger<AuthController> _logger;
         private readonly PlexSettings _plexSettings;
+        private readonly ILogger<AuthController> _logger;
 
         public AuthController(
             IUserService userService,
@@ -47,10 +47,9 @@ namespace PlexRequests.Controllers
             _logger = logger;
         }
 
-        [HttpPost]
-        [Route("Login")]
+        [HttpPost("Login")]
         [AllowAnonymous]
-        public async Task<IActionResult> Login(UserLoginRequest request)
+        public async Task<ActionResult<UserLoginResult>> Login(UserLoginRequest request)
         {
             _logger.LogDebug("Attempting Plex SignIn");
 
@@ -85,20 +84,19 @@ namespace PlexRequests.Controllers
                 AccessToken = CreateToken(plexRequestsUser)
             };
 
-            return Ok(result);
+            return result;
         }
 
-        [HttpPost]
-        [Route("CreateAdmin")]
+        [HttpPost("CreateAdmin")]
         [AllowAnonymous]
-        public async Task<IActionResult> AddPlexAdmin(UserLoginRequest request)
+        public async Task<ActionResult<UserLoginResult>> AddPlexAdmin(UserLoginRequest request)
         {
             _logger.LogDebug("Attempting to create first Admin account");
 
             if (await _userService.IsAdminCreated())
             {
                 _logger.LogInformation("Attempt to create Admin account when one already exists");
-                return BadRequest("An Admin account has already been created");
+                throw new PlexRequestException("Unable to add Plex Admin", "An Admin account has already been created");
             }
 
             _logger.LogDebug("No existing Admin account, attempting Plex SignIn");
@@ -164,12 +162,12 @@ namespace PlexRequests.Controllers
                 _logger.LogInformation("No PlexServer found that is owned by the Admin account");
             }
 
-            var result = new CreateAdminResult
+            var result = new UserLoginResult
             {
                 AccessToken = CreateToken(adminUser)
             };
 
-            return Ok(result);
+            return result;
         }
 
         private string CreateToken(User user)
