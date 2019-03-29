@@ -82,7 +82,7 @@ namespace PlexRequests.Controllers
 
         [HttpPost("CreateAdmin")]
         [AllowAnonymous]
-        public async Task<ActionResult<CreateAdminResult>> AddPlexAdmin(UserLoginRequest request)
+        public async Task<ActionResult<UserLoginResult>> AddPlexAdmin(UserLoginRequest request)
         {
             _logger.LogDebug("Attempting to create first Admin account");
 
@@ -117,7 +117,7 @@ namespace PlexRequests.Controllers
 
             await _userService.CreateUser(adminUser);
 
-            var result = new CreateAdminResult
+            var result = new UserLoginResult
             {
                 AccessToken = CreateToken(adminUser)
             };
