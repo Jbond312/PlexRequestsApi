@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Generic;
 using MongoDB.Bson.Serialization.Attributes;
 
 namespace PlexRequests.Store.Models
@@ -11,7 +12,17 @@ namespace PlexRequests.Store.Models
         public string AccessToken { get; set; }
         public string MachineIdentifier { get; set; }
         public string Scheme { get; set; }
-        public string Ip { get; set; }
-        public int Port { get; set; }
+        public string LocalIp { get; set; }
+        public int LocalPort { get; set; }
+        public string ExternalIp { get; set;}
+        public int ExternalPort { get; set; }
+        public List<PlexServerLibrarySection> Libraries { get; set; }
+
+        public string GetPlexUri(bool useLocal)
+        {
+            var uri = useLocal ? $"{Scheme}://{LocalIp}:{LocalPort}" : $"{Scheme}://{ExternalIp}:{ExternalPort}";
+
+            return uri;
+        }
     }
 }

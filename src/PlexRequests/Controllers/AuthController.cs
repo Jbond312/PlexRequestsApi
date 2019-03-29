@@ -29,18 +29,21 @@ namespace PlexRequests.Controllers
         private readonly IPlexApi _plexApi;
         private readonly AuthenticationSettings _authSettings;
         private readonly ILogger<AuthController> _logger;
+        private readonly PlexSettings _plexSettings;
 
         public AuthController(
             IUserService userService,
             IPlexService plexService,
             IPlexApi plexApi,
             IOptions<AuthenticationSettings> authSettings,
+            IOptions<PlexSettings> plexSettings,
             ILogger<AuthController> logger)
         {
             _userService = userService;
             _plexService = plexService;
             _plexApi = plexApi;
             _authSettings = authSettings.Value;
+            _plexSettings = plexSettings.Value;
             _logger = logger;
         }
 
@@ -134,10 +137,25 @@ namespace PlexRequests.Controllers
                     AccessToken = adminServer.AccessToken,
                     Name = adminServer.Name,
                     MachineIdentifier = adminServer.MachineIdentifier,
-                    Port = Convert.ToInt32(adminServer.Port),
-                    Scheme = adminServer.Scheme,
-                    Ip = adminServer.LocalAddresses.Split(",").FirstOrDefault()
+                    LocalIp = adminServer.LocalAddresses.Split(",").FirstOrDefault(),
+                    LocalPort = _plexSettings.Port,
+                    ExternalIp =  adminServer.Address,
+                    ExternalPort = Convert.ToInt32(adminServer.Port),
+                    Scheme = adminServer.Scheme
                 };
+
+                _logger.LogInformation("Getting available libraries on PlexServer");
+                var libraryContainer = await _plexApi.GetLibrarySections(plexUser.AuthToken,
+                    plexServer.GetPlexUri(_plexSettings.ConnectLocally));
+                _logger.LogInformation($"Identified '{libraryContainer.MediaContainer.Directory.Count}' libraries on the PlexServer");
+
+                plexServer.Libraries = libraryContainer.MediaContainer.Directory.Select(x =>
+                    new PlexServerLibrarySection
+                    {
+                        Key = x.Key,
+                        Title = x.Title,
+                        Type = x.Type
+                    }).ToList();
 
                 await _plexService.Create(plexServer);
             }
