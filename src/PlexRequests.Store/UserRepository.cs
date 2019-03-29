@@ -19,6 +19,12 @@ namespace PlexRequests.Store
             return await users.ToListAsync();
         }
 
+        public async Task<User> GetAdmin()
+        {
+            var users = await Collection.FindAsync(x => x.IsAdmin && !x.IsDisabled);
+            return await users.FirstOrDefaultAsync();
+        }
+
         public async Task<User> GetUser(Guid id)
         {
             var findCursor = await Collection.FindAsync(x => x.Id == id && !x.IsDisabled);
