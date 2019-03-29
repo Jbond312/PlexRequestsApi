@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Generic;
 
 namespace PlexRequests.Models
 {
@@ -6,5 +7,6 @@ namespace PlexRequests.Models
     {
         public Guid Id { get; set; }
         public string Name { get; set; }
+        public List<PlexServerLibraryModel> Libraries { get; set; }
     }
 }

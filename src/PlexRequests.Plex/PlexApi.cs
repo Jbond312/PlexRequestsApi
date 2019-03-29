@@ -108,7 +108,7 @@ namespace PlexRequests.Plex
             return friendContainer?.Friends.ToList();
         }
 
-        public async Task<PlexMediaContainer> GetLibrarySections(string authToken, string plexServerHost)
+        public async Task<PlexMediaContainer> GetLibraries(string authToken, string plexServerHost)
         {
             var apiRequest = new ApiRequestBuilder(plexServerHost, "library/sections", HttpMethod.Get)
                 .AddPlexToken(authToken)

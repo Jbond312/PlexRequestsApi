@@ -145,12 +145,12 @@ namespace PlexRequests.Controllers
                 };
 
                 _logger.LogInformation("Getting available libraries on PlexServer");
-                var libraryContainer = await _plexApi.GetLibrarySections(plexUser.AuthToken,
+                var libraryContainer = await _plexApi.GetLibraries(plexUser.AuthToken,
                     plexServer.GetPlexUri(_plexSettings.ConnectLocally));
                 _logger.LogInformation($"Identified '{libraryContainer.MediaContainer.Directory.Count}' libraries on the PlexServer");
 
                 plexServer.Libraries = libraryContainer.MediaContainer.Directory.Select(x =>
-                    new PlexServerLibrarySection
+                    new PlexServerLibrary
                     {
                         Key = x.Key,
                         Title = x.Title,

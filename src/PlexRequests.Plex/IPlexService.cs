@@ -1,16 +1,12 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Threading.Tasks;
+﻿using System.Threading.Tasks;
 using PlexRequests.Store.Models;
 
 namespace PlexRequests.Plex
 {
     public interface IPlexService
     {
-        Task<List<PlexServer>> GetServers();
-        Task<PlexServer> GetServer(Guid id);
+        Task<PlexServer> GetServer();
         Task<PlexServer> Create(PlexServer server);
-        Task<PlexServer> Update(PlexServer server);
-        Task DeleteServer(Guid id);
+        Task Update(PlexServer server);
     }
 }

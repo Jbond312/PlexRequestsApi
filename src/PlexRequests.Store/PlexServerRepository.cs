@@ -1,6 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Threading.Tasks;
+﻿using System.Threading.Tasks;
 using MongoDB.Driver;
 using PlexRequests.Store.Models;
 
@@ -18,29 +16,16 @@ namespace PlexRequests.Store
             return server;
         }
 
-        public async Task<PlexServer> Update(PlexServer server)
+        public async Task Update(PlexServer server)
         {
             var filter = new FilterDefinitionBuilder<PlexServer>().Eq(x => x.Id, server.Id);
-            var updatedServer = await Collection.FindOneAndReplaceAsync(filter, server);
-
-            return updatedServer;
+            await Collection.FindOneAndReplaceAsync(filter, server);
         }
 
-        public async Task Delete(Guid id)
+        public async Task<PlexServer> Get()
         {
-            await Collection.DeleteOneAsync(x => x.Id == id);
-        }
-
-        public async Task<PlexServer> Get(Guid id)
-        {
-            var findCursor = await Collection.FindAsync(x => x.Id == id);
+            var findCursor = await Collection.FindAsync(FilterDefinition<PlexServer>.Empty);
             return await findCursor.FirstOrDefaultAsync();
-        }
-
-        public async Task<List<PlexServer>> GetAll()
-        {
-            var users = await Collection.FindAsync(FilterDefinition<PlexServer>.Empty);
-            return await users.ToListAsync();
         }
     }
 }

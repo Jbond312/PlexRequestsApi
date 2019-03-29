@@ -16,7 +16,7 @@ namespace PlexRequests.Store.Models
         public int LocalPort { get; set; }
         public string ExternalIp { get; set;}
         public int ExternalPort { get; set; }
-        public List<PlexServerLibrarySection> Libraries { get; set; }
+        public List<PlexServerLibrary> Libraries { get; set; }
 
         public string GetPlexUri(bool useLocal)
         {

@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
 using PlexRequests.Store;
@@ -13,6 +14,11 @@ namespace PlexRequests.Core
         public UserService(IUserRepository userRepository)
         {
             _userRepository = userRepository;
+        }
+
+        public async Task<List<User>> GetAllUsers()
+        {
+            return await _userRepository.GetAllUsers();
         }
 
         public async Task<User> GetUser(Guid id)
