@@ -1,10 +1,10 @@
-﻿using System;
-using System.Linq;
+﻿using System.Linq;
 using System.Threading.Tasks;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using PlexRequests.Plex;
 using PlexRequests.Settings;
+using PlexRequests.Store.Models;
 
 namespace PlexRequests.Sync
 {
@@ -45,11 +45,10 @@ namespace PlexRequests.Sync
             var plexLibraryContainer = await _plexApi.GetLibraries(plexServer.AccessToken,
                 plexServer.GetPlexUri(_plexSettings.ConnectLocally));
 
-
-
             foreach (var libraryToSync in librariesToSync)
             {
-                var existsAsRemoteLibrary = plexLibraryContainer.MediaContainer.Directory.Any(x => x.Key == libraryToSync.Key);
+                var existsAsRemoteLibrary =
+                    plexLibraryContainer.MediaContainer.Directory.Any(x => x.Key == libraryToSync.Key);
 
                 if (!existsAsRemoteLibrary)
                 {
@@ -57,27 +56,40 @@ namespace PlexRequests.Sync
                     continue;
                 }
 
-                IMediaSync syncProcessor = null;
+                var syncProcessor = GetSyncProcessor(libraryToSync, plexServer, plexUrl);
 
-                switch (libraryToSync.Type)
+                if (syncProcessor == null)
                 {
-                    case "movie":
-                        syncProcessor = new MovieSync(_plexApi, _plexService, _logger);
-                        break;
-                    case "show":
-                        syncProcessor = new TvSync(_plexApi, _plexService, _logger);
-                        break;
-                    default:
-                        throw new ArgumentException($"Unknown Plex library type to synchronise: {libraryToSync.Type}");
-
+                    return;
                 }
 
-                var syncResult = await syncProcessor.SyncMedia(libraryToSync, plexUrl, plexServer.AccessToken);
+                var syncResult = await syncProcessor.SyncMedia(libraryToSync);
 
                 await _plexService.CreateMany(syncResult.NewItems);
                 await _plexService.UpdateMany(syncResult.ExistingItems);
+
             }
 
+        }
+
+        private IMediaSync GetSyncProcessor(PlexServerLibrary libraryToSync, PlexServer plexServer, string plexUrl)
+        {
+            IMediaSync syncProcessor = null;
+
+            switch (libraryToSync.Type)
+            {
+                case "movie":
+                    syncProcessor = new MovieSync(_plexApi, _plexService, _logger, plexServer.AccessToken, plexUrl);
+                    break;
+                case "show":
+                    syncProcessor = new TvSync(_plexApi, _plexService, _logger, plexServer.AccessToken, plexUrl);
+                    break;
+                default:
+                    _logger.LogInformation($"Unable to sync Plex library type '{libraryToSync.Type}' as it is not supported.");
+                    break;
+            }
+
+            return syncProcessor;
         }
     }
 }
