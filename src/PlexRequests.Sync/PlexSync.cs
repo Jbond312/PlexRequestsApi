@@ -5,6 +5,7 @@ using Microsoft.Extensions.Options;
 using PlexRequests.Plex;
 using PlexRequests.Settings;
 using PlexRequests.Store.Models;
+using PlexRequests.Sync.SyncProcessors;
 
 namespace PlexRequests.Sync
 {
@@ -52,7 +53,7 @@ namespace PlexRequests.Sync
 
                 if (!existsAsRemoteLibrary)
                 {
-                    _logger.LogInformation("Attempted to sync a local library but it no longer exists remotely");
+                    _logger.LogInformation($"Attempted to sync the local library '{libraryToSync.Type}|{libraryToSync.Key}' but it no longer exists remotely");
                     continue;
                 }
 
@@ -65,9 +66,10 @@ namespace PlexRequests.Sync
 
                 var syncResult = await syncProcessor.SyncMedia(libraryToSync);
 
+                _logger.LogInformation($"Sync Results. Create: {syncResult.NewItems.Count} Update: {syncResult.ExistingItems.Count}");
+
                 await _plexService.CreateMany(syncResult.NewItems);
                 await _plexService.UpdateMany(syncResult.ExistingItems);
-
             }
 
         }

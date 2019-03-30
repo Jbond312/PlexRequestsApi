@@ -5,8 +5,8 @@ namespace PlexRequests.Sync
 {
     public class SyncResult
     {
-        public List<PlexMediaItem> NewItems { get; set; }
-        public List<PlexMediaItem> ExistingItems { get; set; }
+        public List<PlexMediaItem> NewItems { get; }
+        public List<PlexMediaItem> ExistingItems { get; }
 
         public SyncResult()
         {

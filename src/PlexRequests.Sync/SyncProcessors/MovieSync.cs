@@ -2,7 +2,7 @@
 using PlexRequests.Plex;
 using PlexRequests.Store.Enums;
 
-namespace PlexRequests.Sync
+namespace PlexRequests.Sync.SyncProcessors
 {
     public class MovieSync : BaseMediaSync
     {

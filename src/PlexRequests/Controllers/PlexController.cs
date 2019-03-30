@@ -123,7 +123,7 @@ namespace PlexRequests.Controllers
 
         [HttpPost]
         [Route("SyncContent")]
-        [AllowAnonymous]
+        [Admin]
         public async Task SyncContent()
         {
             await _plexSync.Synchronise();
