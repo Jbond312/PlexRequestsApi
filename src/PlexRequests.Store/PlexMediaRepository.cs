@@ -14,8 +14,17 @@ namespace PlexRequests.Store
 
         public async Task<List<PlexMediaItem>> GetAll(PlexMediaTypes? mediaType = null)
         {
-            var users = await Collection.FindAsync(FilterDefinition<PlexMediaItem>.Empty);
-            return await users.ToListAsync();
+            IAsyncCursor<PlexMediaItem> mediaItemsCursor;
+            if (mediaType == null)
+            {
+                mediaItemsCursor = await Collection.FindAsync(FilterDefinition<PlexMediaItem>.Empty);
+            }
+            else
+            {
+                mediaItemsCursor = await Collection.FindAsync(x => x.MediaType == mediaType);
+            }
+
+            return await mediaItemsCursor.ToListAsync();
         }
 
         public async Task CreateMany(IEnumerable<PlexMediaItem> mediaItems)
