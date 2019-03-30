@@ -32,6 +32,8 @@ namespace PlexRequests.Sync
         {
             var plexServer = await _plexService.GetServer();
 
+            var plexUrl = plexServer.GetPlexUri(_plexSettings.ConnectLocally);
+
             var librariesToSync = plexServer.Libraries.Where(x => x.IsEnabled).ToList();
 
             if (!librariesToSync.Any())
@@ -60,19 +62,20 @@ namespace PlexRequests.Sync
                 switch (libraryToSync.Type)
                 {
                     case "movie":
-                        syncProcessor = new MovieSync(_plexApi, _logger);
+                        syncProcessor = new MovieSync(_plexApi, _plexService, _logger);
                         break;
                     case "show":
-                        syncProcessor = new TvSync(_plexApi, _logger);
+                        syncProcessor = new TvSync(_plexApi, _plexService, _logger);
                         break;
                     default:
                         throw new ArgumentException($"Unknown Plex library type to synchronise: {libraryToSync.Type}");
 
                 }
 
-                var mediaItems = await syncProcessor.SyncMedia(libraryToSync);
+                var syncResult = await syncProcessor.SyncMedia(libraryToSync, plexUrl, plexServer.AccessToken);
 
-                await _plexService.CreateMany(mediaItems);
+                await _plexService.CreateMany(syncResult.NewItems);
+                await _plexService.UpdateMany(syncResult.ExistingItems);
             }
 
         }

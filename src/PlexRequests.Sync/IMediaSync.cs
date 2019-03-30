@@ -6,6 +6,6 @@ namespace PlexRequests.Sync
 {
     public interface IMediaSync
     {
-        Task<List<PlexMediaItem>> SyncMedia(PlexServerLibrary library);
+        Task<SyncResult> SyncMedia(PlexServerLibrary library, string url, string plexUrl);
     }
 }
