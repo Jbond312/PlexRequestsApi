@@ -2,7 +2,7 @@
 {
     public class PlexSettings
     {
-        public int Port { get; set; }
+        public int DefaultLocalPort { get; set; }
         public bool ConnectLocally { get; set; }
     }
 }

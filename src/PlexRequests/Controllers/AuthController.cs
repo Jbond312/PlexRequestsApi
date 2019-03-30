@@ -136,7 +136,7 @@ namespace PlexRequests.Controllers
                     Name = adminServer.Name,
                     MachineIdentifier = adminServer.MachineIdentifier,
                     LocalIp = adminServer.LocalAddresses.Split(",").FirstOrDefault(),
-                    LocalPort = _plexSettings.Port,
+                    LocalPort = _plexSettings.DefaultLocalPort,
                     ExternalIp =  adminServer.Address,
                     ExternalPort = Convert.ToInt32(adminServer.Port),
                     Scheme = adminServer.Scheme
