@@ -50,7 +50,8 @@ namespace PlexRequests.Sync.SyncProcessors
                     AgentSourceId = ep.AgentSourceId,
                     AgentType = ep.AgentType,
                     Episode = ep.Index,
-                    Year = ep.Year
+                    Year = ep.Year,
+                    Resolution = ep.Resolution
                 }).ToList();
 
                 mediaItem.Seasons.Add(plexSeason);
@@ -84,7 +85,8 @@ namespace PlexRequests.Sync.SyncProcessors
                 RatingKey = key,
                 Title = metadata?.Title,
                 Index = metadata?.Index ?? 0,
-                Year = itemInfo.MediaContainer.Metadata.FirstOrDefault()?.Year,
+                Year = metadata?.Year,
+                Resolution = metadata?.Media?.FirstOrDefault()?.VideoResolution,
                 AgentType = agentDetails.agentType,
                 AgentSourceId = agentDetails.agentSourceId
             };
@@ -96,6 +98,7 @@ namespace PlexRequests.Sync.SyncProcessors
             public string Title { get; set; }
             public int Index { get; set; }
             public int? Year { get; set; }
+            public string Resolution { get; set; }
             public AgentTypes AgentType { get; set; }
             public string AgentSourceId { get; set; }
         }
