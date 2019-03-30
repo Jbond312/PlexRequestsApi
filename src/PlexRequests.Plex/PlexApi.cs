@@ -16,7 +16,9 @@ namespace PlexRequests.Plex
         private readonly ISettingsService _settingsService;
         private string _baseUri = "https://plex.tv/api/v2/";
 
-        public PlexApi(IApiService apiService, ISettingsService settingsService)
+        public PlexApi(
+            IApiService apiService, 
+            ISettingsService settingsService)
         {
             _apiService = apiService;
             _settingsService = settingsService;

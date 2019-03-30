@@ -1,13 +1,15 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Net;
 using System.Threading.Tasks;
 using Microsoft.Extensions.Logging;
+using PlexRequests.Helpers;
 using PlexRequests.Plex;
 using PlexRequests.Store.Enums;
 using PlexRequests.Store.Models;
 
-namespace PlexRequests.Sync
+namespace PlexRequests.Sync.SyncProcessors
 {
     public abstract class BaseMediaSync : IMediaSync
     {
@@ -40,18 +42,18 @@ namespace PlexRequests.Sync
 
         public async Task<SyncResult> SyncMedia(PlexServerLibrary library)
         {
-            _logger.LogInformation($"Synchronising Library Type: {library.Type}");
+            _logger.LogInformation($"Sync processing library type: {library.Type}|{library.Key}");
 
             var result = new SyncResult();
 
             var libraryContainer = await _plexApi.GetLibrary(AuthToken, PlexUri, library.Key);
-            var previouslySyncdMedia = await _plexService.GetMediaItems(MediaType);
+            var localMediaItems = await _plexService.GetMediaItems(MediaType);
 
             foreach (var remoteMediaItem in libraryContainer.MediaContainer.Metadata)
             {
                 var ratingKey = Convert.ToInt32(remoteMediaItem.RatingKey);
 
-                var mediaItem = previouslySyncdMedia.FirstOrDefault(x => x.Key == ratingKey);
+                var mediaItem = localMediaItems.FirstOrDefault(x => x.Key == ratingKey);
 
                 if (mediaItem == null)
                 {
@@ -72,19 +74,24 @@ namespace PlexRequests.Sync
                 var metadata = metadataContainer.MediaContainer.Metadata.FirstOrDefault();
 
                 mediaItem.Resolution = metadata?.Media?.FirstOrDefault()?.VideoResolution;
-                SetAgentDetails(mediaItem, metadata?.Guid);
+
+                var (agentType, agentSourceId) = GetAgentDetails(metadata?.Guid);
+                mediaItem.AgentType = agentType;
+                mediaItem.AgentSourceId = agentSourceId;
 
                 await GetChildMetadata(mediaItem);
             }
 
+            _logger.LogInformation($"Sync finished processing library type: {library.Type}|{library.Key}");
+
             return result;
         }
 
-        protected void SetAgentDetails(BasePlexMediaItem mediaItem, string agentGuid)
+        protected (AgentTypes agentType, string agentSourceId) GetAgentDetails(string agentGuid)
         {
             if (string.IsNullOrEmpty(agentGuid))
             {
-                return;
+                throw new PlexRequestException("PlexMetadataGuid", "The PlexMetadataGuid should not be null or empty", HttpStatusCode.InternalServerError);
             }
 
             /* The possible strings to split are
@@ -101,9 +108,7 @@ namespace PlexRequests.Sync
 
             var matchingSource = _agentTypes.First(x =>
                 x.ToString().Contains(agentTypeRaw, StringComparison.CurrentCultureIgnoreCase));
-
-            mediaItem.AgentType = matchingSource;
-            mediaItem.AgentSourceId = idRaw;
+            return (matchingSource, idRaw);
         }
 
         protected virtual Task GetChildMetadata(PlexMediaItem mediaItem)
