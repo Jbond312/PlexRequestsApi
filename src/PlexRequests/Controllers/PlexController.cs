@@ -56,11 +56,12 @@ namespace PlexRequests.Controllers
 
             var existingFriends = await _userService.GetAllUsers();
 
-            var deletedFriends = existingFriends.Where(ef => remoteFriends.Select(rf => rf.Email).Contains(ef.Email)).ToList();
+            var deletedFriends = existingFriends.Where(ef => !remoteFriends.Select(rf => rf.Email).Contains(ef.Email)  && !ef.IsAdmin).ToList();
 
             foreach (var friend in deletedFriends)
             {
                 friend.IsDisabled = true;
+                await _userService.UpdateUser(friend);
             }
 
             foreach (var friend in remoteFriends)
