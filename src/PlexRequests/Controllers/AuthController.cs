@@ -67,7 +67,7 @@ namespace PlexRequests.Controllers
 
             var plexRequestsUser = await _userService.GetUserFromPlexId(plexUser.Id);
 
-            if (plexRequestsUser == null)
+            if (plexRequestsUser == null || plexRequestsUser.IsDisabled)
             {
                 _logger.LogInformation("Attempted login by unknown user.");
                 return Unauthorized();
