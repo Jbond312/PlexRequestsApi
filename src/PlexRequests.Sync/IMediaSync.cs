@@ -5,6 +5,6 @@ namespace PlexRequests.Sync
 {
     public interface IMediaSync
     {
-        Task<SyncResult> SyncMedia(PlexServerLibrary library);
+        Task<SyncResult> SyncMedia(PlexServerLibrary library, bool fullRefresh);
     }
 }

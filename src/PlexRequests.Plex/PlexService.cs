@@ -57,5 +57,10 @@ namespace PlexRequests.Plex
                 await _plexMediaRepository.Update(mediaItem);
             }
         }
+
+        public async Task DeleteAllMediaItems()
+        {
+            await _plexMediaRepository.DeleteAll();
+        }
     }
 }

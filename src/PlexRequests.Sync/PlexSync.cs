@@ -29,7 +29,7 @@ namespace PlexRequests.Sync
             _logger = logger;
         }
 
-        public async Task Synchronise()
+        public async Task Synchronise(bool fullRefresh)
         {
             var plexServer = await _plexService.GetServer();
 
@@ -41,6 +41,11 @@ namespace PlexRequests.Sync
             {
                 _logger.LogDebug("No Plex libraries have been enabled for synchronisation");
                 return;
+            }
+
+            if (fullRefresh)
+            {
+                await _plexService.DeleteAllMediaItems();
             }
 
             var plexLibraryContainer = await _plexApi.GetLibraries(plexServer.AccessToken,
@@ -64,7 +69,7 @@ namespace PlexRequests.Sync
                     return;
                 }
 
-                var syncResult = await syncProcessor.SyncMedia(libraryToSync);
+                var syncResult = await syncProcessor.SyncMedia(libraryToSync, fullRefresh);
 
                 _logger.LogInformation($"Sync Results. Create: {syncResult.NewItems.Count} Update: {syncResult.ExistingItems.Count}");
 

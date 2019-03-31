@@ -14,11 +14,9 @@ namespace PlexRequests.Store.Models
 
         [BsonId]
         public Guid Id { get; set; }
-
         public int Year { get; set; }
         public string Resolution { get; set; }
         public PlexMediaTypes MediaType { get; set; }
-
         public List<PlexSeason> Seasons { get; set; }
     }
 }

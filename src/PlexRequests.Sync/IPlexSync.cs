@@ -4,6 +4,6 @@ namespace PlexRequests.Sync
 {
     public interface IPlexSync
     {
-        Task Synchronise();
+        Task Synchronise(bool fullRefresh);
     }
 }

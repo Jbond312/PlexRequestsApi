@@ -125,9 +125,9 @@ namespace PlexRequests.Controllers
         [HttpPost]
         [Route("SyncContent")]
         [Admin]
-        public async Task SyncContent()
+        public async Task SyncContent([FromQuery] bool fullRefresh = false)
         {
-            await _plexSync.Synchronise();
+            await _plexSync.Synchronise(fullRefresh);
         }
 
         [HttpGet]
