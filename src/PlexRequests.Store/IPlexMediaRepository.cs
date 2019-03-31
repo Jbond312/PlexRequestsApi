@@ -10,5 +10,6 @@ namespace PlexRequests.Store
         Task<List<PlexMediaItem>> GetAll(PlexMediaTypes? mediaType = null);
         Task CreateMany(IEnumerable<PlexMediaItem> mediaItems);
         Task Update(PlexMediaItem mediaItem);
+        Task DeleteAll();
     }
 }

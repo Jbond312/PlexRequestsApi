@@ -6,6 +6,7 @@ using System.Threading.Tasks;
 using Microsoft.Extensions.Logging;
 using PlexRequests.Helpers;
 using PlexRequests.Plex;
+using PlexRequests.Plex.Models;
 using PlexRequests.Store.Enums;
 using PlexRequests.Store.Models;
 
@@ -40,39 +41,48 @@ namespace PlexRequests.Sync.SyncProcessors
             PlexUri = plexUri;
         }
 
-        public async Task<SyncResult> SyncMedia(PlexServerLibrary library)
+        public async Task<SyncResult> SyncMedia(PlexServerLibrary library, bool fullRefresh)
         {
             _logger.LogInformation($"Sync processing library type: {library.Type}|{library.Key}");
 
             var result = new SyncResult();
 
-            var libraryContainer = await _plexApi.GetLibrary(AuthToken, PlexUri, library.Key);
+            var libraryContainer = await GetPlexMediaContainer(library, fullRefresh);
+
             var localMediaItems = await _plexService.GetMediaItems(MediaType);
 
+            var keysProcessed = new List<int>();
             foreach (var remoteMediaItem in libraryContainer.MediaContainer.Metadata)
             {
-                var ratingKey = Convert.ToInt32(remoteMediaItem.RatingKey);
+                var ratingKey = GetRatingKey(remoteMediaItem, fullRefresh);
 
+                if (keysProcessed.Contains(ratingKey))
+                {
+                    continue;
+                }
+
+                keysProcessed.Add(ratingKey);
+                
+                var metadataContainer = await _plexApi.GetMetadata(AuthToken, PlexUri, ratingKey);
+                var metadata = metadataContainer.MediaContainer.Metadata.FirstOrDefault();
+                
                 var mediaItem = localMediaItems.FirstOrDefault(x => x.Key == ratingKey);
-
                 if (mediaItem == null)
                 {
-                    mediaItem = new PlexMediaItem();
+                    mediaItem = new PlexMediaItem
+                    {
+                        Key = ratingKey,
+                        MediaType = MediaType,
+                        Title = metadata?.Title,
+                        Year = metadata?.Year ?? 0
+                    };
                     result.NewItems.Add(mediaItem);
                 }
                 else
                 {
                     result.ExistingItems.Add(mediaItem);
                 }
-
-                mediaItem.Key = ratingKey;
-                mediaItem.MediaType = MediaType;
-                mediaItem.Title = remoteMediaItem.Title;
-                mediaItem.Year = remoteMediaItem.Year;
-
-                var metadataContainer = await _plexApi.GetMetadata(AuthToken, PlexUri, mediaItem.Key);
-                var metadata = metadataContainer.MediaContainer.Metadata.FirstOrDefault();
-
+                
                 mediaItem.Resolution = metadata?.Media?.FirstOrDefault()?.VideoResolution;
 
                 var (agentType, agentSourceId) = GetAgentDetails(metadata?.Guid);
@@ -114,6 +124,33 @@ namespace PlexRequests.Sync.SyncProcessors
         protected virtual Task GetChildMetadata(PlexMediaItem mediaItem)
         {
             return Task.CompletedTask;
+        }
+
+        private int GetRatingKey(Metadata remoteMediaItem, bool fullRefresh)
+        {
+            var rawRatingKey = remoteMediaItem.RatingKey;
+            if (!fullRefresh && MediaType == PlexMediaTypes.Show)
+            {
+                rawRatingKey = remoteMediaItem.GrandParentRatingKey;
+            }
+
+            var ratingKey = Convert.ToInt32(rawRatingKey);
+            return ratingKey;
+        }
+
+        private async Task<PlexMediaContainer> GetPlexMediaContainer(PlexServerLibrary library, bool fullRefresh)
+        {
+            PlexMediaContainer libraryContainer;
+            if (fullRefresh)
+            {
+                libraryContainer = await _plexApi.GetLibrary(AuthToken, PlexUri, library.Key);
+            }
+            else
+            {
+                libraryContainer = await _plexApi.GetRecentlyAdded(AuthToken, PlexUri, library.Key);
+            }
+
+            return libraryContainer;
         }
     }
 }

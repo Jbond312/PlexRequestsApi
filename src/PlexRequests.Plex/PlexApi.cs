@@ -136,6 +136,19 @@ namespace PlexRequests.Plex
             return plexMediaContainer;
         }
 
+        public async Task<PlexMediaContainer> GetRecentlyAdded(string authToken, string plexServerHost, string key)
+        {
+            var apiRequest = new ApiRequestBuilder(plexServerHost, $"library/sections/{key}/recentlyAdded", HttpMethod.Get)
+                .AddPlexToken(authToken)
+                .AddRequestHeaders(await GetPlexHeaders())
+                .AcceptJson()
+                .Build();
+
+            var plexMediaContainer = await _apiService.InvokeApiAsync<PlexMediaContainer>(apiRequest);
+
+            return plexMediaContainer;
+        }
+
         public async Task<PlexMediaContainer> GetMetadata(string authToken, string plexServerHost, int metadataId)
         {
             var apiRequest = new ApiRequestBuilder(plexServerHost, $"library/metadata/{metadataId}", HttpMethod.Get)

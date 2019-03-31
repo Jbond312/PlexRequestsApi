@@ -37,5 +37,10 @@ namespace PlexRequests.Store
             var filter = new FilterDefinitionBuilder<PlexMediaItem>().Eq(x => x.Id, mediaItem.Id);
             await Collection.FindOneAndReplaceAsync(filter, mediaItem);
         }
+
+        public async Task DeleteAll()
+        {
+            await Collection.DeleteManyAsync(FilterDefinition<PlexMediaItem>.Empty);
+        }
     }
 }
