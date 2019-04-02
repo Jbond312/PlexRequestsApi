@@ -76,11 +76,20 @@ namespace PlexRequests
             services.Configure<AuthenticationSettings>(Configuration.GetSection(nameof(AuthenticationSettings)));
             services.Configure<TheMovieDbSettings>(Configuration.GetSection(nameof(TheMovieDbSettings)));
             services.Configure<PlexSettings>(Configuration.GetSection(nameof(PlexSettings)));
+            services.Configure<DatabaseSettings>(Configuration.GetSection(nameof(DatabaseSettings)));
 
             var authSettings = Configuration.GetSection(nameof(AuthenticationSettings)).Get<AuthenticationSettings>();
-            var appSettings = Configuration.GetSection(nameof(Settings)).Get<Store.Models.Settings>();
+            var databaseSettings = Configuration.GetSection(nameof(DatabaseSettings)).Get<DatabaseSettings>();
             
-            services.RegisterDependencies(appSettings);
+            if(Environment.IsProduction())
+            {
+                var dbUser = System.Environment.GetEnvironmentVariable("MONGO_INITDB_ROOT_USERNAME");
+                var dbUserPass = System.Environment.GetEnvironmentVariable("MONGO_INITDB_ROOT_PASSWORD");
+                databaseSettings.User = dbUser;
+                databaseSettings.Password = dbUserPass;
+            }
+
+            services.RegisterDependencies(databaseSettings);
             services.ConfigureJwtAuthentication(authSettings, Environment.IsProduction());
 
             MongoDefaults.AssignIdOnInsert = true;
