@@ -9,6 +9,7 @@ using PlexRequests.Helpers;
 using PlexRequests.Plex;
 using PlexRequests.Settings;
 using PlexRequests.Store;
+using PlexRequests.Sync;
 using PlexRequests.TheMovieDb;
 
 namespace PlexRequests
@@ -54,6 +55,8 @@ namespace PlexRequests
             services.AddTransient<ICacheService, CacheService>();
             services.AddTransient<ISettingsService, SettingsService>();
             services.AddTransient<IUserService, UserService>();
+            services.AddTransient<IPlexService, PlexService>();
+            services.AddTransient<IPlexSync, PlexSync>();
             services.AddSingleton<IPlexRequestsHttpClient, PlexRequestsHttpClient>();
         }
 
@@ -65,6 +68,10 @@ namespace PlexRequests
                 new SettingsRepository(connectionString, settings.DatabaseName));
             services.AddTransient<IUserRepository>(repo =>
                 new UserRepository(connectionString, settings.DatabaseName));
+            services.AddTransient<IPlexServerRepository>(repo =>
+                new PlexServerRepository(connectionString, settings.DatabaseName));
+            services.AddTransient<IPlexMediaRepository>(repo =>
+                new PlexMediaRepository(connectionString, settings.DatabaseName));
         }
     }
 }

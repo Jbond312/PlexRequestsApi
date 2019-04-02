@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using AutoMapper;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Mvc;
@@ -70,9 +71,11 @@ namespace PlexRequests
             ConfigureLogging();
 
             services.AddMemoryCache();
+            services.AddAutoMapper();
 
             services.Configure<AuthenticationSettings>(Configuration.GetSection(nameof(AuthenticationSettings)));
             services.Configure<TheMovieDbSettings>(Configuration.GetSection(nameof(TheMovieDbSettings)));
+            services.Configure<PlexSettings>(Configuration.GetSection(nameof(PlexSettings)));
 
             var authSettings = Configuration.GetSection(nameof(AuthenticationSettings)).Get<AuthenticationSettings>();
             var appSettings = Configuration.GetSection(nameof(Settings)).Get<Store.Models.Settings>();

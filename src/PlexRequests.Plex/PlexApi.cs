@@ -16,7 +16,9 @@ namespace PlexRequests.Plex
         private readonly ISettingsService _settingsService;
         private string _baseUri = "https://plex.tv/api/v2/";
 
-        public PlexApi(IApiService apiService, ISettingsService settingsService)
+        public PlexApi(
+            IApiService apiService, 
+            ISettingsService settingsService)
         {
             _apiService = apiService;
             _settingsService = settingsService;
@@ -108,7 +110,7 @@ namespace PlexRequests.Plex
             return friendContainer?.Friends.ToList();
         }
 
-        public async Task<PlexMediaContainer> GetLibrarySections(string authToken, string plexServerHost)
+        public async Task<PlexMediaContainer> GetLibraries(string authToken, string plexServerHost)
         {
             var apiRequest = new ApiRequestBuilder(plexServerHost, "library/sections", HttpMethod.Get)
                 .AddPlexToken(authToken)
@@ -124,6 +126,19 @@ namespace PlexRequests.Plex
         public async Task<PlexMediaContainer> GetLibrary(string authToken, string plexServerHost, string key)
         {
             var apiRequest = new ApiRequestBuilder(plexServerHost, $"library/sections/{key}/all", HttpMethod.Get)
+                .AddPlexToken(authToken)
+                .AddRequestHeaders(await GetPlexHeaders())
+                .AcceptJson()
+                .Build();
+
+            var plexMediaContainer = await _apiService.InvokeApiAsync<PlexMediaContainer>(apiRequest);
+
+            return plexMediaContainer;
+        }
+
+        public async Task<PlexMediaContainer> GetRecentlyAdded(string authToken, string plexServerHost, string key)
+        {
+            var apiRequest = new ApiRequestBuilder(plexServerHost, $"library/sections/{key}/recentlyAdded", HttpMethod.Get)
                 .AddPlexToken(authToken)
                 .AddRequestHeaders(await GetPlexHeaders())
                 .AcceptJson()
