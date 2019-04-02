@@ -16,10 +16,10 @@ namespace PlexRequests
 {
     public static class ServiceCollectionExtensions
     {
-        public static void RegisterDependencies(this IServiceCollection services, Store.Models.Settings settings)
+        public static void RegisterDependencies(this IServiceCollection services, DatabaseSettings databaseSettings)
         {
             RegisterServices(services);
-            RegisterRepositories(services, settings);
+            RegisterRepositories(services, databaseSettings);
         }
 
         public static void ConfigureJwtAuthentication(this IServiceCollection services, AuthenticationSettings authSettings, bool isProduction)
@@ -60,18 +60,18 @@ namespace PlexRequests
             services.AddSingleton<IPlexRequestsHttpClient, PlexRequestsHttpClient>();
         }
 
-        private static void RegisterRepositories(IServiceCollection services, Store.Models.Settings settings)
+        private static void RegisterRepositories(IServiceCollection services, DatabaseSettings databaseSettings)
         {
-            var connectionString = $"mongodb://{settings.DatabaseServer}:27017?connectTimeoutMS=30000";
+            var connectionString = $"mongodb://{databaseSettings.User}:{databaseSettings.Password}@{databaseSettings.Server}:27017?connectTimeoutMS=30000";
 
             services.AddTransient<ISettingsRepository>(repo =>
-                new SettingsRepository(connectionString, settings.DatabaseName));
+                new SettingsRepository(connectionString, databaseSettings.Database));
             services.AddTransient<IUserRepository>(repo =>
-                new UserRepository(connectionString, settings.DatabaseName));
+                new UserRepository(connectionString, databaseSettings.Database));
             services.AddTransient<IPlexServerRepository>(repo =>
-                new PlexServerRepository(connectionString, settings.DatabaseName));
+                new PlexServerRepository(connectionString, databaseSettings.Database));
             services.AddTransient<IPlexMediaRepository>(repo =>
-                new PlexMediaRepository(connectionString, settings.DatabaseName));
+                new PlexMediaRepository(connectionString, databaseSettings.Database));
         }
     }
 }
