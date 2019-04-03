@@ -1,5 +1,8 @@
 ﻿using System;
+using System.Linq;
+using System.Security.Claims;
 using System.Text;
+using System.Threading.Tasks;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.IdentityModel.Tokens;
@@ -30,6 +33,10 @@ namespace PlexRequests
                 x.DefaultChallengeScheme = JwtBearerDefaults.AuthenticationScheme;
             }).AddJwtBearer(x =>
             {
+                x.Events = new JwtBearerEvents
+                {
+                    OnTokenValidated = OnTokenValidated
+                };
                 x.RequireHttpsMetadata = isProduction;
                 x.SaveToken = true;
                 x.TokenValidationParameters = new TokenValidationParameters
@@ -72,6 +79,28 @@ namespace PlexRequests
                 new PlexServerRepository(connectionString, databaseSettings.Database));
             services.AddTransient<IPlexMediaRepository>(repo =>
                 new PlexMediaRepository(connectionString, databaseSettings.Database));
+        }
+
+        private static async Task OnTokenValidated(TokenValidatedContext tokenValidatedContext)
+        {
+            var userService = tokenValidatedContext.HttpContext.RequestServices.GetService<IUserService>();
+            var userIdClaim = tokenValidatedContext.Principal.Claims.FirstOrDefault(x => x.Type == ClaimTypes.NameIdentifier);
+
+            if (string.IsNullOrEmpty(userIdClaim?.Value))
+            {
+                return;
+            }
+
+            var user = await userService.GetUser(Guid.Parse(userIdClaim.Value));
+
+            if (user == null)
+            {
+                tokenValidatedContext.Fail("User does not exist.");
+            }
+            else if (user.IsDisabled)
+            {
+                tokenValidatedContext.Fail("User has been disabled.");
+            }
         }
     }
 }
