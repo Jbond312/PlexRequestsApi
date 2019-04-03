@@ -63,6 +63,7 @@ namespace PlexRequests
             services.AddTransient<ISettingsService, SettingsService>();
             services.AddTransient<IUserService, UserService>();
             services.AddTransient<IPlexService, PlexService>();
+            services.AddSingleton<ITokenService, TokenService>();
             services.AddTransient<IPlexSync, PlexSync>();
             services.AddSingleton<IPlexRequestsHttpClient, PlexRequestsHttpClient>();
         }
