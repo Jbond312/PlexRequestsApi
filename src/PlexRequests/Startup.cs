@@ -146,7 +146,7 @@ namespace PlexRequests
             app.UseMvc(routes => { routes.MapRoute("default", "api/{controller}/{action}"); });
         }
 
-        private static void PrimeSettings(IApplicationBuilder app, IConfiguration configuration)
+        private void PrimeSettings(IApplicationBuilder app, IConfiguration configuration)
         {
             var logger = app.ApplicationServices.GetService<ILogger<Startup>>();
             var settingsService = app.ApplicationServices.GetService<ISettingsService>();
@@ -159,6 +159,8 @@ namespace PlexRequests
                 ? "PlexRequests"
                 : settings.ApplicationName;
             settings.PlexClientId = Guid.NewGuid();
+
+            settings.Version = Environment.IsProduction() ? System.Environment.GetEnvironmentVariable("PLEXREQUESTS_VERSION") : "Dev";
 
             settingsService.PrimeSettings(settings).GetAwaiter().GetResult();
         }

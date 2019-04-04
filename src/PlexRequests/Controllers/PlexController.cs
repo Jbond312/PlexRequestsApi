@@ -24,9 +24,9 @@ namespace PlexRequests.Controllers
 
         [HttpPost("SyncUsers")]
         [Admin]
-        public async Task<IActionResult> SyncUsers([FromBody] SyncUsersCommand command)
+        public async Task<IActionResult> SyncUsers()
         {
-            await _mediator.Send(command);
+            await _mediator.Send(new SyncUsersCommand());
 
             return Ok();
         }
@@ -34,9 +34,9 @@ namespace PlexRequests.Controllers
         [HttpPost]
         [Route("SyncLibraries")]
         [Admin]
-        public async Task<ActionResult<List<PlexServerLibraryViewModel>>> SyncLibraries([FromBody] SyncLibrariesCommand command)
+        public async Task<ActionResult<List<PlexServerLibraryViewModel>>> SyncLibraries()
         {
-            var result = await _mediator.Send(command);
+            var result = await _mediator.Send(new SyncLibrariesCommand());
 
             return Ok(result.Libraries);
         }
