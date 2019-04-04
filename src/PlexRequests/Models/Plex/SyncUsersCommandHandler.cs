@@ -55,7 +55,7 @@ namespace PlexRequests.Models.Plex
                     Username = friend.Username,
                     Email = friend.Email,
                     PlexAccountId = Convert.ToInt32(friend.Id),
-                    Roles = new List<string> {PlexRequestRoles.User}
+                    Roles = new List<string> { PlexRequestRoles.User }
                 };
 
                 await _userService.CreateUser(user);
