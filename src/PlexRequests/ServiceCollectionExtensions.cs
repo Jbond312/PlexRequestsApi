@@ -13,6 +13,7 @@ using PlexRequests.Plex;
 using PlexRequests.Settings;
 using PlexRequests.Store;
 using PlexRequests.Sync;
+using PlexRequests.Sync.SyncProcessors;
 using PlexRequests.TheMovieDb;
 
 namespace PlexRequests
@@ -65,6 +66,8 @@ namespace PlexRequests
             services.AddTransient<IPlexService, PlexService>();
             services.AddSingleton<ITokenService, TokenService>();
             services.AddTransient<IPlexSync, PlexSync>();
+            services.AddSingleton<IMediaItemProcessor, MediaItemProcessor>();
+            services.AddSingleton<IProcessorProvider, ProcessorProvider>();
             services.AddSingleton<IPlexRequestsHttpClient, PlexRequestsHttpClient>();
         }
 

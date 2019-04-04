@@ -76,7 +76,7 @@ namespace PlexRequests.Models.Auth
             _logger.LogDebug("Getting PlexServers");
             var servers = await _plexApi.GetServers(plexUser.AuthToken);
 
-            var adminServer = servers.FirstOrDefault(x => x.Owned == "1");
+            var adminServer = servers?.FirstOrDefault(x => x.Owned == "1");
 
             if (adminServer != null)
             {
@@ -133,16 +133,21 @@ namespace PlexRequests.Models.Auth
             var libraryContainer = await _plexApi.GetLibraries(plexUser.AuthToken,
                 plexServer.GetPlexUri(_plexSettings.ConnectLocally));
 
-            _logger.LogInformation(
-                $"Identified '{libraryContainer.MediaContainer.Directory.Count}' libraries on the PlexServer");
+            var directories = libraryContainer?.MediaContainer.Directory;
 
-            plexServer.Libraries = libraryContainer.MediaContainer.Directory.Select(x =>
-                new PlexServerLibrary
-                {
-                    Key = x.Key,
-                    Title = x.Title,
-                    Type = x.Type
-                }).ToList();
+            if (directories != null)
+            {
+                _logger.LogInformation(
+                    $"Identified '{directories.Count}' libraries on the PlexServer");
+
+                plexServer.Libraries = directories.Select(x =>
+                    new PlexServerLibrary
+                    {
+                        Key = x.Key,
+                        Title = x.Title,
+                        Type = x.Type
+                    }).ToList();
+            }
 
             await _plexService.Create(plexServer);
         }
