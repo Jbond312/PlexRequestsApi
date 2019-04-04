@@ -3,7 +3,6 @@ using System.Threading;
 using System.Threading.Tasks;
 using MediatR;
 using Microsoft.Extensions.Logging;
-using PlexRequests.Controllers;
 using PlexRequests.Core;
 using PlexRequests.Helpers;
 using PlexRequests.Plex;
@@ -15,13 +14,13 @@ namespace PlexRequests.Models.Auth
         private readonly IUserService _userService;
         private readonly ITokenService _tokenService;
         private readonly IPlexApi _plexApi;
-        private readonly ILogger<AuthController> _logger;
+        private readonly ILogger<UserLoginCommandHandler> _logger;
 
         public UserLoginCommandHandler(
             IUserService userService,
             ITokenService tokenService,
             IPlexApi plexApi,
-            ILogger<AuthController> logger)
+            ILogger<UserLoginCommandHandler> logger)
         {
             _userService = userService;
             _tokenService = tokenService;

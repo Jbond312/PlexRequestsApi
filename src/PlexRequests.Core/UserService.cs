@@ -30,9 +30,9 @@ namespace PlexRequests.Core
             return await _userRepository.GetUser(plexAccountId);
         }
 
-        public async Task<User> CreateUser(User user)
+        public async Task CreateUser(User user)
         {
-            return await _userRepository.CreateUser(user);
+            await _userRepository.CreateUser(user);
         }
 
         public async Task<User> UpdateUser(User user)

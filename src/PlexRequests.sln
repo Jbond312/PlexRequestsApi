@@ -21,7 +21,13 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Solution Items", "Solution 
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "PlexRequests.TheMovieDb", "PlexRequests.TheMovieDb\PlexRequests.TheMovieDb.csproj", "{4D922A00-706D-4CA7-8894-C3EF665B9D36}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "PlexRequests.Sync", "PlexRequests.Sync\PlexRequests.Sync.csproj", "{D4B56787-F68A-4590-811B-D6828DABFAF5}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "PlexRequests.Sync", "PlexRequests.Sync\PlexRequests.Sync.csproj", "{D4B56787-F68A-4590-811B-D6828DABFAF5}"
+EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "PlexRequests.UnitTests", "PlexRequests.UnitTests\PlexRequests.UnitTests.csproj", "{E0DB8659-82D3-4793-8E29-859BA0CD3969}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "PlexRequests.Sync.UnitTests", "PlexRequests.Sync.UnitTests\PlexRequests.Sync.UnitTests.csproj", "{DD85AFDA-8E96-4E88-98EF-4E00E1B4637A}"
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "UnitTests", "UnitTests", "{505A8AFF-9ACF-41FC-B27A-2D010822163F}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -65,9 +71,21 @@ Global
 		{D4B56787-F68A-4590-811B-D6828DABFAF5}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{D4B56787-F68A-4590-811B-D6828DABFAF5}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{D4B56787-F68A-4590-811B-D6828DABFAF5}.Release|Any CPU.Build.0 = Release|Any CPU
+		{E0DB8659-82D3-4793-8E29-859BA0CD3969}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{E0DB8659-82D3-4793-8E29-859BA0CD3969}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{E0DB8659-82D3-4793-8E29-859BA0CD3969}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{E0DB8659-82D3-4793-8E29-859BA0CD3969}.Release|Any CPU.Build.0 = Release|Any CPU
+		{DD85AFDA-8E96-4E88-98EF-4E00E1B4637A}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{DD85AFDA-8E96-4E88-98EF-4E00E1B4637A}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{DD85AFDA-8E96-4E88-98EF-4E00E1B4637A}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{DD85AFDA-8E96-4E88-98EF-4E00E1B4637A}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(NestedProjects) = preSolution
+		{E0DB8659-82D3-4793-8E29-859BA0CD3969} = {505A8AFF-9ACF-41FC-B27A-2D010822163F}
+		{DD85AFDA-8E96-4E88-98EF-4E00E1B4637A} = {505A8AFF-9ACF-41FC-B27A-2D010822163F}
 	EndGlobalSection
 	GlobalSection(ExtensibilityGlobals) = postSolution
 		SolutionGuid = {184D93EF-A8B8-4FA2-8CE6-833D27DC8E53}

@@ -10,7 +10,7 @@ namespace PlexRequests.Core
         Task<List<User>> GetAllUsers();
         Task<User> GetUser(Guid id);
         Task<User> GetUserFromPlexId(int plexAccountId);
-        Task<User> CreateUser(User user);
+        Task CreateUser(User user);
         Task<User> UpdateUser(User user);
         Task<bool> UserExists(string email);
         Task<bool> IsAdminCreated();

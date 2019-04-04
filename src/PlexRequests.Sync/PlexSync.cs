@@ -3,6 +3,7 @@ using System.Threading.Tasks;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using PlexRequests.Plex;
+using PlexRequests.Plex.Models;
 using PlexRequests.Settings;
 using PlexRequests.Store.Models;
 using PlexRequests.Sync.SyncProcessors;
@@ -13,18 +14,21 @@ namespace PlexRequests.Sync
     {
         private readonly IPlexApi _plexApi;
         private readonly IPlexService _plexService;
+        private readonly IProcessorProvider _processorProvider;
         private readonly PlexSettings _plexSettings;
         private readonly ILogger<PlexSync> _logger;
 
         public PlexSync(
             IPlexApi plexApi,
             IPlexService plexService,
+            IProcessorProvider processorProvider,
             IOptions<PlexSettings> plexSettings,
             ILogger<PlexSync> logger
             )
         {
             _plexApi = plexApi;
             _plexService = plexService;
+            _processorProvider = processorProvider;
             _plexSettings = plexSettings.Value;
             _logger = logger;
         }
@@ -48,8 +52,7 @@ namespace PlexRequests.Sync
                 await _plexService.DeleteAllMediaItems();
             }
 
-            var plexLibraryContainer = await _plexApi.GetLibraries(plexServer.AccessToken,
-                plexServer.GetPlexUri(_plexSettings.ConnectLocally));
+            var plexLibraryContainer = await _plexApi.GetLibraries(plexServer.AccessToken, plexUrl);
 
             foreach (var libraryToSync in librariesToSync)
             {
@@ -62,41 +65,49 @@ namespace PlexRequests.Sync
                     continue;
                 }
 
-                var syncProcessor = GetSyncProcessor(libraryToSync, plexServer, plexUrl);
+                var syncProcessor = _processorProvider.GetProcessor(libraryToSync.Type);
 
                 if (syncProcessor == null)
                 {
+                    _logger.LogInformation($"Attempted to sync the local library '{libraryToSync.Type}|{libraryToSync.Key}' but the type is not supported");
                     return;
                 }
 
-                var syncResult = await syncProcessor.SyncMedia(libraryToSync, fullRefresh);
-
-                _logger.LogInformation($"Sync Results. Create: {syncResult.NewItems.Count} Update: {syncResult.ExistingItems.Count}");
-
-                await _plexService.CreateMany(syncResult.NewItems);
-                await _plexService.UpdateMany(syncResult.ExistingItems);
+                await SynchroniseLibrary(fullRefresh, libraryToSync, plexServer, plexUrl, syncProcessor);
             }
-
         }
 
-        private IMediaSync GetSyncProcessor(PlexServerLibrary libraryToSync, PlexServer plexServer, string plexUrl)
+        private async Task SynchroniseLibrary(bool fullRefresh, PlexServerLibrary libraryToSync, PlexServer plexServer,
+            string plexUrl, ISyncProcessor syncProcessor)
         {
-            IMediaSync syncProcessor = null;
+            _logger.LogInformation($"Sync processing library type: {libraryToSync.Type}|{libraryToSync.Key}");
 
-            switch (libraryToSync.Type)
+            var libraryContainer =
+                await GetLibraryContainer(libraryToSync, fullRefresh, plexServer.AccessToken, plexUrl);
+
+            var syncResult = await syncProcessor.Synchronise(libraryContainer, fullRefresh, plexServer.AccessToken, plexUrl);
+
+            _logger.LogInformation($"Sync finished processing library type: {libraryToSync.Type}|{libraryToSync.Key}");
+
+            _logger.LogInformation($"Sync Results. Create: {syncResult.NewItems.Count} Update: {syncResult.ExistingItems.Count}");
+
+            await _plexService.CreateMany(syncResult.NewItems);
+            await _plexService.UpdateMany(syncResult.ExistingItems);
+        }
+
+        private async Task<PlexMediaContainer> GetLibraryContainer(PlexServerLibrary library, bool fullRefresh, string authToken, string plexUri)
+        {
+            PlexMediaContainer libraryContainer;
+            if (fullRefresh)
             {
-                case "movie":
-                    syncProcessor = new MovieSync(_plexApi, _plexService, _logger, plexServer.AccessToken, plexUrl);
-                    break;
-                case "show":
-                    syncProcessor = new TvSync(_plexApi, _plexService, _logger, plexServer.AccessToken, plexUrl);
-                    break;
-                default:
-                    _logger.LogInformation($"Unable to sync Plex library type '{libraryToSync.Type}' as it is not supported.");
-                    break;
+                libraryContainer = await _plexApi.GetLibrary(authToken, plexUri, library.Key);
+            }
+            else
+            {
+                libraryContainer = await _plexApi.GetRecentlyAdded(authToken, plexUri, library.Key);
             }
 
-            return syncProcessor;
+            return libraryContainer;
         }
     }
 }
