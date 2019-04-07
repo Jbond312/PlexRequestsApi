@@ -4,6 +4,7 @@ using System.Security.Claims;
 using System.Text;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.IdentityModel.Tokens;
 using PlexRequests.Api;
@@ -57,6 +58,9 @@ namespace PlexRequests
 
         private static void RegisterServices(IServiceCollection services)
         {
+            services.AddSingleton<IHttpContextAccessor, HttpContextAccessor>();
+            services.AddTransient<IClaimsPrincipalAccessor, ClaimsPrincipalAccessor>();
+            
             services.AddTransient<IPlexApi, PlexApi>();
             services.AddTransient<ITheMovieDbApi, TheMovieDbApi>();
             services.AddSingleton<IApiService, ApiService>();
@@ -64,6 +68,7 @@ namespace PlexRequests
             services.AddTransient<ISettingsService, SettingsService>();
             services.AddTransient<IUserService, UserService>();
             services.AddTransient<IPlexService, PlexService>();
+            services.AddTransient<IRequestService, RequestService>();
             services.AddSingleton<ITokenService, TokenService>();
             services.AddTransient<IPlexSync, PlexSync>();
             services.AddSingleton<IMediaItemProcessor, MediaItemProcessor>();
@@ -83,6 +88,8 @@ namespace PlexRequests
                 new PlexServerRepository(connectionString, databaseSettings.Database));
             services.AddTransient<IPlexMediaRepository>(repo =>
                 new PlexMediaRepository(connectionString, databaseSettings.Database));
+            services.AddTransient<IRequestRepository>(repo =>
+                new RequestRepository(connectionString, databaseSettings.Database));
         }
 
         private static async Task OnTokenValidated(TokenValidatedContext tokenValidatedContext)

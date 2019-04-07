@@ -1,4 +1,6 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
+using System.Linq.Expressions;
 using System.Threading.Tasks;
 using AutoFixture;
 using NSubstitute;
@@ -39,11 +41,11 @@ namespace PlexRequests.Sync.UnitTests.SyncProcessors
 
             request.LibraryContainer.MediaContainer.Metadata = new List<Metadata>();
 
-            _plexService.GetMediaItems(Arg.Any<PlexMediaTypes>()).Returns(new List<PlexMediaItem>());
-
+            MockGetMediaItems();
+            
             await _underTest.Synchronise(request.LibraryContainer, request.FullRefresh, request.AuthToken, request.PlexUri);
 
-            await _plexService.Received().GetMediaItems(Arg.Is(PlexMediaTypes.Movie));
+            await _plexService.Received().GetMediaItems(Arg.Any<Expression<Func<PlexMediaItem, bool>>>());
         }
 
         [Test]
@@ -56,8 +58,7 @@ namespace PlexRequests.Sync.UnitTests.SyncProcessors
                 metadata.RatingKey = _fixture.Create<int>().ToString();
             }
 
-            _plexService.GetMediaItems(Arg.Any<PlexMediaTypes>()).Returns(new List<PlexMediaItem>());
-
+            MockGetMediaItems();
             MockGetMediaItem();
 
             await _underTest.Synchronise(request.LibraryContainer, request.FullRefresh, request.AuthToken, request.PlexUri);
@@ -73,8 +74,7 @@ namespace PlexRequests.Sync.UnitTests.SyncProcessors
                 metadata.RatingKey = _fixture.Create<int>().ToString();
             }
 
-            _plexService.GetMediaItems(Arg.Any<PlexMediaTypes>()).Returns(new List<PlexMediaItem>());
-
+            MockGetMediaItems();
             MockGetMediaItem();
 
             await _underTest.Synchronise(request.LibraryContainer, request.FullRefresh, request.AuthToken, request.PlexUri);
@@ -90,6 +90,12 @@ namespace PlexRequests.Sync.UnitTests.SyncProcessors
 
             _mediaItemProcessor.GetMediaItem(Arg.Any<int>(), Arg.Any<PlexMediaTypes>(), Arg.Any<List<PlexMediaItem>>(),
                 Arg.Any<string>(), Arg.Any<string>()).Returns(getMediaItemResponse);
+        }
+        
+        private void MockGetMediaItems()
+        {
+            _plexService.GetMediaItems(Arg.Any<Expression<Func<PlexMediaItem, bool>>>())
+                        .Returns(new List<PlexMediaItem>());
         }
     }
 }

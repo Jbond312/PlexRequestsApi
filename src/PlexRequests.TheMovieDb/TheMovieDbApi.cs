@@ -99,6 +99,18 @@ namespace PlexRequests.TheMovieDb
             return movie;
         }
 
+        public async Task<ExternalIds> GetMovieExternalIds(int movieId)
+        {
+            var apiRequest = new ApiRequestBuilder(_baseUri, $"movie/{movieId}/external_ids", HttpMethod.Get)
+                             .AddQueryParam("api_key", _apiKey)
+                             .AddQueryParam("language", LanguageCode)
+                             .Build();
+
+            var externalIds = await _apiService.InvokeApiAsync<ExternalIds>(apiRequest);
+
+            return externalIds;
+        }
+
         public async Task<List<TvSearch>> SearchTv(string query, int? page)
         {
             var requestBuilder = new ApiRequestBuilder(_baseUri, "search/tv", HttpMethod.Get)

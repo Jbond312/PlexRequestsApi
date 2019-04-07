@@ -1,8 +1,9 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
+using System.Linq.Expressions;
 using System.Threading.Tasks;
 using PlexRequests.Store.Models;
 using MongoDB.Driver;
-using PlexRequests.Store.Enums;
 
 namespace PlexRequests.Store
 {
@@ -12,19 +13,18 @@ namespace PlexRequests.Store
         {
         }
 
-        public async Task<List<PlexMediaItem>> GetAll(PlexMediaTypes? mediaType = null)
+        public async Task<List<PlexMediaItem>> GetMany(Expression<Func<PlexMediaItem, bool>> filter = null)
         {
-            IAsyncCursor<PlexMediaItem> mediaItemsCursor;
-            if (mediaType == null)
-            {
-                mediaItemsCursor = await Collection.FindAsync(FilterDefinition<PlexMediaItem>.Empty);
-            }
-            else
-            {
-                mediaItemsCursor = await Collection.FindAsync(x => x.MediaType == mediaType);
-            }
+            var cursor = await GetRequestsCursor(filter);
 
-            return await mediaItemsCursor.ToListAsync();
+            return await cursor.ToListAsync();
+        }
+        
+        public async Task<PlexMediaItem> GetOne(Expression<Func<PlexMediaItem, bool>> filter = null)
+        {
+            var cursor = await GetRequestsCursor(filter);
+
+            return await cursor.FirstOrDefaultAsync();
         }
 
         public async Task CreateMany(IEnumerable<PlexMediaItem> mediaItems)
@@ -41,6 +41,21 @@ namespace PlexRequests.Store
         public async Task DeleteAll()
         {
             await Collection.DeleteManyAsync(FilterDefinition<PlexMediaItem>.Empty);
+        }
+        
+        private async Task<IAsyncCursor<PlexMediaItem>> GetRequestsCursor(Expression<Func<PlexMediaItem, bool>> filter = null)
+        {
+            IAsyncCursor<PlexMediaItem> cursor;
+            if (filter == null)
+            {
+                cursor = await Collection.FindAsync(FilterDefinition<PlexMediaItem>.Empty);
+            }
+            else
+            {
+                cursor = await Collection.FindAsync(filter);
+            }
+
+            return cursor;
         }
     }
 }

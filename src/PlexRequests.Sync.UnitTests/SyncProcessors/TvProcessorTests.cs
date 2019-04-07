@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Linq.Expressions;
 using System.Threading.Tasks;
 using AutoFixture;
 using NSubstitute;
@@ -43,11 +44,11 @@ namespace PlexRequests.Sync.UnitTests.SyncProcessors
 
             request.LibraryContainer.MediaContainer.Metadata = new List<Metadata>();
 
-            _plexService.GetMediaItems(Arg.Any<PlexMediaTypes>()).Returns(new List<PlexMediaItem>());
-
+            MockGetMediaItems();
+            
             await _underTest.Synchronise(request.LibraryContainer, request.FullRefresh, request.AuthToken, request.PlexUri);
 
-            await _plexService.Received().GetMediaItems(Arg.Is(PlexMediaTypes.Show));
+            await _plexService.Received().GetMediaItems(Arg.Any<Expression<Func<PlexMediaItem, bool>>>());
         }
 
         [Test]
@@ -57,8 +58,7 @@ namespace PlexRequests.Sync.UnitTests.SyncProcessors
 
             CorrectMetadataKeys(request.LibraryContainer);
 
-            _plexService.GetMediaItems(Arg.Any<PlexMediaTypes>()).Returns(new List<PlexMediaItem>());
-
+            MockGetMediaItems();
             MockGetMediaItem();
 
             await _underTest.Synchronise(request.LibraryContainer, request.FullRefresh, request.AuthToken, request.PlexUri);
@@ -71,8 +71,7 @@ namespace PlexRequests.Sync.UnitTests.SyncProcessors
 
             CorrectMetadataKeys(request.LibraryContainer);
 
-            _plexService.GetMediaItems(Arg.Any<PlexMediaTypes>()).Returns(new List<PlexMediaItem>());
-
+            MockGetMediaItems();
             MockGetMediaItem();
 
             await _underTest.Synchronise(request.LibraryContainer, request.FullRefresh, request.AuthToken, request.PlexUri);
@@ -94,8 +93,7 @@ namespace PlexRequests.Sync.UnitTests.SyncProcessors
                 metadata.GrandParentRatingKey = keyId;
             }
 
-            _plexService.GetMediaItems(Arg.Any<PlexMediaTypes>()).Returns(new List<PlexMediaItem>());
-
+            MockGetMediaItems();
             MockGetMediaItem();
 
             await _underTest.Synchronise(request.LibraryContainer, request.FullRefresh, request.AuthToken, request.PlexUri);
@@ -113,8 +111,7 @@ namespace PlexRequests.Sync.UnitTests.SyncProcessors
             var firstMetadata = request.LibraryContainer.MediaContainer.Metadata.First();
             request.LibraryContainer.MediaContainer.Metadata = new List<Metadata>{firstMetadata};
 
-            _plexService.GetMediaItems(Arg.Any<PlexMediaTypes>()).Returns(new List<PlexMediaItem>());
-
+            MockGetMediaItems();
             MockGetMediaItem();
             CorrectMetadataKeys(request.LibraryContainer);
 
@@ -137,8 +134,7 @@ namespace PlexRequests.Sync.UnitTests.SyncProcessors
             request.FullRefresh = true;
 
             CorrectMetadataKeys(request.LibraryContainer);
-
-            _plexService.GetMediaItems(Arg.Any<PlexMediaTypes>()).Returns(new List<PlexMediaItem>());
+            MockGetMediaItems();
 
             var mediaItem = MockGetMediaItem();
             var seasonMetadata = MockSeasonMetadata();
@@ -171,6 +167,11 @@ namespace PlexRequests.Sync.UnitTests.SyncProcessors
             return plexContainer;
         }
 
+        private void MockGetMediaItems()
+        {
+            _plexService.GetMediaItems(Arg.Any<Expression<Func<PlexMediaItem, bool>>>())
+                        .Returns(new List<PlexMediaItem>());
+        }
 
         private SyncRequest CreateSyncRequest()
         {
@@ -179,6 +180,7 @@ namespace PlexRequests.Sync.UnitTests.SyncProcessors
             request.LibraryContainer.MediaContainer.Metadata = new List<Metadata> { firstMetadata };
             return request;
         }
+        
         private void CorrectMetadataKeys(PlexMediaContainer mediaContainer)
         {
             foreach (var metadata in mediaContainer.MediaContainer.Metadata)
