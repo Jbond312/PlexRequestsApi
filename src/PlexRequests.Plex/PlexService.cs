@@ -1,9 +1,10 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
 using System.Linq;
+using System.Linq.Expressions;
 using System.Threading.Tasks;
 using PlexRequests.Helpers;
 using PlexRequests.Store;
-using PlexRequests.Store.Enums;
 using PlexRequests.Store.Models;
 
 namespace PlexRequests.Plex
@@ -44,9 +45,14 @@ namespace PlexRequests.Plex
             await _plexServerRepository.Update(server);
         }
 
-        public async Task<List<PlexMediaItem>> GetMediaItems(PlexMediaTypes? mediaType = null)
+        public async Task<List<PlexMediaItem>> GetMediaItems(Expression<Func<PlexMediaItem, bool>> filter = null)
         {
-            return await _plexMediaRepository.GetAll(mediaType);
+            return await _plexMediaRepository.GetMany(filter);
+        }
+
+        public async Task<PlexMediaItem> GetOneMediaItem(Expression<Func<PlexMediaItem, bool>> filter = null)
+        {
+            return await _plexMediaRepository.GetOne(filter);
         }
 
         public async Task CreateMany(List<PlexMediaItem> mediaItems)

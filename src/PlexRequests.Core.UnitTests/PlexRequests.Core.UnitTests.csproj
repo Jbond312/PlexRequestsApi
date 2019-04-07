@@ -15,7 +15,7 @@
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\PlexRequests\PlexRequests.csproj" />
+    <ProjectReference Include="..\PlexRequests.Core\PlexRequests.Core.csproj" />
   </ItemGroup>
 
 </Project>

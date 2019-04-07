@@ -11,6 +11,7 @@ namespace PlexRequests.TheMovieDb
         Task<List<MovieSearch>> PopularMovies(int? page);
         Task<List<MovieSearch>> TopRatedMovies(int? page);
         Task<MovieDetails> GetMovieDetails(int movieId);
+        Task<ExternalIds> GetMovieExternalIds(int movieId);
         Task<List<TvSearch>> SearchTv(string query, int? page);
         Task<List<TvSearch>> PopularTv(int? page);
         Task<List<TvSearch>> TopRatedTv(int? page);
