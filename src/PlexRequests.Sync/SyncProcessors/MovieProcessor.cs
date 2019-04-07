@@ -28,7 +28,7 @@ namespace PlexRequests.Sync.SyncProcessors
 
             const PlexMediaTypes mediaType = PlexMediaTypes.Movie;
 
-            var localMediaItems = await _plexService.GetMediaItems(mediaType);
+            var localMediaItems = await _plexService.GetMediaItems(x => x.MediaType == mediaType);
 
             foreach (var remoteMediaItem in libraryContainer.MediaContainer.Metadata)
             {
