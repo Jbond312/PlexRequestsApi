@@ -19,7 +19,15 @@ namespace PlexRequests.Controllers
         }
 
         [HttpPost("Movie")]
-        public async Task<ActionResult> Create([FromBody] CreateMovieRequestCommand command)
+        public async Task<ActionResult> CreateMovieRequest([FromBody] CreateMovieRequestCommand command)
+        {
+            await _mediator.Send(command);
+
+            return Ok();
+        }
+        
+        [HttpPost("Tv")]
+        public async Task<ActionResult> CreateTvRequest([FromBody] CreateTvRequestCommand command)
         {
             await _mediator.Send(command);
 
