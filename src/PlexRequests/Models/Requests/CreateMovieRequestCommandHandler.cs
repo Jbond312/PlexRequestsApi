@@ -58,9 +58,8 @@ namespace PlexRequests.Models.Requests
 
         private async Task ValidateRequestNotDuplicate(CreateMovieRequestCommand request)
         {
-            var existingRequest = await _requestService.GetOne(x =>
-                x.MediaType == PlexMediaTypes.Movie && x.AgentType == AgentTypes.TheMovieDb &&
-                x.AgentSourceId == request.TheMovieDbId.ToString());
+            var existingRequest =
+                await _requestService.GetExistingMovieRequest(AgentTypes.TheMovieDb, request.TheMovieDbId.ToString());
 
             if (existingRequest != null)
             {
@@ -84,13 +83,13 @@ namespace PlexRequests.Models.Requests
 
         private async Task<PlexMediaItem> GetExistingPlexMediaItem(int theMovieDbId, ExternalIds externalIds)
         {
-            var plexMediaItem = await _plexService.GetOneMediaItem(x =>
-                x.AgentSourceId == theMovieDbId.ToString() && x.AgentType == AgentTypes.TheMovieDb);
+            var plexMediaItem = await _plexService.GetExistingMediaItemByAgent(PlexMediaTypes.Movie, AgentTypes.TheMovieDb, theMovieDbId.ToString());
 
             if (plexMediaItem == null && !string.IsNullOrEmpty(externalIds?.Imdb_Id))
             {
-                plexMediaItem = await _plexService.GetOneMediaItem(x =>
-                    x.AgentSourceId == externalIds.Imdb_Id && x.AgentType == AgentTypes.Imdb);
+                plexMediaItem =
+                    await _plexService.GetExistingMediaItemByAgent(PlexMediaTypes.Movie, AgentTypes.Imdb,
+                        externalIds.Imdb_Id);
             }
 
             return plexMediaItem;

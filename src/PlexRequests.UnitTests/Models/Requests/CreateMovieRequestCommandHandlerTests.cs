@@ -1,5 +1,4 @@
 using System;
-using System.Linq.Expressions;
 using System.Net;
 using System.Threading;
 using System.Threading.Tasks;
@@ -13,6 +12,7 @@ using PlexRequests.Core;
 using PlexRequests.Helpers;
 using PlexRequests.Models.Requests;
 using PlexRequests.Plex;
+using PlexRequests.Store.Enums;
 using PlexRequests.Store.Models;
 using PlexRequests.TheMovieDb;
 using PlexRequests.TheMovieDb.Models;
@@ -69,7 +69,8 @@ namespace PlexRequests.UnitTests.Models.Requests
             
             await _underTest.Handle(request, CancellationToken.None);
 
-            await _plexService.Received(1).GetOneMediaItem(Arg.Any<Expression<Func<PlexMediaItem, bool>>>());
+            await _plexService.Received(1).GetExistingMediaItemByAgent(Arg.Is(PlexMediaTypes.Movie),
+                Arg.Is(AgentTypes.TheMovieDb), Arg.Is(request.TheMovieDbId.ToString()));
         }
 
         [Test]
@@ -81,8 +82,9 @@ namespace PlexRequests.UnitTests.Models.Requests
             
             MockGetMediaItem();
             await _underTest.Handle(request, CancellationToken.None);
-            
-            await _plexService.Received(1).GetOneMediaItem(Arg.Any<Expression<Func<PlexMediaItem, bool>>>());
+
+            await _plexService.Received(1).GetExistingMediaItemByAgent(Arg.Any<PlexMediaTypes>(),
+                Arg.Any<AgentTypes>(), Arg.Any<string>());
         }
         
         [Test]
@@ -98,7 +100,10 @@ namespace PlexRequests.UnitTests.Models.Requests
 
             await _underTest.Handle(request, CancellationToken.None);
             
-            await _plexService.Received(2).GetOneMediaItem(Arg.Any<Expression<Func<PlexMediaItem, bool>>>());
+            await _plexService.Received(1).GetExistingMediaItemByAgent(Arg.Is(PlexMediaTypes.Movie),
+                Arg.Is(AgentTypes.TheMovieDb), Arg.Is(request.TheMovieDbId.ToString()));
+            await _plexService.Received(1).GetExistingMediaItemByAgent(Arg.Is(PlexMediaTypes.Movie),
+                Arg.Is(AgentTypes.Imdb), Arg.Is(externalIds.Imdb_Id));
         }
 
         [Test]
@@ -110,7 +115,8 @@ namespace PlexRequests.UnitTests.Models.Requests
 
             await _underTest.Handle(request, CancellationToken.None);
 
-            await _requestService.Received().GetOne(Arg.Any<Expression<Func<Request, bool>>>());
+            await _requestService.Received().GetExistingMovieRequest(Arg.Is(AgentTypes.TheMovieDb),
+                Arg.Is(request.TheMovieDbId.ToString()));
         }
 
         [Test]
@@ -188,14 +194,13 @@ namespace PlexRequests.UnitTests.Models.Requests
         {
             if (!alreadyExists)
             {
-                _plexService.GetOneMediaItem(Arg.Any<Expression<Func<PlexMediaItem, bool>>>()).ReturnsNull();
+                _plexService.GetExistingMediaItemByAgent(Arg.Any<PlexMediaTypes>(), Arg.Any<AgentTypes>(), Arg.Any<string>()).ReturnsNull();
             }
             else
             {
                 var plexMediaItem = _fixture.Create<PlexMediaItem>();
 
-                _plexService.GetOneMediaItem(Arg.Any<Expression<Func<PlexMediaItem, bool>>>())
-                            .Returns(plexMediaItem);
+                _plexService.GetExistingMediaItemByAgent(Arg.Any<PlexMediaTypes>(), Arg.Any<AgentTypes>(), Arg.Any<string>()).Returns(plexMediaItem);
             }
         }
 
@@ -203,7 +208,7 @@ namespace PlexRequests.UnitTests.Models.Requests
         {
             var request = _fixture.Create<Request>();
 
-            _requestService.GetOne(Arg.Any<Expression<Func<Request, bool>>>()).Returns(request);
+            _requestService.GetExistingMovieRequest(Arg.Any<AgentTypes>(), Arg.Any<string>()).Returns(request);
         }
     }
 }

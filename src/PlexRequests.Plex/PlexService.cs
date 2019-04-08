@@ -5,6 +5,7 @@ using System.Linq.Expressions;
 using System.Threading.Tasks;
 using PlexRequests.Helpers;
 using PlexRequests.Store;
+using PlexRequests.Store.Enums;
 using PlexRequests.Store.Models;
 
 namespace PlexRequests.Plex
@@ -50,9 +51,12 @@ namespace PlexRequests.Plex
             return await _plexMediaRepository.GetMany(filter);
         }
 
-        public async Task<PlexMediaItem> GetOneMediaItem(Expression<Func<PlexMediaItem, bool>> filter = null)
+        public async Task<PlexMediaItem> GetExistingMediaItemByAgent(PlexMediaTypes mediaType, AgentTypes agentType, string agentSourceId)
         {
-            return await _plexMediaRepository.GetOne(filter);
+            return await _plexMediaRepository.GetOne(x =>
+                x.MediaType == mediaType &&
+                x.AgentType == agentType &&
+                x.AgentSourceId == agentSourceId);
         }
 
         public async Task CreateMany(List<PlexMediaItem> mediaItems)
