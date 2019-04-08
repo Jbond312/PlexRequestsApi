@@ -17,5 +17,6 @@ namespace PlexRequests.TheMovieDb
         Task<List<TvSearch>> TopRatedTv(int? page);
         Task<TvDetails> GetTvDetails(int tvId);
         Task<TvSeasonDetails> GetTvSeasonDetails(int tvId, int seasonNumber);
+        Task<ExternalIds> GetTvExternalIds(int tvId);
     }
 }
