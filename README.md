@@ -1,5 +1,7 @@
 # PlexRequestsApi (name TBC)
 
+[![Build Status](https://api.travis-ci.com/Jbond312/PlexRequestsApi.svg?branch=develop)](https://travis-ci.com/Jbond312/PlexRequestsApi)
+
 ## Note - Work in progress
 
 This project contains a Web Api to allow for Plex server administrators to provide functionality to their users so they can request new content or flag existing content for review. Users should also be notified when requests are fulfilled and be able to see if content being requested is already available within Plex.
