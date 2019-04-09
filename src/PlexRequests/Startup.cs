@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.IO;
 using AutoMapper;
 using MediatR;
 using Microsoft.AspNetCore.Builder;
@@ -99,9 +100,11 @@ namespace PlexRequests
 
         private void ConfigureLogging()
         {
+
+            var logPath = Path.Combine("logs", "log-{Date}.txt");
             var loggerConfiguration = new LoggerConfiguration()
                 .MinimumLevel.Debug()
-                .WriteTo.RollingFile("logs\\log-{Date}.txt");
+                .WriteTo.RollingFile(logPath);
 
             if (Environment.IsProduction())
             {
