@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
+using PlexRequests.Core;
 using PlexRequests.Plex;
 using PlexRequests.Sync.SyncProcessors;
 
@@ -13,13 +14,14 @@ namespace PlexRequests.Sync
         public ProcessorProvider(
             IPlexApi plexApi,
             IPlexService plexService,
-            IMediaItemProcessor mediaItemProcessor
+            IMediaItemProcessor mediaItemProcessor,
+            IAgentGuidParser agentGuidParser
             )
         {
             _processors = new List<ISyncProcessor>
             {
                 new MovieProcessor(plexService, mediaItemProcessor),
-                new TvProcessor(plexApi, plexService, mediaItemProcessor)
+                new TvProcessor(plexApi, plexService, mediaItemProcessor, agentGuidParser)
             };
         }
 

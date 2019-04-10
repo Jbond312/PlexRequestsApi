@@ -74,6 +74,7 @@ namespace PlexRequests
             services.AddSingleton<IMediaItemProcessor, MediaItemProcessor>();
             services.AddSingleton<IProcessorProvider, ProcessorProvider>();
             services.AddSingleton<IPlexRequestsHttpClient, PlexRequestsHttpClient>();
+            services.AddSingleton<IAgentGuidParser, AgentGuidParser>();
         }
 
         private static void RegisterRepositories(IServiceCollection services, DatabaseSettings databaseSettings)

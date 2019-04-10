@@ -5,10 +5,9 @@ using System.Net;
 using System.Threading;
 using System.Threading.Tasks;
 using AutoFixture;
+using FluentAssertions;
 using MediatR;
 using NSubstitute;
-using NSubstitute.ReturnsExtensions;
-using NUnit.Framework;
 using PlexRequests.Core;
 using PlexRequests.Helpers;
 using PlexRequests.Models.Requests;
@@ -17,24 +16,31 @@ using PlexRequests.Store.Enums;
 using PlexRequests.Store.Models;
 using PlexRequests.TheMovieDb;
 using PlexRequests.TheMovieDb.Models;
-using Shouldly;
+using TestStack.BDDfy;
+using Xunit;
 
 namespace PlexRequests.UnitTests.Models.Requests
 {
-    [TestFixture]
     public class CreateTvRequestCommandHandlerTests
     {
-        private IRequestHandler<CreateTvRequestCommand> _underTest;
+        private readonly IRequestHandler<CreateTvRequestCommand> _underTest;
 
-        private IRequestService _requestService;
-        private ITheMovieDbApi _theMovieDbApi;
-        private IPlexService _plexService;
-        private IClaimsPrincipalAccessor _claimsPrincipalAccessor;
+        private readonly IRequestService _requestService;
+        private readonly ITheMovieDbApi _theMovieDbApi;
+        private readonly IPlexService _plexService;
+        private readonly IClaimsPrincipalAccessor _claimsPrincipalAccessor;
 
-        private Fixture _fixture;
+        private readonly Fixture _fixture;
 
-        [SetUp]
-        public void Setup()
+        private Func<Task> _commandAction;
+        private CreateTvRequestCommand _command;
+        private List<Request> _requests;
+        private PlexMediaItem _plexMediaItem;
+        private Request _createdRequest;
+        private string _claimsUsername;
+        private Guid _claimsUserId;
+
+        public CreateTvRequestCommandHandlerTests()
         {
             _requestService = Substitute.For<IRequestService>();
             _theMovieDbApi = Substitute.For<ITheMovieDbApi>();
@@ -46,390 +52,249 @@ namespace PlexRequests.UnitTests.Models.Requests
             _fixture = new Fixture();
         }
 
-        [Test]
-        public async Task Checks_For_Existing_Request()
+        [Fact]
+        private void Throws_Error_If_All_Episodes_Already_Requested()
         {
-            var command = _fixture.Create<CreateTvRequestCommand>();
-
-            MockExistingRequests();
-            MockExternalIds();
-            
-            await _underTest.Handle(command, CancellationToken.None);
-
-            await _requestService.Received().GetExistingTvRequests(Arg.Is(AgentTypes.TheMovieDb), Arg.Is(command.TheMovieDbId.ToString()));
-        }
-
-        [Test]
-        public async Task Throws_Error_If_All_Episodes_Already_Requested()
-        {
-            var command = _fixture.Create<CreateTvRequestCommand>();
-            command.SeasonEpisodes = new Dictionary<int, List<int>>
-            {
-                [1] = new List<int> {1}
-            };
-            
-            var existingRequests = new List<Request>
-            {
-                CreateExistingRequest(1, 1)
-            };
-            
-            _requestService.GetExistingTvRequests(Arg.Any<AgentTypes>(), Arg.Any<string>()).Returns(existingRequests);
-
-            MockExternalIds();
-            
-            var exception = await Should.ThrowAsync<PlexRequestException>(() => _underTest.Handle(command, CancellationToken.None));
-            
-            exception.ShouldNotBeNull();
-            exception.Message.ShouldBe("Request not created");
-            exception.Description.ShouldBe("All TV Episodes have already been requested.");
-            exception.StatusCode.ShouldBe(HttpStatusCode.BadRequest);
-        }
-
-        [Test]
-        [TestCase(true)]
-        [TestCase(false)]
-        public async Task Gets_ExternalIds_Only_When_Not_Matched_To_TheMovieDbId(bool theMovieDbMatched)
-        {
-            var command = _fixture.Create<CreateTvRequestCommand>();
-            
-            MockExistingRequests();
-            MockExternalIds();
-            MockGetMediaItem(theMovieDbMatched);
-            
-            await _underTest.Handle(command, CancellationToken.None);
-
-            if (theMovieDbMatched)
-            {
-                await _theMovieDbApi.DidNotReceive().GetTvExternalIds(Arg.Is(command.TheMovieDbId));
-            }
-            else
-            {
-                await _theMovieDbApi.Received().GetTvExternalIds(Arg.Is(command.TheMovieDbId));
-            }
+            this.Given(x => x.GivenACommand())
+                .Given(x => x.GivenAllEpisodesAlreadyRequested())
+                .When(x => x.WhenCommandActionIsCreated())
+                .Then(x => x.ThenErrorIsThrown("Request not created", "All TV Episodes have already been requested.", HttpStatusCode.BadRequest))
+                .BDDfy();
         }
         
-        [Test]
-        public async Task Lookup_Plex_MediaItem_From_TheMovieDbId()
+        [Fact]
+        private void Throws_Error_When_All_Episodes_In_Request_Already_Exist_In_Plex_With_Primary_Agent_TheMovieDb()
         {
-            var command = _fixture.Create<CreateTvRequestCommand>();
-            
-            MockExistingRequests();
-            MockExternalIds();
-            MockGetMediaItem(true);
-
-            await _underTest.Handle(command, CancellationToken.None);
-
-            await _plexService.Received(1).GetExistingMediaItemByAgent(Arg.Is(PlexMediaTypes.Show), Arg.Is(AgentTypes.TheMovieDb), Arg.Is(command.TheMovieDbId.ToString()));
+            this.Given(x => x.GivenACommand())
+                .Given(x => x.GivenNoMatchingRequests())
+                .Given(x => x.GivenAllEpisodesAlreadyInPlex())
+                .When(x => x.WhenCommandActionIsCreated())
+                .Then(x => x.ThenErrorIsThrown("Request not created",
+                    "All TV Episodes are already available in Plex.", HttpStatusCode.BadRequest))
+                .BDDfy();
         }
         
-        [Test]
-        public async Task Lookup_From_ExternalId_TheTvDb_If_No_TheMovieDb_Match()
+        [Fact]
+        private void Throws_Error_When_All_Episodes_In_Request_Already_Exist_In_Plex_With_Fallback_Agent_TheTvDb()
         {
-            var command = _fixture.Create<CreateTvRequestCommand>();
-            
-            MockExistingRequests();
-            var externalIds = MockExternalIds();
-
-            _plexService.GetExistingMediaItemByAgent(Arg.Is(PlexMediaTypes.Show), Arg.Any<AgentTypes>(), Arg.Any<string>()).ReturnsNull();
-            
-            await _underTest.Handle(command, CancellationToken.None);
-
-            await _plexService.Received(1).GetExistingMediaItemByAgent(Arg.Is(PlexMediaTypes.Show), Arg.Is(AgentTypes.TheMovieDb),
-                Arg.Is(command.TheMovieDbId.ToString()));
-            await _plexService.Received(1).GetExistingMediaItemByAgent(Arg.Is(PlexMediaTypes.Show), Arg.Is(AgentTypes.TheTvDb),
-                Arg.Is(externalIds.TvDb_Id));
+            this.Given(x => x.GivenACommand())
+                .Given(x => x.GivenNoMatchingRequests())
+                .Given(x => x.GivenAllEpisodesAlreadyInPlexFromFallbackAgent())
+                .Given(x => x.GivenTheTvDbExternalIdReturned())
+                .When(x => x.WhenCommandActionIsCreated())
+                .Then(x => x.ThenErrorIsThrown("Request not created",
+                    "All TV Episodes are already available in Plex.", HttpStatusCode.BadRequest))
+                .BDDfy();
         }
 
-        [Test]
-        public async Task Does_Not_Lookup_From_TheTvDb_If_No_TheMovieDb_Match_And_No_TheTvbDb_ExternalId()
+        [Fact]
+        private void Creates_Request_Successfully_When_All_Episodes_Are_Valid()
         {
-            var command = _fixture.Create<CreateTvRequestCommand>();
-            
-            MockExistingRequests();
-            var externalIds = MockExternalIds();
-            externalIds.TvDb_Id = string.Empty;
-
-            _plexService.GetExistingMediaItemByAgent(Arg.Any<PlexMediaTypes>(), Arg.Any<AgentTypes>(), Arg.Any<string>()).ReturnsNull();
-            
-            await _underTest.Handle(command, CancellationToken.None);
-            
-            await _plexService.ReceivedWithAnyArgs(1)
-                        .GetExistingMediaItemByAgent(Arg.Any<PlexMediaTypes>(), Arg.Any<AgentTypes>(),
-                            Arg.Any<string>());
+            this.Given(x => x.GivenACommand())
+                .Given(x => x.GivenNoMatchingRequests())
+                .Given(x => x.GivenNoMatchingPlexContent())
+                .Given(x => x.GivenUserDetailsFromClaims())
+                .Given(x => x.GivenARequestIsCreated())
+                .When(x => x.WhenCommandActionIsCreated())
+                .Then(x => x.ThenRequestIsCreated(_command.Seasons.Count))
+                .BDDfy();
         }
 
-        [Test]
-        public async Task Throws_Error_When_Episodes_Left_In_Request_Exist_In_Plex()
+        [Fact]
+        private void Creates_Request_Successfully_When_New_Episodes_But_One_Season_Already_Requested()
         {
-            var command = _fixture.Create<CreateTvRequestCommand>();
-            command.SeasonEpisodes = new Dictionary<int, List<int>>
-            {
-                [1] = new List<int> {1}
-            };
-
-            MockExistingRequests();
-            MockExternalIds();
-            
-            var plexMediaItem = CreateExistingPlexMediaItem(1, 1);
-            _plexService
-                .GetExistingMediaItemByAgent(Arg.Any<PlexMediaTypes>(), Arg.Any<AgentTypes>(), Arg.Any<string>())
-                .Returns(plexMediaItem);
-            
-            var exception = await Should.ThrowAsync<PlexRequestException>(() => _underTest.Handle(command, CancellationToken.None));
-            
-            exception.ShouldNotBeNull();
-            exception.Message.ShouldBe("Request not created");
-            exception.Description.ShouldBe("All TV Episodes hare already available in Plex.");
-            exception.StatusCode.ShouldBe(HttpStatusCode.BadRequest);
-        }
-
-        [Test]
-        public async Task Creates_New_Request()
-        {
-            var command = _fixture.Create<CreateTvRequestCommand>();
-            
-            MockExistingRequests();
-            MockExternalIds();
-
-            Request actualRequest = null;
-            await _requestService.Create(Arg.Do<Request>(x => actualRequest = x));
-            
-            await _underTest.Handle(command, CancellationToken.None);
-
-            await _requestService.Received().Create(Arg.Any<Request>());
-            actualRequest.ShouldNotBeNull();
-            actualRequest.Id.ShouldBe(Guid.Empty);
-            actualRequest.MediaType.ShouldBe(PlexMediaTypes.Show);
-            actualRequest.IsApproved.ShouldBeFalse();
-            actualRequest.AgentType.ShouldBe(AgentTypes.TheMovieDb);
-            actualRequest.AgentSourceId.ShouldBe(command.TheMovieDbId.ToString());
-            actualRequest.PlexRatingKey.ShouldBeNull();
-            actualRequest.SeasonEpisodes.ShouldNotBeNull();
-            actualRequest.SeasonEpisodes.Count.ShouldBeGreaterThan(0);
-        }
-
-        [Test]
-        public async Task Creates_Request_With_Users_UserId()
-        {
-            var command = _fixture.Create<CreateTvRequestCommand>();
-            
-            MockExistingRequests();
-            MockExternalIds();
-
-            var userId = _fixture.Create<Guid>();
-            _claimsPrincipalAccessor.UserId.Returns(userId);
-            
-            await _underTest.Handle(command, CancellationToken.None);
-
-            await _requestService.Received().Create(Arg.Is<Request>(req => req.RequestedByUserId == userId));
+            this.Given(x => x.GivenACommand())
+                .Given(x => x.GivenOneSeasonNotAlreadyRequested())
+                .Given(x => x.GivenNoMatchingPlexContent())
+                .Given(x => x.GivenUserDetailsFromClaims())
+                .Given(x => x.GivenARequestIsCreated())
+                .When(x => x.WhenCommandActionIsCreated())
+                .Then(x => x.ThenRequestIsCreated(1))
+                .BDDfy();
         }
         
-        [Test]
-        public async Task Creates_Request_With_Users_Username()
+        [Fact]
+        private void Creates_Request_Successfully_When_New_Episodes_But_One_Season_Already_In_Plex()
         {
-            var command = _fixture.Create<CreateTvRequestCommand>();
-            
-            MockExistingRequests();
-            MockExternalIds();
-
-            var username = _fixture.Create<string>();
-            _claimsPrincipalAccessor.Username.Returns(username);
-            
-            await _underTest.Handle(command, CancellationToken.None);
-
-            await _requestService.Received().Create(Arg.Is<Request>(req => req.RequestedByUserName == username));
+            this.Given(x => x.GivenACommand())
+                .Given(x => x.GivenNoMatchingRequests())
+                .Given(x => x.GivenOneSeasonNotMatchingPlexContent())
+                .Given(x => x.GivenUserDetailsFromClaims())
+                .Given(x => x.GivenARequestIsCreated())
+                .When(x => x.WhenCommandActionIsCreated())
+                .Then(x => x.ThenRequestIsCreated(1))
+                .BDDfy();
         }
 
-        [Test]
-        public async Task Creates_Request_With_Episodes_Filtered_Out_By_Existing_Requests()
+        private void GivenACommand()
         {
-            var command = _fixture.Create<CreateTvRequestCommand>();
-            command.SeasonEpisodes = new Dictionary<int, List<int>>
-            {
-                [1] = new List<int> {1, 2, 3}
-            };
-            
-            var existingRequests = new List<Request>
-            {
-                CreateExistingRequest(1, 2)
-            };
-            
-            _requestService.GetExistingTvRequests(Arg.Any<AgentTypes>(), Arg.Any<string>()).Returns(existingRequests);
+            _command = _fixture.Create<CreateTvRequestCommand>();
+        }
 
-            MockExternalIds();
+        private void GivenAllEpisodesAlreadyRequested()
+        {
+            CreateRequestsFromCommand();
 
-            Request actualRequest = null;
-            await _requestService.Create(Arg.Do<Request>(x => actualRequest = x));
-            
-            await _underTest.Handle(command, CancellationToken.None);
-            
-            actualRequest.ShouldNotBeNull();
-            actualRequest.SeasonEpisodes[1].Count.ShouldBe(1);
-            actualRequest.SeasonEpisodes[1].First().Episode.ShouldBe(3);
+            _requestService.GetExistingTvRequests(Arg.Any<AgentTypes>(), Arg.Any<string>()).Returns(_requests);
         }
         
-        [Test]
-        public async Task Creates_Request_With_Whole_Season_Filtered_Out_By_Existing_Requests()
+        private void GivenOneSeasonNotAlreadyRequested()
         {
-            var command = _fixture.Create<CreateTvRequestCommand>();
-            command.SeasonEpisodes = new Dictionary<int, List<int>>
-            {
-                [1] = new List<int> {1, 2, 3},
-                [2] = new List<int> {1, 2, 3}
-            };
-            
-            var existingRequests = new List<Request>
-            {
-                CreateExistingRequest(1, 3)
-            };
-            
-            _requestService.GetExistingTvRequests(Arg.Any<AgentTypes>(), Arg.Any<string>()).Returns(existingRequests);
+            CreateRequestsFromCommand();
 
-            MockExternalIds();
-
-            Request actualRequest = null;
-            await _requestService.Create(Arg.Do<Request>(x => actualRequest = x));
+            _requests.First().Seasons.RemoveAt(0);
             
-            await _underTest.Handle(command, CancellationToken.None);
-            
-            actualRequest.ShouldNotBeNull();
-            actualRequest.SeasonEpisodes.ShouldNotContainKey(1);
-        }
-        
-        [Test]
-        public async Task Creates_Request_With_Episodes_Filtered_Out_By_Existing_Plex_MediaItem()
-        {
-            var command = _fixture.Create<CreateTvRequestCommand>();
-            command.SeasonEpisodes = new Dictionary<int, List<int>>
-            {
-                [1] = new List<int> {1, 2, 3}
-            };
-
-
-            MockExistingRequests();
-            MockExternalIds();
-            
-            var plexMediaItem = CreateExistingPlexMediaItem(1, 2);
-            _plexService
-                .GetExistingMediaItemByAgent(Arg.Any<PlexMediaTypes>(), Arg.Any<AgentTypes>(), Arg.Any<string>())
-                .Returns(plexMediaItem);
-                
-            Request actualRequest = null;
-            await _requestService.Create(Arg.Do<Request>(x => actualRequest = x));
-            
-            await _underTest.Handle(command, CancellationToken.None);
-            
-            actualRequest.ShouldNotBeNull();
-            actualRequest.SeasonEpisodes[1].Count.ShouldBe(1);
-            actualRequest.SeasonEpisodes[1].First().Episode.ShouldBe(3);
-        }
-        
-        [Test]
-        public async Task Creates_Request_With_Whole_Season_Filtered_Out_By_Existing_Plex_MediaItem()
-        {
-            var command = _fixture.Create<CreateTvRequestCommand>();
-            command.SeasonEpisodes = new Dictionary<int, List<int>>
-            {
-                [1] = new List<int> {1, 2, 3},
-                [2] = new List<int> {1, 2, 3}
-            };
-
-
-            MockExistingRequests();
-            MockExternalIds();
-
-            var plexMediaItem = CreateExistingPlexMediaItem(1, 3);
-            _plexService
-                .GetExistingMediaItemByAgent(Arg.Any<PlexMediaTypes>(), Arg.Any<AgentTypes>(), Arg.Any<string>())
-                .Returns(plexMediaItem);
-                
-            Request actualRequest = null;
-            await _requestService.Create(Arg.Do<Request>(x => actualRequest = x));
-            
-            await _underTest.Handle(command, CancellationToken.None);
-            
-            actualRequest.ShouldNotBeNull();
-            actualRequest.SeasonEpisodes.ShouldNotContainKey(1);
+            _requestService.GetExistingTvRequests(Arg.Any<AgentTypes>(), Arg.Any<string>()).Returns(_requests);
         }
 
-        private void MockExistingRequests()
+        private void CreateRequestsFromCommand()
         {
-            var existingRequests = _fixture.CreateMany<Request>().ToList();
-            _requestService.GetExistingTvRequests(Arg.Any<AgentTypes>(), Arg.Any<string>()).Returns(existingRequests);
-        }
+            var request = _fixture.Create<Request>();
 
-        private void MockGetMediaItem(bool alreadyExists = false)
-        {
-            if (!alreadyExists)
+            request.Seasons = new List<RequestSeason>();
+            foreach (var season in _command.Seasons)
             {
-                _plexService.GetExistingMediaItemByAgent(Arg.Is(PlexMediaTypes.Show), Arg.Any<AgentTypes>(), Arg.Any<string>()).ReturnsNull();
-            }
-            else
-            {
-                var plexMediaItem = _fixture.Create<PlexMediaItem>();
-
-                _plexService.GetExistingMediaItemByAgent(Arg.Is(PlexMediaTypes.Show), Arg.Any<AgentTypes>(), Arg.Any<string>())
-                            .Returns(plexMediaItem);
-            }
-        }
-        
-        private ExternalIds MockExternalIds()
-        {
-            var externalIds = _fixture.Create<ExternalIds>();
-
-            _theMovieDbApi.GetTvExternalIds(Arg.Any<int>()).Returns(externalIds);
-
-            return externalIds;
-        }
-
-        private Request CreateExistingRequest(int season, int totalEpisodes)
-        {
-            var request = _fixture.Build<Request>()
-                                  .With(x => x.SeasonEpisodes, new Dictionary<int, List<RequestEpisode>>())
-                                  .Create();
-
-            var requestEpisodes = new List<RequestEpisode>();
-            for (var episode = 1; episode <= totalEpisodes; episode++)
-            {
-                requestEpisodes.Add(new RequestEpisode
+                var requestEpisodes = season.Episodes.Select(episode => new RequestEpisode
                 {
-                    Episode = episode
+                    Episode = episode.Episode
                 });
+
+                var requestSeason = new RequestSeason
+                {
+                    Season = season.Season,
+                    Episodes = requestEpisodes.ToList()
+                };
+
+                request.Seasons.Add(requestSeason);
             }
 
-            request.SeasonEpisodes = new Dictionary<int, List<RequestEpisode>>
-            {
-                [season] = requestEpisodes
-            };
+            _requests = new List<Request> {request};
+        }
 
-            return request;
+        private void GivenAllEpisodesAlreadyInPlex()
+        {
+            _plexMediaItem = _fixture.Create<PlexMediaItem>();
+
+            _plexMediaItem.Seasons = CreatePlexSeasonsFromCommand();
+
+            _plexService
+                .GetExistingMediaItemByAgent(Arg.Any<PlexMediaTypes>(), Arg.Any<AgentTypes>(), Arg.Any<string>())
+                .Returns(_plexMediaItem);
         }
         
-        private PlexMediaItem CreateExistingPlexMediaItem(int season, int totalEpisodes)
+        private void GivenAllEpisodesAlreadyInPlexFromFallbackAgent()
         {
-            var plexMediaItem = _fixture.Build<PlexMediaItem>()
-                                  .With(x => x.Seasons, new List<PlexSeason>())
-                                  .Create();
+            _plexMediaItem = _fixture.Create<PlexMediaItem>();
 
-            var plexEpisodes = new List<PlexEpisode>();
-            for (var episode = 1; episode <= totalEpisodes; episode++)
+            _plexMediaItem.Seasons = CreatePlexSeasonsFromCommand();
+
+            _plexService
+                .GetExistingMediaItemByAgent(Arg.Any<PlexMediaTypes>(), Arg.Any<AgentTypes>(), Arg.Any<string>())
+                .Returns(null, _plexMediaItem);
+        }
+        
+        private void GivenOneSeasonNotMatchingPlexContent()
+        {
+            _plexMediaItem = _fixture.Create<PlexMediaItem>();
+
+            _plexMediaItem.Seasons = CreatePlexSeasonsFromCommand();
+            _plexMediaItem.Seasons.RemoveAt(0);
+            
+            _plexService
+                .GetExistingMediaItemByAgent(Arg.Any<PlexMediaTypes>(), Arg.Any<AgentTypes>(), Arg.Any<string>())
+                .Returns(_plexMediaItem);
+        }
+
+        private void GivenNoMatchingRequests()
+        {
+            _requests = _fixture.CreateMany<Request>().ToList();
+
+            _requestService.GetExistingTvRequests(Arg.Any<AgentTypes>(), Arg.Any<string>()).Returns(_requests);
+        }
+        
+        private void GivenNoMatchingPlexContent()
+        {
+            _plexMediaItem = _fixture.Create<PlexMediaItem>();
+
+            _plexService
+                .GetExistingMediaItemByAgent(Arg.Any<PlexMediaTypes>(), Arg.Any<AgentTypes>(), Arg.Any<string>())
+                .Returns(_plexMediaItem);
+        }
+
+        private void GivenTheTvDbExternalIdReturned()
+        {
+            _theMovieDbApi.GetTvExternalIds(Arg.Any<int>()).Returns(_fixture.Create<ExternalIds>());
+        }
+
+        private void GivenARequestIsCreated()
+        {
+            _createdRequest = null;
+            _requestService.Create(Arg.Do<Request>(x => _createdRequest = x));
+        }
+
+        private void GivenUserDetailsFromClaims()
+        {
+            _claimsUsername = _fixture.Create<string>();
+            _claimsUserId = _fixture.Create<Guid>();
+            _claimsPrincipalAccessor.Username.Returns(_claimsUsername);
+            _claimsPrincipalAccessor.UserId.Returns(_claimsUserId);
+        }
+
+        private void WhenCommandActionIsCreated()
+        {
+            _commandAction = async () => await _underTest.Handle(_command, CancellationToken.None);
+        }
+        
+        private void ThenErrorIsThrown(string message, string description, HttpStatusCode statusCode)
+        {
+            _commandAction.Should().Throw<PlexRequestException>()
+                          .WithMessage(message)
+                          .Where(x => x.Description == description)
+                          .Where(x => x.StatusCode == statusCode);
+        }
+
+        private void ThenRequestIsCreated(int expectedSeasonCount)
+        {
+            _commandAction.Should().NotThrow();
+            _requestService.Received().Create(Arg.Any<Request>());
+            
+            _createdRequest.Should().NotBeNull();
+            _createdRequest.Id.Should().Be(Guid.Empty);
+            _createdRequest.MediaType.Should().Be(PlexMediaTypes.Show);
+            _createdRequest.IsApproved.Should().BeFalse();
+            _createdRequest.AgentType.Should().Be(AgentTypes.TheMovieDb);
+            _createdRequest.AgentSourceId.Should().Be(_command.TheMovieDbId.ToString());
+            _createdRequest.PlexRatingKey.Should().BeNull();
+            _createdRequest.Seasons.Should().NotBeNull();
+            _createdRequest.Seasons.Count.Should().Be(expectedSeasonCount);
+            _createdRequest.RequestedByUserName.Should().Be(_claimsUsername);
+            _createdRequest.RequestedByUserId.Should().Be(_claimsUserId);
+
+            for (var i = 0; i < expectedSeasonCount; i++)
             {
-                plexEpisodes.Add(new PlexEpisode
-                {
-                    Episode = episode
-                });
+                _createdRequest.Seasons[i].Should().BeEquivalentTo(_command.Seasons[i]);
             }
+        }
 
-            plexMediaItem.Seasons = new List<PlexSeason>
+        private List<PlexSeason> CreatePlexSeasonsFromCommand()
+        {
+            var plexSeasons = new List<PlexSeason>();
+
+            foreach (var season in _command.Seasons)
             {
-                new PlexSeason
+                var plexEpisodes = season.Episodes.Select(episode => new PlexEpisode
                 {
-                    Season = season,
+                    Episode = episode.Episode
+                }).ToList();
+                
+                plexSeasons.Add(new PlexSeason
+                {
+                    Season = season.Season,
                     Episodes = plexEpisodes
-                }
-            };
+                });
+            }
 
-            return plexMediaItem;
+            return plexSeasons.ToList();
         }
     }
 }

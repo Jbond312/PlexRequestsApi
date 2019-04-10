@@ -54,7 +54,8 @@ namespace PlexRequests.Models.Auth
             if (plexUser == null)
             {
                 _logger.LogDebug("Invalid PlexCredentials");
-                return null;
+                throw new PlexRequestException("Invalid PlexCredentials",
+                    "The Login credentials for Plex were invalid.");
             }
 
             _logger.LogDebug("Plex SignIn Successful");
@@ -125,7 +126,8 @@ namespace PlexRequests.Models.Auth
                 LocalPort = _plexSettings.DefaultLocalPort,
                 ExternalIp = adminServer.Address,
                 ExternalPort = Convert.ToInt32(adminServer.Port),
-                Scheme = adminServer.Scheme
+                Scheme = adminServer.Scheme,
+                Libraries = new List<PlexServerLibrary>()
             };
 
             _logger.LogInformation("Getting available libraries on PlexServer");

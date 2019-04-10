@@ -26,16 +26,14 @@ namespace PlexRequests.Sync.SyncProcessors
         {
             var syncResult = new SyncResult();
 
-            const PlexMediaTypes mediaType = PlexMediaTypes.Movie;
-
-            var localMediaItems = await _plexService.GetMediaItems(x => x.MediaType == mediaType);
+            var localMediaItems = await _plexService.GetMediaItems(Type);
 
             foreach (var remoteMediaItem in libraryContainer.MediaContainer.Metadata)
             {
                 var ratingKey = Convert.ToInt32(remoteMediaItem.RatingKey);
 
                 var (isNewItem, mediaItem) =
-                    await _mediaItemProcessor.GetMediaItem(ratingKey, mediaType, localMediaItems, authToken, plexUri);
+                    await _mediaItemProcessor.GetMediaItem(ratingKey, Type, localMediaItems, authToken, plexUri);
                 
                 _mediaItemProcessor.UpdateResult(syncResult, isNewItem, mediaItem);
             }

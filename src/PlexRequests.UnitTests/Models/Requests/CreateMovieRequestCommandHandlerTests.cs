@@ -3,11 +3,11 @@ using System.Net;
 using System.Threading;
 using System.Threading.Tasks;
 using AutoFixture;
+using FluentAssertions;
 using MediatR;
 using Microsoft.Extensions.Logging;
 using NSubstitute;
 using NSubstitute.ReturnsExtensions;
-using NUnit.Framework;
 using PlexRequests.Core;
 using PlexRequests.Helpers;
 using PlexRequests.Models.Requests;
@@ -16,199 +16,181 @@ using PlexRequests.Store.Enums;
 using PlexRequests.Store.Models;
 using PlexRequests.TheMovieDb;
 using PlexRequests.TheMovieDb.Models;
-using Shouldly;
+using TestStack.BDDfy;
+using Xunit;
 
 namespace PlexRequests.UnitTests.Models.Requests
 {
-    [TestFixture]
     public class CreateMovieRequestCommandHandlerTests
     {
-        private IRequestHandler<CreateMovieRequestCommand> _underTest;
+        private readonly IRequestHandler<CreateMovieRequestCommand> _underTest;
 
-        private ITheMovieDbApi _theMovieDbApi;
-        private IRequestService _requestService;
-        private IPlexService _plexService;
-        private IClaimsPrincipalAccessor _claimsPrincipalAccessor;
-        private ILogger<CreateRequestCommandHandler> _logger;
+        private readonly ITheMovieDbApi _theMovieDbApi;
+        private readonly IRequestService _requestService;
+        private readonly IPlexService _plexService;
+        private readonly IClaimsPrincipalAccessor _claimsPrincipalAccessor;
 
-        private Fixture _fixture;
+        private readonly Fixture _fixture;
+        
+        private CreateMovieRequestCommand _command;
+        private Request _request;
+        private Func<Task> _commandAction;
+        private PlexMediaItem _plexMediaItem;
+        private Request _createdRequest;
+        private string _claimsUsername;
+        private Guid _claimsUserId;
 
-        [SetUp]
-        public void Setup()
+        public CreateMovieRequestCommandHandlerTests()
         {
             _theMovieDbApi = Substitute.For<ITheMovieDbApi>();
             _requestService = Substitute.For<IRequestService>();
             _plexService = Substitute.For<IPlexService>();
             _claimsPrincipalAccessor = Substitute.For<IClaimsPrincipalAccessor>();
-            _logger = Substitute.For<ILogger<CreateRequestCommandHandler>>();
+            var logger = Substitute.For<ILogger<CreateRequestCommandHandler>>();
 
-            _underTest = new CreateRequestCommandHandler(_theMovieDbApi, _requestService, _plexService, _claimsPrincipalAccessor, _logger);
+            _underTest = new CreateRequestCommandHandler(_theMovieDbApi, _requestService, _plexService, _claimsPrincipalAccessor, logger);
 
             _fixture = new Fixture();
 
         }
 
-        [Test]
-        public async Task Get_ExternalIds_For_Movie()
+        [Fact]
+        private void Throws_Error_If_Movie_Already_Requested()
         {
-            var command = _fixture.Create<CreateMovieRequestCommand>();
-
-            MockGetMediaItem();
-            
-            await _underTest.Handle(command, CancellationToken.None);
-
-            await _theMovieDbApi.Received().GetMovieExternalIds(Arg.Is(command.TheMovieDbId));
+            this.Given(x => x.GivenACommand())
+                .Given(x => x.GivenRequestAlreadyExists())
+                .When(x => x.WhenCommandActionIsCreated())
+                .Then(x => x.ThenErrorIsThrown("Request not created", "The Movie has already been requested.",
+                    HttpStatusCode.BadRequest))
+                .BDDfy();
         }
 
-        [Test]
-        public async Task Lookup_Plex_MediaItem_From_TheMovieDbId()
+        [Fact]
+        private void Throws_Error_If_Movie_Already_In_Plex_From_Primary_Agent_TheMovieDb()
         {
-            var request = _fixture.Create<CreateMovieRequestCommand>();
-
-            MockGetMediaItem();
-            
-            await _underTest.Handle(request, CancellationToken.None);
-
-            await _plexService.Received(1).GetExistingMediaItemByAgent(Arg.Is(PlexMediaTypes.Movie),
-                Arg.Is(AgentTypes.TheMovieDb), Arg.Is(request.TheMovieDbId.ToString()));
-        }
-
-        [Test]
-        public async Task Does_Not_Lookup_ImdbId_If_No_ImdbId_From_ExternalIds()
-        {
-            var request = _fixture.Create<CreateMovieRequestCommand>();
-
-            _theMovieDbApi.GetMovieExternalIds(Arg.Any<int>()).ReturnsNull();
-            
-            MockGetMediaItem();
-            await _underTest.Handle(request, CancellationToken.None);
-
-            await _plexService.Received(1).GetExistingMediaItemByAgent(Arg.Any<PlexMediaTypes>(),
-                Arg.Any<AgentTypes>(), Arg.Any<string>());
+            this.Given(x => x.GivenACommand())
+                .Given(x => x.GivenNoRequestExists())
+                .Given(x => x.GivenMovieAlreadyInPlex())
+                .When(x => x.WhenCommandActionIsCreated())
+                .Then(x => x.ThenErrorIsThrown("Request not created", "The Movie is already available in Plex.",
+                    HttpStatusCode.BadRequest))
+                .BDDfy();
         }
         
-        [Test]
-        public async Task Lookup_Plex_MediaItem_From_Imdb_If_Not_Found_And_Has_ImdbId()
+        [Fact]
+        private void Throws_Error_If_Movie_Already_In_Plex_From_Fallback_Agent_Imdb()
         {
-            var request = _fixture.Create<CreateMovieRequestCommand>();
-
-            var externalIds = _fixture.Create<ExternalIds>();
-            
-            _theMovieDbApi.GetMovieExternalIds(Arg.Any<int>()).Returns(externalIds);
-
-            MockGetMediaItem();
-
-            await _underTest.Handle(request, CancellationToken.None);
-            
-            await _plexService.Received(1).GetExistingMediaItemByAgent(Arg.Is(PlexMediaTypes.Movie),
-                Arg.Is(AgentTypes.TheMovieDb), Arg.Is(request.TheMovieDbId.ToString()));
-            await _plexService.Received(1).GetExistingMediaItemByAgent(Arg.Is(PlexMediaTypes.Movie),
-                Arg.Is(AgentTypes.Imdb), Arg.Is(externalIds.Imdb_Id));
+            this.Given(x => x.GivenACommand())
+                .Given(x => x.GivenNoRequestExists())
+                .Given(x => x.GivenExternalIdsFromTheMovieDb())
+                .Given(x => x.GivenMovieAlreadyInPlexFromFallbackAgent())
+                .When(x => x.WhenCommandActionIsCreated())
+                .Then(x => x.ThenErrorIsThrown("Request not created", "The Movie is already available in Plex.",
+                    HttpStatusCode.BadRequest))
+                .BDDfy();
         }
 
-        [Test]
-        public async Task Gets_Existing_Matching_Request_From_Any_User()
+        [Fact]
+        private void Creates_Request_Successfully()
         {
-            var request = _fixture.Create<CreateMovieRequestCommand>();
-            
-            MockGetMediaItem();
-
-            await _underTest.Handle(request, CancellationToken.None);
-
-            await _requestService.Received().GetExistingMovieRequest(Arg.Is(AgentTypes.TheMovieDb),
-                Arg.Is(request.TheMovieDbId.ToString()));
+            this.Given(x => x.GivenACommand())
+                .Given(x => x.GivenNoRequestExists())
+                .Given(x => x.GivenMovieNotInPlex())
+                .Given(x => x.GivenARequestIsCreated())
+                .Given(x => x.GivenUserDetailsFromClaims())
+                .When(x => x.WhenCommandActionIsCreated())
+                .Then(x => x.ThenRequestIsCreated())
+                .BDDfy();
         }
 
-        [Test]
-        public async Task Throws_Error_If_Existing_Request()
+        private void GivenACommand()
         {
-            var request = _fixture.Create<CreateMovieRequestCommand>();
-            
-            MockGetMediaItem();
-            MockGetRequest();
-            
-            var exception = await Should.ThrowAsync<PlexRequestException>(() => _underTest.Handle(request, CancellationToken.None));
-            
-            exception.Message.ShouldBe("Request not created");
-            exception.Description.ShouldBe("The Movie has already been requested.");
-            exception.StatusCode.ShouldBe(HttpStatusCode.BadRequest);
+            _command = _fixture.Create<CreateMovieRequestCommand>();
+        }
+
+        private void GivenRequestAlreadyExists()
+        {
+            _request = _fixture.Create<Request>();
+
+            _requestService.GetExistingMovieRequest(Arg.Any<AgentTypes>(), Arg.Any<string>()).Returns(_request);
         }
         
-        [Test]
-        public async Task Throws_Error_New_Request_But_MediaItem_Already_In_Plex()
+        private void GivenNoRequestExists()
         {
-            var request = _fixture.Create<CreateMovieRequestCommand>();
-            
-            MockGetMediaItem(alreadyExists: true);
-            
-            var exception = await Should.ThrowAsync<PlexRequestException>(() => _underTest.Handle(request, CancellationToken.None));
-            
-            exception.Message.ShouldBe("Request not created");
-            exception.Description.ShouldBe("The Movie is already available in Plex.");
-            exception.StatusCode.ShouldBe(HttpStatusCode.BadRequest);
+            _requestService.GetExistingMovieRequest(Arg.Any<AgentTypes>(), Arg.Any<string>()).ReturnsNull();
         }
 
-        [Test]
-        public async Task Creates_New_Request()
+        private void GivenMovieAlreadyInPlex()
         {
-            var request = _fixture.Create<CreateMovieRequestCommand>();
-            
-            MockGetMediaItem();
+            _plexMediaItem = _fixture.Create<PlexMediaItem>();
 
-            await _underTest.Handle(request, CancellationToken.None);
-
-            await _requestService.Received().Create(Arg.Any<Request>());
-        }
-
-        [Test]
-        public async Task Gets_Username_From_ClaimsPrincipal()
-        {
-            var request = _fixture.Create<CreateMovieRequestCommand>();
-            
-            MockGetMediaItem();
-
-            var username = _fixture.Create<string>();
-            _claimsPrincipalAccessor.Username.Returns(username);
-
-            await _underTest.Handle(request, CancellationToken.None);
-
-            await _requestService.Received().Create(Arg.Is<Request>(req => req.RequestedByUserName == username));
+            _plexService
+                .GetExistingMediaItemByAgent(Arg.Any<PlexMediaTypes>(), Arg.Any<AgentTypes>(), Arg.Any<string>())
+                .Returns(_plexMediaItem);
         }
         
-        [Test]
-        public async Task Gets_UserId_From_ClaimsPrincipal()
+        private void GivenMovieAlreadyInPlexFromFallbackAgent()
         {
-            var request = _fixture.Create<CreateMovieRequestCommand>();
-            
-            MockGetMediaItem();
+            _plexMediaItem = _fixture.Create<PlexMediaItem>();
 
-            var userId = _fixture.Create<Guid>();
-            _claimsPrincipalAccessor.UserId.Returns(userId);
-
-            await _underTest.Handle(request, CancellationToken.None);
-
-            await _requestService.Received().Create(Arg.Is<Request>(req => req.RequestedByUserId == userId));
+            _plexService
+                .GetExistingMediaItemByAgent(Arg.Any<PlexMediaTypes>(), Arg.Any<AgentTypes>(), Arg.Any<string>())
+                .Returns(null, _plexMediaItem);
         }
 
-        private void MockGetMediaItem(bool alreadyExists = false)
+        private void GivenMovieNotInPlex()
         {
-            if (!alreadyExists)
-            {
-                _plexService.GetExistingMediaItemByAgent(Arg.Any<PlexMediaTypes>(), Arg.Any<AgentTypes>(), Arg.Any<string>()).ReturnsNull();
-            }
-            else
-            {
-                var plexMediaItem = _fixture.Create<PlexMediaItem>();
-
-                _plexService.GetExistingMediaItemByAgent(Arg.Any<PlexMediaTypes>(), Arg.Any<AgentTypes>(), Arg.Any<string>()).Returns(plexMediaItem);
-            }
+            _plexService
+                .GetExistingMediaItemByAgent(Arg.Any<PlexMediaTypes>(), Arg.Any<AgentTypes>(), Arg.Any<string>())
+                .ReturnsNull();
         }
 
-        private void MockGetRequest()
+        private void GivenARequestIsCreated()
         {
-            var request = _fixture.Create<Request>();
+            _requestService.Create(Arg.Do<Request>(x => _createdRequest = x));
+        }
 
-            _requestService.GetExistingMovieRequest(Arg.Any<AgentTypes>(), Arg.Any<string>()).Returns(request);
+        private void GivenExternalIdsFromTheMovieDb()
+        {
+            _theMovieDbApi.GetMovieExternalIds(Arg.Any<int>()).Returns(_fixture.Create<ExternalIds>());
+        }
+
+        private void GivenUserDetailsFromClaims()
+        {
+            _claimsUsername = _fixture.Create<string>();
+            _claimsUserId = _fixture.Create<Guid>();
+
+            _claimsPrincipalAccessor.Username.Returns(_claimsUsername);
+            _claimsPrincipalAccessor.UserId.Returns(_claimsUserId);
+        }
+
+        private void ThenRequestIsCreated()
+        {
+            _commandAction.Should().NotThrow();
+
+            _createdRequest.Should().NotBeNull();
+            _createdRequest.Id.Should().Be(Guid.Empty);
+            _createdRequest.MediaType.Should().Be(PlexMediaTypes.Movie);
+            _createdRequest.IsApproved.Should().BeFalse();
+            _createdRequest.AgentType.Should().Be(AgentTypes.TheMovieDb);
+            _createdRequest.AgentSourceId.Should().Be(_command.TheMovieDbId.ToString());
+            _createdRequest.PlexRatingKey.Should().BeNull();
+            _createdRequest.Seasons.Should().BeNull();
+            _createdRequest.RequestedByUserName.Should().Be(_claimsUsername);
+            _createdRequest.RequestedByUserId.Should().Be(_claimsUserId);
+        }
+
+        private void WhenCommandActionIsCreated()
+        {
+            _commandAction = async () => await _underTest.Handle(_command, CancellationToken.None);
+        }
+
+        private void ThenErrorIsThrown(string message, string description, HttpStatusCode statusCode)
+        {
+            _commandAction.Should().Throw<PlexRequestException>()
+                          .WithMessage(message)
+                          .Where(x => x.Description == description)
+                          .Where(x => x.StatusCode == statusCode);
         }
     }
 }
