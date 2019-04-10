@@ -1,232 +1,215 @@
-﻿using AutoFixture;
+﻿using System;
+using System.Collections.Generic;
+using AutoFixture;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using NSubstitute;
-using NUnit.Framework;
 using PlexRequests.Plex;
 using PlexRequests.Settings;
 using PlexRequests.Store.Models;
-using System.Linq;
 using System.Threading.Tasks;
-using NSubstitute.ReturnsExtensions;
+using FluentAssertions;
 using PlexRequests.Plex.Models;
 using PlexRequests.Sync.SyncProcessors;
+using TestStack.BDDfy;
+using Xunit;
 
 namespace PlexRequests.Sync.UnitTests
 {
-    [TestFixture]
     public class PlexSyncTests
     {
-        private PlexSync _underTest;
+        private readonly PlexSync _underTest;
 
-        private IPlexApi _plexApi;
-        private IPlexService _plexService;
-        private IProcessorProvider _processorProvider;
-        private PlexSettings _plexSettings;
-        private ILogger<PlexSync> _logger;
+        private readonly IPlexApi _plexApi;
+        private readonly IPlexService _plexService;
+        private readonly IProcessorProvider _processorProvider;
 
-        private Fixture _fixture;
+        private readonly Fixture _fixture;
+        
+        private PlexServer _plexServer;
+        private Func<Task> _commandAction;
+        private PlexMediaContainer _remoteLibraryContainer;
+        private ISyncProcessor _syncProcessor;
+        private SyncResult _syncProcessorResult;
+        private List<PlexMediaItem> _createdMediaItems;
+        private List<PlexMediaItem> _updatedMediaItems;
 
-        [SetUp]
-        public void Setup()
+        public PlexSyncTests()
         {
             _plexApi = Substitute.For<IPlexApi>();
             _plexService = Substitute.For<IPlexService>();
             _processorProvider = Substitute.For<IProcessorProvider>();
-            _logger = Substitute.For<ILogger<PlexSync>>();
+            var logger = Substitute.For<ILogger<PlexSync>>();
 
             _fixture = new Fixture();
 
-            _plexSettings = _fixture.Create<PlexSettings>();
-            var options = Options.Create(_plexSettings);
+            var plexSettings = _fixture.Create<PlexSettings>();
+            var options = Options.Create(plexSettings);
 
-            _underTest = new PlexSync(_plexApi, _plexService, _processorProvider, options, _logger);
+            _underTest = new PlexSync(_plexApi, _plexService, _processorProvider, options, logger);
         }
 
-        [Test]
-        public async Task Gets_Plex_Server()
+        [Fact]
+        private void A_Full_Refresh_Should_Remove_All_Existing_Plex_Content()
         {
-            MockPlexServer();
-            MockPlexLibraries();
-
-            await _underTest.Synchronise(_fixture.Create<bool>());
-
-            await _plexService.Received().GetServer();
+            this.Given(x => x.GivenAPlexServer())
+                .Given(x => x.GivenAllServerLibrariesAreEnabled())
+                .Given(x => x.GivenNoMatchingRemoteLibraries())
+                .When(x => x.WhenACommandActionIsCreated(true))
+                .Then(x => x.ThenCommandShouldBeSuccessful())
+                .Then(x => x.ThenExistingPlexItemsAreDeleted())
+                .BDDfy();
         }
 
-        [Test]
-        [TestCase(true)]
-        [TestCase(false)]
-        public async Task Deletes_All_MediaItems_When_Refresh_Applicable(bool fullRefresh)
+        [Fact]
+        private void A_Full_Refresh_Should_Gather_All_Plex_Library_Metadata()
         {
-            MockPlexServer();
-            MockPlexLibraries();
+            this.Given(x => x.GivenAPlexServer())
+                .Given(x => x.GivenASingleEnabledLibrary())
+                .Given(x => x.GivenMatchingRemoteLibraries())
+                .Given(x => x.GivenASyncProcessor())
+                .When(x => x.WhenACommandActionIsCreated(true))
+                .Then(x => x.ThenCommandShouldBeSuccessful())
+                .Then(x => x.ThenAllLibraryMetadataIsRetrieved())
+                .BDDfy();
+        }
+        
+        [Fact]
+        private void A_Partial_Refresh_Should_Gather_Only_Recently_Added_Plex_Library_Metadata()
+        {
+            this.Given(x => x.GivenAPlexServer())
+                .Given(x => x.GivenASingleEnabledLibrary())
+                .Given(x => x.GivenMatchingRemoteLibraries())
+                .Given(x => x.GivenASyncProcessor())
+                .When(x => x.WhenACommandActionIsCreated(false))
+                .Then(x => x.ThenCommandShouldBeSuccessful())
+                .Then(x => x.ThenRecentlyAddedMetadataIsRetrieved())
+                .BDDfy();
+        }
+        
+        [Fact]
+        private void When_New_And_Existing_Items_In_Sync_Result_They_Are_Persisted()
+        {
+            this.Given(x => x.GivenAPlexServer())
+                .Given(x => x.GivenASingleEnabledLibrary())
+                .Given(x => x.GivenMatchingRemoteLibraries())
+                .Given(x => x.GivenASyncProcessor())
+                .Given(x => x.GivenSyncResultPersisted())
+                .When(x => x.WhenACommandActionIsCreated(true))
+                .Then(x => x.ThenCommandShouldBeSuccessful())
+                .Then(x => x.ThenSyncResultsShouldHaveBeenPersisted())
+                .BDDfy();
+        }
 
-            await _underTest.Synchronise(fullRefresh);
+        [Fact]
+        private void If_Local_Enabled_Library_Not_In_Remote_It_Should_Not_Sync()
+        {
+            this.Given(x => x.GivenAPlexServer())
+                .Given(x => x.GivenASingleEnabledLibrary())
+                .Given(x => x.GivenNoMatchingRemoteLibraries())
+                .Given(x => x.GivenASyncProcessor())
+                .When(x => x.WhenACommandActionIsCreated(true))
+                .Then(x => x.ThenCommandShouldBeSuccessful())
+                .Then(x => x.ThenNoSynchronisationShouldOccur())
+                .BDDfy();
+        }
+        
+        private void GivenAPlexServer()
+        {
+            _plexServer = _fixture.Create<PlexServer>();
 
-            if (fullRefresh)
+            _plexService.GetServer().Returns(_plexServer);
+        }
+
+        private void GivenAllServerLibrariesAreEnabled()
+        {
+            foreach (var library in _plexServer.Libraries)
             {
-                await _plexService.Received().DeleteAllMediaItems();
-            }
-            else
-            {
-                await _plexService.DidNotReceive().DeleteAllMediaItems();
-            }
-        }
-
-        [Test]
-        public async Task Gets_Remote_Libraries()
-        {
-            var plexServer = MockPlexServer();
-            var plexUri = plexServer.GetPlexUri(_plexSettings.ConnectLocally);
-            MockPlexLibraries();
-
-            await _underTest.Synchronise(_fixture.Create<bool>());
-
-            await _plexApi.Received().GetLibraries(Arg.Is(plexServer.AccessToken), Arg.Is(plexUri));
-        }
-
-        [Test]
-        public async Task Process_Not_Called_When_No_Matching_Remote_Libraries()
-        {
-            MockPlexServer();
-            MockPlexLibraries();
-
-            await _underTest.Synchronise(_fixture.Create<bool>());
-
-            _processorProvider.DidNotReceive().GetProcessor(Arg.Any<string>());
-        }
-
-        [Test]
-        public async Task Processor_Called_When_Valid_Library()
-        {
-            var plexServer = MockPlexServer();
-            var remoteLibraries = MockPlexLibraries();
-
-            plexServer.Libraries[0].Key = remoteLibraries.MediaContainer.Directory[0].Key;
-
-            _processorProvider.GetProcessor(Arg.Any<string>()).ReturnsNull();
-
-            await _underTest.Synchronise(_fixture.Create<bool>());
-
-            _processorProvider.Received().GetProcessor(Arg.Is(plexServer.Libraries[0].Type));
-        }
-
-        [Test]
-        [TestCase(true)]
-        [TestCase(false)]
-        public async Task Gets_Recently_Added_When_FullRefresh_False(bool fullRefresh)
-        {
-            var plexServer = MockPlexServer();
-            var plexUri = plexServer.GetPlexUri(_plexSettings.ConnectLocally);
-            var remoteLibraries = MockPlexLibraries();
-
-            plexServer.Libraries[0].Key = remoteLibraries.MediaContainer.Directory[0].Key;
-
-            MockProcessorSynchronise();
-
-            await _underTest.Synchronise(fullRefresh);
-
-            if (fullRefresh)
-            {
-                await _plexApi.Received().GetLibrary(Arg.Is(plexServer.AccessToken), Arg.Is(plexUri),
-                    Arg.Is(plexServer.Libraries[0].Key));
-            }
-            else
-            {
-                await _plexApi.Received().GetRecentlyAdded(Arg.Is(plexServer.AccessToken), Arg.Is(plexUri),
-                    Arg.Is(plexServer.Libraries[0].Key));
+                library.IsEnabled = true;
             }
         }
 
-        [Test]
-        public async Task Calls_Processor_Synchronise()
+        private void GivenASingleEnabledLibrary()
         {
-            var plexServer = MockPlexServer();
-            var remoteLibraries = MockPlexLibraries();
+            var plexLibrary = _fixture.Build<PlexServerLibrary>()
+                                      .With(x => x.IsEnabled, true)
+                                      .Create();
 
-            plexServer.Libraries[0].Key = remoteLibraries.MediaContainer.Directory[0].Key;
-
-            var (_, processor) = MockProcessorSynchronise();
-
-            await _underTest.Synchronise(_fixture.Create<bool>());
-
-            await processor.Received(1).Synchronise(Arg.Any<PlexMediaContainer>(), Arg.Any<bool>(), Arg.Any<string>(),
-                Arg.Any<string>());
+            _plexServer.Libraries = new List<PlexServerLibrary> {plexLibrary};
         }
 
-        [Test]
-        public async Task Updates_MediaItems_From_SyncResult()
+        private void GivenMatchingRemoteLibraries()
         {
-            var plexServer = MockPlexServer();
-            var remoteLibraries = MockPlexLibraries();
+            _remoteLibraryContainer = _fixture.Create<PlexMediaContainer>();
 
-            plexServer.Libraries[0].Key = remoteLibraries.MediaContainer.Directory[0].Key;
-
-            var (processorResult, _) = MockProcessorSynchronise();
-
-            await _underTest.Synchronise(_fixture.Create<bool>());
-
-            await _plexService.Received(1).CreateMany(Arg.Is(processorResult.NewItems));
-            await _plexService.Received(1).UpdateMany(Arg.Is(processorResult.ExistingItems));
-        }
-
-        [Test]
-        public async Task Did_Not_Sync_If_No_Enabled_Libraries()
-        {
-            var plexServer = MockPlexServer();
-            var remoteLibraries = MockPlexLibraries();
-
-            foreach (var library in plexServer.Libraries)
+            for (var i = 0; i < _plexServer.Libraries.Count; i++)
             {
-                library.IsEnabled = false;
+                _remoteLibraryContainer.MediaContainer.Directory[i].Key = _plexServer.Libraries[i].Key;
             }
-
-            plexServer.Libraries[0].Key = remoteLibraries.MediaContainer.Directory[0].Key;
-
-            await _underTest.Synchronise(_fixture.Create<bool>());
-
-            _processorProvider.DidNotReceive().GetProcessor(Arg.Any<string>());
+            
+            _plexApi.GetLibraries(Arg.Any<string>(), Arg.Any<string>()).Returns(_remoteLibraryContainer);
         }
 
-        private (SyncResult, ISyncProcessor) MockProcessorSynchronise()
+        private void GivenNoMatchingRemoteLibraries()
         {
-            var processor = Substitute.For<ISyncProcessor>();
+            _remoteLibraryContainer = _fixture.Create<PlexMediaContainer>();
 
-            var syncResult = _fixture.Create<SyncResult>();
-
-            processor.Synchronise(Arg.Any<PlexMediaContainer>(), Arg.Any<bool>(), Arg.Any<string>(), Arg.Any<string>())
-                .Returns(syncResult);
-
-            _processorProvider.GetProcessor(Arg.Any<string>()).Returns(processor);
-
-            return (syncResult, processor);
+            _plexApi.GetLibraries(Arg.Any<string>(), Arg.Any<string>()).Returns(_remoteLibraryContainer);
         }
 
-        private PlexServer MockPlexServer()
+        private void GivenASyncProcessor()
         {
-            var plexLibraries = _fixture
-                .Build<PlexServerLibrary>()
-                .With(x => x.IsEnabled, true)
-                .CreateMany().ToList();
+            _syncProcessor = Substitute.For<ISyncProcessor>();
+            _syncProcessorResult = _fixture.Create<SyncResult>();
 
-            var plexServer = _fixture
-                .Build<PlexServer>()
-                .With(x => x.Libraries, plexLibraries)
-                .Create();
-
-            _plexService.GetServer().Returns(plexServer);
-
-            return plexServer;
+            _syncProcessor
+                .Synchronise(Arg.Any<PlexMediaContainer>(), Arg.Any<bool>(), Arg.Any<string>(), Arg.Any<string>())
+                .Returns(_syncProcessorResult);
+            
+            _processorProvider.GetProcessor(Arg.Any<string>()).Returns(_syncProcessor);
         }
 
-        private PlexMediaContainer MockPlexLibraries()
+        private void GivenSyncResultPersisted()
         {
-            var container = _fixture.Create<PlexMediaContainer>();
+            _plexService.CreateMany(Arg.Do<List<PlexMediaItem>>(x => _createdMediaItems = x));
+            _plexService.UpdateMany(Arg.Do<List<PlexMediaItem>>(x => _updatedMediaItems = x));
+        }
 
-            _plexApi.GetLibraries(Arg.Any<string>(), Arg.Any<string>()).Returns(container);
+        private void WhenACommandActionIsCreated(bool fullRefresh)
+        {
+            _commandAction = async () => await _underTest.Synchronise(fullRefresh);
+        }
 
-            return container;
+        private void ThenCommandShouldBeSuccessful()
+        {
+            _commandAction.Should().NotThrow();
+        }
+        
+        private void ThenExistingPlexItemsAreDeleted()
+        {
+            _plexService.Received().DeleteAllMediaItems();
+        }
+
+        private void ThenAllLibraryMetadataIsRetrieved()
+        {
+            _plexApi.Received().GetLibrary(Arg.Any<string>(), Arg.Any<string>(), Arg.Any<string>());
+        }
+        
+        private void ThenRecentlyAddedMetadataIsRetrieved()
+        {
+            _plexApi.Received().GetRecentlyAdded(Arg.Any<string>(), Arg.Any<string>(), Arg.Any<string>());
+        }
+
+        private void ThenSyncResultsShouldHaveBeenPersisted()
+        {
+            _createdMediaItems.Should().BeEquivalentTo(_syncProcessorResult.NewItems);
+            _updatedMediaItems.Should().BeEquivalentTo(_syncProcessorResult.ExistingItems);
+        }
+
+        private void ThenNoSynchronisationShouldOccur()
+        {
+            _syncProcessor.DidNotReceive().Synchronise(Arg.Any<PlexMediaContainer>(), Arg.Any<bool>(),
+                Arg.Any<string>(), Arg.Any<string>());
         }
     }
 }

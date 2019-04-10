@@ -36,7 +36,7 @@ namespace PlexRequests.Models.Auth
             if (plexUser == null)
             {
                 _logger.LogDebug("Invalid PlexCredentials");
-                throw new PlexRequestException("Unable to login to Plex with the given credentials");
+                throw new PlexRequestException("Invalid Plex Credentials", "Unable to login to Plex with the given credentials");
             }
 
             _logger.LogDebug("Plex SignIn Successful");
@@ -48,7 +48,7 @@ namespace PlexRequests.Models.Auth
             if (plexRequestsUser == null || plexRequestsUser.IsDisabled)
             {
                 _logger.LogInformation("Attempted login by unknown user.");
-                return null;
+                throw new PlexRequestException("Unrecognised user", "The user is not recognised or has been disabled.");
             }
 
             _logger.LogDebug("Found matching PlexRequests User");

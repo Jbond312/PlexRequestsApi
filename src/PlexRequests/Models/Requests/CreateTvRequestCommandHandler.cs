@@ -47,7 +47,7 @@ namespace PlexRequests.Models.Requests
                 AgentType = AgentTypes.TheMovieDb,
                 AgentSourceId = request.TheMovieDbId.ToString(),
                 IsApproved = false,
-                SeasonEpisodes = ConvertToRequestEpisodes(request.SeasonEpisodes),
+                Seasons = request.Seasons.Where(x => x.Episodes.Any()).ToList(),
                 RequestedByUserId = _claimsPrincipalAccessor.UserId,
                 RequestedByUserName = _claimsPrincipalAccessor.Username
             };
@@ -63,10 +63,10 @@ namespace PlexRequests.Models.Requests
             {
                 RemoveExistingPlexEpisodesFromRequest(request, plexMediaItem);
 
-                if (!request.SeasonEpisodes.SelectMany(x => x.Value).Any())
+                if (!request.Seasons.SelectMany(x => x.Episodes).Any())
                 {
                     throw new PlexRequestException("Request not created",
-                        "All TV Episodes hare already available in Plex.");
+                        "All TV Episodes are already available in Plex.");
                 }
             }
         }
@@ -99,17 +99,17 @@ namespace PlexRequests.Models.Requests
                 await _requestService.GetExistingTvRequests(AgentTypes.TheMovieDb, request.TheMovieDbId.ToString());
 
             var existingSeasonEpisodeRequests = requests
-                                                .SelectMany(x => x.SeasonEpisodes)
-                                                .GroupBy(x => x.Key)
+                                                .SelectMany(x => x.Seasons)
+                                                .GroupBy(x => x.Season)
                                                 .ToDictionary(x => x.Key,
                                                     v => v.SelectMany(res =>
-                                                        res.Value.Select(re => re.Episode)
+                                                        res.Episodes.Select(re => re.Episode)
                                                            .Distinct()
                                                     ));
 
             RemoveDuplicateEpisodeRequests(request, existingSeasonEpisodeRequests);
 
-            if (!request.SeasonEpisodes.SelectMany(x => x.Value).Any())
+            if (!request.Seasons.SelectMany(x => x.Episodes).Any())
             {
                 throw new PlexRequestException("Request not created", "All TV Episodes have already been requested.");
             }
@@ -118,58 +118,44 @@ namespace PlexRequests.Models.Requests
         private static void RemoveDuplicateEpisodeRequests(CreateTvRequestCommand request,
             IReadOnlyDictionary<int, IEnumerable<int>> existingSeasonEpisodeRequests)
         {
-            foreach (var (season, episodes) in request.SeasonEpisodes)
+            foreach (var season in request.Seasons)
             {
-                if (!existingSeasonEpisodeRequests.TryGetValue(season, out var existingRequests))
+                if (!existingSeasonEpisodeRequests.TryGetValue(season.Season, out var existingRequests))
                 {
                     continue;
                 }
 
-                var duplicateEpisodes = episodes.Where(x => existingRequests.Contains(x)).ToList();
-                episodes.RemoveAll(x => duplicateEpisodes.Contains(x));
+                var duplicateEpisodes = season.Episodes.Where(x => existingRequests.Contains(x.Episode)).ToList();
+                season.Episodes.RemoveAll(x => duplicateEpisodes.Contains(x));
             }
-        }
-
-        private static Dictionary<int, List<RequestEpisode>> ConvertToRequestEpisodes(
-            Dictionary<int, List<int>> seasonEpisodes)
-        {
-            var seasonEpisodeRequests = new Dictionary<int, List<RequestEpisode>>();
-            foreach (var (season, episodes) in seasonEpisodes)
-            {
-                if (!episodes.Any())
-                {
-                    continue;
-                }
-
-                seasonEpisodeRequests.Add(season, episodes.Select(episode => new RequestEpisode
-                {
-                    Episode = episode,
-                    IsApproved = false
-                }).ToList());
-            }
-
-            return seasonEpisodeRequests;
         }
 
         private static void RemoveExistingPlexEpisodesFromRequest(CreateTvRequestCommand request,
             PlexMediaItem plexMediaItem)
         {
-            foreach (var (key, value) in request.SeasonEpisodes)
+            foreach (var season in request.Seasons)
             {
-                var matchingSeason = plexMediaItem.Seasons.FirstOrDefault(x => x.Season == key);
+                var matchingSeason = plexMediaItem.Seasons.FirstOrDefault(x => x.Season == season.Season);
 
                 if (matchingSeason == null)
                 {
                     continue;
                 }
 
-                var matchingEpisodes = matchingSeason
-                                       .Episodes.Where(x => value.Contains(x.Episode)).Select(x => x.Episode)
-                                       .ToList();
-
-                if (matchingEpisodes.Any())
+                var episodesToRemove = new List<RequestEpisode>();
+                foreach (var episode in matchingSeason.Episodes)
                 {
-                    value.RemoveAll(x => matchingEpisodes.Contains(x));
+                    var episodeInRequest = season.Episodes.FirstOrDefault(x => x.Episode == episode.Episode);
+
+                    if (episodeInRequest != null)
+                    {
+                        episodesToRemove.Add(episodeInRequest);
+                    }
+                }
+                
+                if (episodesToRemove.Any())
+                {
+                    season.Episodes.RemoveAll(x => episodesToRemove.Contains(x));
                 }
             }
         }

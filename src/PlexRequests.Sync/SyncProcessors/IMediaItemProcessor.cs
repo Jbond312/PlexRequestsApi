@@ -10,6 +10,5 @@ namespace PlexRequests.Sync.SyncProcessors
         Task<(bool, PlexMediaItem)> GetMediaItem(int ratingKey, PlexMediaTypes mediaType, List<PlexMediaItem> localMedia, string authToken, string plexUri);
 
         void UpdateResult(SyncResult syncResult, bool isNew, PlexMediaItem mediaItem);
-        (AgentTypes agentType, string agentSourceId) GetAgentDetails(string agentGuid);
     }
 }

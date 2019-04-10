@@ -1,30 +1,34 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Linq.Expressions;
 using System.Threading.Tasks;
 using AutoFixture;
+using FluentAssertions;
 using NSubstitute;
-using NUnit.Framework;
 using PlexRequests.Plex;
 using PlexRequests.Plex.Models;
 using PlexRequests.Store.Enums;
 using PlexRequests.Store.Models;
 using PlexRequests.Sync.SyncProcessors;
+using TestStack.BDDfy;
+using Xunit;
 
 namespace PlexRequests.Sync.UnitTests.SyncProcessors
 {
-    [TestFixture]
     public class MovieProcessorTests
     {
-        private MovieProcessor _underTest;
+        private readonly MovieProcessor _underTest;
 
-        private IPlexService _plexService;
-        private IMediaItemProcessor _mediaItemProcessor;
+        private readonly IPlexService _plexService;
+        private readonly IMediaItemProcessor _mediaItemProcessor;
 
-        private Fixture _fixture;
+        private readonly Fixture _fixture;
 
-        [SetUp]
-        public void Setup()
+        private PlexMediaContainer _plexMediaContainer;
+        private PlexMediaItem _plexMediaItem;
+        private Func<Task> _commandAction;
+        private bool _isNewMediaItem;
+
+        public MovieProcessorTests()
         {
             _plexService = Substitute.For<IPlexService>();
             _mediaItemProcessor = Substitute.For<IMediaItemProcessor>();
@@ -33,69 +37,99 @@ namespace PlexRequests.Sync.UnitTests.SyncProcessors
 
             _fixture = new Fixture();
         }
-
-        [Test]
-        public async Task Gets_Local_MediaItems()
+        
+        [Fact]
+        private void Gets_Local_Movie_MediaItems()
         {
-            var request = _fixture.Create<SyncRequest>();
-
-            request.LibraryContainer.MediaContainer.Metadata = new List<Metadata>();
-
-            MockGetMediaItems();
-            
-            await _underTest.Synchronise(request.LibraryContainer, request.FullRefresh, request.AuthToken, request.PlexUri);
-
-            await _plexService.Received().GetMediaItems(Arg.Any<Expression<Func<PlexMediaItem, bool>>>());
-        }
-
-        [Test]
-        public async Task Gets_MediaItem_From_MediaItemProcessor()
-        {
-            var request = _fixture.Create<SyncRequest>();
-
-            foreach (var metadata in request.LibraryContainer.MediaContainer.Metadata)
-            {
-                metadata.RatingKey = _fixture.Create<int>().ToString();
-            }
-
-            MockGetMediaItems();
-            MockGetMediaItem();
-
-            await _underTest.Synchronise(request.LibraryContainer, request.FullRefresh, request.AuthToken, request.PlexUri);
-        }
-
-        [Test]
-        public async Task UpdatesResult_After_Getting_MediaItem()
-        {
-            var request = _fixture.Create<SyncRequest>();
-
-            foreach (var metadata in request.LibraryContainer.MediaContainer.Metadata)
-            {
-                metadata.RatingKey = _fixture.Create<int>().ToString();
-            }
-
-            MockGetMediaItems();
-            MockGetMediaItem();
-
-            await _underTest.Synchronise(request.LibraryContainer, request.FullRefresh, request.AuthToken, request.PlexUri);
-
-            var metadataCount = request.LibraryContainer.MediaContainer.Metadata.Count;
-
-            _mediaItemProcessor.Received(metadataCount).UpdateResult(Arg.Any<SyncResult>(), Arg.Any<bool>(), Arg.Any<PlexMediaItem>());
-        }
-
-        private void MockGetMediaItem()
-        {
-            var getMediaItemResponse = _fixture.Create<(bool, PlexMediaItem)>();
-
-            _mediaItemProcessor.GetMediaItem(Arg.Any<int>(), Arg.Any<PlexMediaTypes>(), Arg.Any<List<PlexMediaItem>>(),
-                Arg.Any<string>(), Arg.Any<string>()).Returns(getMediaItemResponse);
+            this.Given(x => x.GivenAContainerWithMetadata())
+                .Given(x => x.GivenAProcessedMediaItem())
+                .When(x => x.WhenAnActionIsCreated())
+                .Then(x => x.ThenIsSuccessful())
+                .Then(x => x.ThenLocalMediaItemsWereRetrieved())
+                .BDDfy();
         }
         
-        private void MockGetMediaItems()
+        [Fact]
+        private void A_Media_Item_Is_Processed()
         {
-            _plexService.GetMediaItems(Arg.Any<Expression<Func<PlexMediaItem, bool>>>())
-                        .Returns(new List<PlexMediaItem>());
+            this.Given(x => x.GivenAContainerWithMetadata())
+                .Given(x => x.GivenAProcessedMediaItem())
+                .When(x => x.WhenAnActionIsCreated())
+                .Then(x => x.ThenIsSuccessful())
+                .Then(x => x.ThenAMediaItemWasProcessed())
+                .BDDfy();
+        }
+        
+        [Fact]
+        private void A_Result_Is_Updated()
+        {
+            this.Given(x => x.GivenAContainerWithMetadata())
+                .Given(x => x.GivenAProcessedMediaItem())
+                .When(x => x.WhenAnActionIsCreated())
+                .Then(x => x.ThenIsSuccessful())
+                .Then(x => x.ThenAResultWasUpdated())
+                .BDDfy();
+        }
+        
+        [Fact]
+        private void Returns_Correct_SyncResult()
+        {
+            this.Given(x => x.GivenAContainerWithMetadata())
+                .Given(x => x.GivenAProcessedMediaItem())
+                .When(x => x.WhenAnActionIsCreated())
+                .Then(x => x.ThenIsSuccessful())
+                .BDDfy();
+        }
+
+        private void GivenAContainerWithMetadata()
+        {
+            _plexMediaContainer = _fixture.Create<PlexMediaContainer>();
+
+            foreach (var metadata in _plexMediaContainer.MediaContainer.Metadata)
+            {
+                metadata.RatingKey = _fixture.Create<int>().ToString();
+            }
+        }
+
+        private void GivenAProcessedMediaItem()
+        {
+            _isNewMediaItem = _fixture.Create<bool>();
+            _plexMediaItem = _fixture.Create<PlexMediaItem>();
+
+            _mediaItemProcessor.GetMediaItem(Arg.Any<int>(), Arg.Any<PlexMediaTypes>(), Arg.Any<List<PlexMediaItem>>(),
+                Arg.Any<string>(), Arg.Any<string>()).Returns((_isNewMediaItem, _plexMediaItem));
+        }
+
+        private void WhenAnActionIsCreated()
+        {
+            var fullRefresh = _fixture.Create<bool>();
+            var authToken = _fixture.Create<string>();
+            var plexUri = _fixture.Create<string>();
+
+            _commandAction = async () =>
+                await _underTest.Synchronise(_plexMediaContainer, fullRefresh, authToken, plexUri);
+        }
+
+        private void ThenIsSuccessful()
+        {
+            _commandAction.Should().NotThrow();
+        }
+
+        private void ThenLocalMediaItemsWereRetrieved()
+        {
+            _plexService.Received().GetMediaItems(Arg.Is(PlexMediaTypes.Movie));
+        }
+
+        private void ThenAMediaItemWasProcessed()
+        {
+            _mediaItemProcessor.Received().GetMediaItem(Arg.Any<int>(), Arg.Any<PlexMediaTypes>(), Arg.Any<List<PlexMediaItem>>(),
+                Arg.Any<string>(), Arg.Any<string>());
+        }
+
+        private void ThenAResultWasUpdated()
+        {
+            _mediaItemProcessor
+                .Received().UpdateResult(Arg.Any<SyncResult>(), Arg.Any<bool>(), Arg.Any<PlexMediaItem>());
         }
     }
 }
