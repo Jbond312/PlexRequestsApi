@@ -4,33 +4,36 @@ using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 using AutoFixture;
+using FluentAssertions;
 using MediatR;
 using NSubstitute;
-using NUnit.Framework;
 using PlexRequests.Core;
-using PlexRequests.Helpers;
 using PlexRequests.Models.Plex;
 using PlexRequests.Plex;
 using PlexRequests.Plex.Models;
 using PlexRequests.Store.Models;
-using Shouldly;
+using TestStack.BDDfy;
+using Xunit;
 using User = PlexRequests.Store.Models.User;
 
 namespace PlexRequests.UnitTests.Models.Plex
 {
-    [TestFixture]
     public class SyncUsersCommandHandlerTests
     {
-        private IRequestHandler<SyncUsersCommand> _underTest;
+        private readonly IRequestHandler<SyncUsersCommand> _underTest;
 
-        private IPlexApi _plexApi;
-        private IUserService _userService;
-        private IPlexService _plexService;
+        private readonly IPlexApi _plexApi;
+        private readonly IUserService _userService;
+        private readonly IPlexService _plexService;
 
-        private Fixture _fixture;
+        private readonly Fixture _fixture;
+        
+        private SyncUsersCommand _command;
+        private List<Friend> _remoteFriends;
+        private List<User> _localUsers;
+        private Func<Task> _commandAction;
 
-        [SetUp]
-        public void Setup()
+        public SyncUsersCommandHandlerTests()
         {
             _plexApi = Substitute.For<IPlexApi>();
             _userService = Substitute.For<IUserService>();
@@ -41,176 +44,87 @@ namespace PlexRequests.UnitTests.Models.Plex
             _fixture = new Fixture();
         }
 
-        [Test]
-        public async Task Gets_Server()
+        [Fact]
+        public void Disables_Local_Users_When_In_Local_But_Not_Remote()
         {
-            var command = _fixture.Create<SyncUsersCommand>();
-
-            MockPlexServer();
-            MockPlexFriends();
-            MockDbUsers();
-
-            await _underTest.Handle(command, CancellationToken.None);
-
-            await _plexService.Received().GetServer();
+            this.Given(x => x.GivenACommand())
+                .Given(x => x.GivenAServer())
+                .Given(x => x.GivenRemoteFriends(false))
+                .Given(x => x.GivenLocalUsers(true))
+                .When(x => x.WhenACommandIsCreated())
+                .Then(x => x.ThenLocalUsersAreDisabled())
+                .BDDfy();
         }
 
-        [Test]
-        public async Task Gets_Plex_Friends()
+        [Fact]
+        public void Creates_Local_Users_When_In_Remote_But_Not_Local()
         {
-            var command = _fixture.Create<SyncUsersCommand>();
-
-            var plexServer = MockPlexServer();
-            MockPlexFriends();
-            MockDbUsers();
-
-            await _underTest.Handle(command, CancellationToken.None);
-
-            await _plexApi.Received().GetFriends(Arg.Is(plexServer.AccessToken));
+            this.Given(x => x.GivenACommand())
+                .Given(x => x.GivenAServer())
+                .Given(x => x.GivenRemoteFriends(true))
+                .Given(x => x.GivenLocalUsers(false))
+                .When(x => x.WhenACommandIsCreated())
+                .Then(x => x.ThenLocalUsersAreCreated())
+                .BDDfy();
         }
 
-        [Test]
-        public async Task Get_Db_Users()
+        private void GivenACommand()
         {
-            var command = _fixture.Create<SyncUsersCommand>();
-
-            MockPlexServer();
-            MockPlexFriends();
-            MockDbUsers();
-
-            await _underTest.Handle(command, CancellationToken.None);
-
-            await _userService.Received().GetAllUsers();
+            _command = _fixture.Create<SyncUsersCommand>();
         }
 
-        [Test]
-        public async Task Disables_Deleted_Users()
+        private void GivenAServer()
         {
-            var command = _fixture.Create<SyncUsersCommand>();
-
-            MockPlexServer();
-            var remoteFriends = MockPlexFriends();
-            var localUsers = MockDbUsers();
-            SyncFriendsAndUsers(localUsers, remoteFriends);
-
-            localUsers[0].Email = _fixture.Create<string>();
-
-            await _underTest.Handle(command, CancellationToken.None);
-
-            await _userService.Received(1).UpdateUser(localUsers[0]);
-            localUsers.Count(x => x.IsDisabled).ShouldBe(1);
-            localUsers[0].IsDisabled.ShouldBe(true);
+            _plexService.GetServer().Returns(_fixture.Create<PlexServer>());
         }
 
-        [Test]
-        [TestCase("")]
-        [TestCase(null)]
-        public async Task Does_Not_Create_User_When_No_Email(string email)
+        private void GivenRemoteFriends(bool hasRemoteFriends)
         {
-            var command = _fixture.Create<SyncUsersCommand>();
+            _remoteFriends = new List<Friend>();
 
-            MockPlexServer();
-            var remoteFriends = MockPlexFriends();
-            var localUsers = MockDbUsers();
-            SyncFriendsAndUsers(localUsers, remoteFriends);
-
-            foreach (var friend in remoteFriends)
+            if (hasRemoteFriends)
             {
-                friend.Email = email;
+                _remoteFriends = _fixture.Build<Friend>()
+                                         .With(x => x.Id, _fixture.Create<int>().ToString)
+                                         .CreateMany()
+                                         .ToList();
+            }
+            
+            _plexApi.GetFriends(Arg.Any<string>()).Returns(_remoteFriends);
+        }
+
+        private void GivenLocalUsers(bool hasLocalUsers)
+        {
+            _localUsers = new List<User>();
+
+            if (hasLocalUsers)
+            {
+                _localUsers = _fixture.Build<User>()
+                                      .With(x => x.IsAdmin, false)
+                                      .CreateMany()
+                                      .ToList();
             }
 
-            await _underTest.Handle(command, CancellationToken.None);
-
-            await _userService.DidNotReceive().CreateUser(Arg.Any<User>());
+            _userService.GetAllUsers().Returns(_localUsers);
         }
 
-        [Test]
-        public async Task Does_Not_Create_User_When_Already_Exists()
+        private void WhenACommandIsCreated()
         {
-            var command = _fixture.Create<SyncUsersCommand>();
-
-            MockPlexServer();
-            var remoteFriends = MockPlexFriends();
-            var localUsers = MockDbUsers();
-            SyncFriendsAndUsers(localUsers, remoteFriends);
-
-            _userService.UserExists(Arg.Any<string>()).Returns(true);
-
-            await _underTest.Handle(command, CancellationToken.None);
-
-            await _userService.DidNotReceive().CreateUser(Arg.Any<User>());
+            _commandAction = async () => await _underTest.Handle(_command, CancellationToken.None);
         }
 
-        [Test]
-        public async Task Creates_User_Successfully()
+        private void ThenLocalUsersAreCreated()
         {
-            var command = _fixture.Create<SyncUsersCommand>();
+            _commandAction.Should().NotThrow();
 
-            MockPlexServer();
-            var remoteFriends = MockPlexFriends();
-            var localUsers = MockDbUsers();
-            SyncFriendsAndUsers(localUsers, remoteFriends);
-
-            _userService.UserExists(Arg.Any<string>()).Returns(false);
-
-            await _underTest.Handle(command, CancellationToken.None);
-
-            await _userService.Received(1).CreateUser(Arg.Is<User>(x => IsValidUser(x, remoteFriends[0])));
+            _userService.Received(_remoteFriends.Count).CreateUser(Arg.Any<User>());
         }
 
-        private PlexServer MockPlexServer()
+        private void ThenLocalUsersAreDisabled()
         {
-            var plexServer = _fixture.Create<PlexServer>();
+            _commandAction.Should().NotThrow();
 
-            _plexService.GetServer().Returns(plexServer);
-
-            return plexServer;
-        }
-
-        private List<Friend> MockPlexFriends()
-        {
-            var plexFriends = _fixture
-                .Build<Friend>()
-                .With(x => x.Id, _fixture.Create<int>().ToString)
-                .CreateMany().ToList();
-
-            _plexApi.GetFriends(Arg.Any<string>()).Returns(plexFriends);
-
-            return plexFriends;
-        }
-
-        private List<User> MockDbUsers()
-        {
-            var users = _fixture.Build<User>()
-                .With(x => x.IsAdmin, false)
-                .With(x => x.IsDisabled, false)
-                .CreateMany()
-                .ToList();
-
-            _userService.GetAllUsers().Returns(users);
-
-            return users;
-        }
-
-        private static void SyncFriendsAndUsers(List<User> localUsers, List<Friend> remoteFriends)
-        {
-            for (var i = 0; i < localUsers.Count; i++)
-            {
-                var user = localUsers[i];
-                var remoteFriend = remoteFriends[i];
-
-                user.Email = remoteFriend.Email;
-            }
-        }
-
-        private static bool IsValidUser(User user, Friend friend)
-        {
-            user.ShouldNotBeNull();
-            user.Username.ShouldBe(friend.Username);
-            user.Email.ShouldBe(friend.Email);
-            user.PlexAccountId.ShouldBe(Convert.ToInt32(friend.Id));
-            user.Roles.SequenceEqual(new List<string> { PlexRequestRoles.User }).ShouldBeTrue();
-            return true;
+            _userService.Received(_localUsers.Count).UpdateUser(Arg.Any<User>());
         }
     }
 }

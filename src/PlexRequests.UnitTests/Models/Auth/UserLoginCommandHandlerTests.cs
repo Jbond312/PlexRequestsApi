@@ -1,179 +1,179 @@
 ﻿using System;
+using System.Net;
 using System.Threading;
 using System.Threading.Tasks;
 using AutoFixture;
+using FluentAssertions;
 using Microsoft.Extensions.Logging;
 using NSubstitute;
-using NUnit.Framework;
+using NSubstitute.ReturnsExtensions;
 using PlexRequests.Core;
 using PlexRequests.Helpers;
 using PlexRequests.Models.Auth;
 using PlexRequests.Plex;
 using PlexRequests.Plex.Models;
-using Shouldly;
+using TestStack.BDDfy;
+using Xunit;
 
 namespace PlexRequests.UnitTests.Models.Auth
 {
-    [TestFixture]
     public class UserLoginCommandHandlerTests
     {
-        private UserLoginCommandHandler _underTest;
-        private IUserService _userService;
-        private ITokenService _tokenService;
-        private IPlexApi _plexApi;
-        private ILogger<UserLoginCommandHandler> _logger;
+        private readonly UserLoginCommandHandler _underTest;
+        private readonly IUserService _userService;
+        private readonly ITokenService _tokenService;
+        private readonly IPlexApi _plexApi;
 
-        private Fixture _fixture;
+        private readonly Fixture _fixture;
+        private UserLoginCommand _command;
+        private Store.Models.User _matchingDbUser;
+        private Store.Models.User _updatedUser;
+        private string _createdToken;
+        private Func<Task<UserLoginCommandResult>> _commandAction;
 
-        [SetUp]
-        public void Setup()
+        public UserLoginCommandHandlerTests()
         {
             _userService = Substitute.For<IUserService>();
             _tokenService = Substitute.For<ITokenService>();
             _plexApi = Substitute.For<IPlexApi>();
-            _logger = Substitute.For<ILogger<UserLoginCommandHandler>>();
+            var logger = Substitute.For<ILogger<UserLoginCommandHandler>>();
 
-            _underTest = new UserLoginCommandHandler(_userService, _tokenService, _plexApi, _logger);
+            _underTest = new UserLoginCommandHandler(_userService, _tokenService, _plexApi, logger);
 
             _fixture = new Fixture();
         }
 
-        [Test]
-        public async Task Calls_Plex_SignIn_With_Credentials()
+        [Fact]
+        private void Throws_Error_When_Invalid_PlexCredentials()
         {
-            var command = _fixture.Create<UserLoginCommand>();
-
-            MockPlexUserSignsIn();
-            MockGetDbUserFromPlexId();
-            
-            await _underTest.Handle(command, CancellationToken.None);
-
-            await _plexApi.Received().SignIn(command.Username, command.Password);
+            this.Given(x => x.GivenACommand())
+                .Given(x => x.GivenInvalidPlexCredentials())
+                .When(x => x.WhenACommandActionIsCreated())
+                .Then(x => x.ThenAnErrorIsThrown("Invalid Plex Credentials", "Unable to login to Plex with the given credentials", HttpStatusCode.BadRequest))
+                .BDDfy();
         }
 
-        [Test]
-        public async Task Throws_Error_When_Null_Plex_User()
+        [Fact]
+        private void Throws_Error_When_No_Matching_User_In_Database()
         {
-            var command = _fixture.Create<UserLoginCommand>();
-
-            var exception = await Should.ThrowAsync<PlexRequestException>(() => _underTest.Handle(command, CancellationToken.None));
-
-            exception.Message.ShouldBe("Unable to login to Plex with the given credentials");
+            this.Given(x => x.GivenACommand())
+                .Given(x => x.GivenValidPlexCredentials())
+                .Given(x => x.GivenNoMatchingUser())
+                .When(x => x.WhenACommandActionIsCreated())
+                .Then(x => x.ThenAnErrorIsThrown("Unrecognised user", "The user is not recognised or has been disabled.", HttpStatusCode.BadRequest))
+                .BDDfy();
         }
 
-        [Test]
-        public async Task Calls_UserService_GetUser_With_Plex_UserId()
+        [Fact]
+        public void Throws_Error_When_Matching_User_Is_Disabled()
         {
-            var command = _fixture.Create<UserLoginCommand>();
-
-            var plexSignInUser = MockPlexUserSignsIn();
-            MockGetDbUserFromPlexId();
-
-            await _underTest.Handle(command, CancellationToken.None);
-
-            await _userService.Received().GetUserFromPlexId(plexSignInUser.Id);
+            this.Given(x => x.GivenACommand())
+                .Given(x => x.GivenValidPlexCredentials())
+                .Given(x => x.GivenAMatchingUser(true))
+                .When(x => x.WhenACommandActionIsCreated())
+                .Then(x => x.ThenAnErrorIsThrown("Unrecognised user", "The user is not recognised or has been disabled.", HttpStatusCode.BadRequest))
+                .BDDfy();
         }
 
-        [Test]
-        public async Task Returns_Null_When_Disabled_Db_User()
+        [Fact]
+        private void User_Is_Updated_With_New_LastLogin_Date()
         {
-            var command = _fixture.Create<UserLoginCommand>();
-
-            MockPlexUserSignsIn();
-            var dbUser = MockGetDbUserFromPlexId();
-            dbUser.IsDisabled = true;
-
-            var result = await _underTest.Handle(command, CancellationToken.None);
-            
-            result.ShouldBeNull();
+            this.Given(x => x.GivenACommand())
+                .Given(x => x.GivenValidPlexCredentials())
+                .Given(x => x.GivenAMatchingUser(false))
+                .Given(x => x.GivenAUserIsUpdated())
+                .When(x => x.WhenACommandActionIsCreated())
+                .Then(x => x.ThenUserIsUpdatedCorrectly())
+                .BDDfy();
         }
 
-        [Test]
-        public async Task Returns_Null_When_Db_User_Not_Found()
+        [Fact]
+        private void Token_Is_Created_Successfully()
         {
-            var command = _fixture.Create<UserLoginCommand>();
-
-            MockPlexUserSignsIn();
-
-            var result = await _underTest.Handle(command, CancellationToken.None);
-
-            result.ShouldBeNull();
+            this.Given(x => x.GivenACommand())
+                .Given(x => x.GivenValidPlexCredentials())
+                .Given(x => x.GivenAMatchingUser(false))
+                .Given(x => x.GivenATokenIsCreated())
+                .When(x => x.WhenACommandActionIsCreated())
+                .Then(x => x.ThenATokenIsReturnedCorrectly())
+                .BDDfy();
         }
 
-        [Test]
-        public async Task Updates_LastLogin_Date()
+        private void GivenACommand()
         {
-            var command = _fixture.Create<UserLoginCommand>();
+            _command = _fixture.Create<UserLoginCommand>();
+        }
 
-            MockPlexUserSignsIn();
-            var dbUser = MockGetDbUserFromPlexId();
-            MockCreateToken();
+        private void GivenInvalidPlexCredentials()
+        {
+            _plexApi.SignIn(Arg.Any<string>(), Arg.Any<string>()).ReturnsNull();
+        }
+
+        private void GivenValidPlexCredentials()
+        {
+            _plexApi.SignIn(Arg.Any<string>(), Arg.Any<string>()).Returns(_fixture.Create<User>());
+        }
+
+        private void GivenNoMatchingUser()
+        {
+            _userService.GetUserFromPlexId(Arg.Any<int>()).ReturnsNull();
+        }
+
+        private void GivenAMatchingUser(bool isDisabled)
+        {
+            _matchingDbUser = _fixture.Build<Store.Models.User>()
+                                      .With(x => x.IsDisabled, isDisabled)
+                                      .Create();
+
+            _userService.GetUserFromPlexId(Arg.Any<int>()).Returns(_matchingDbUser);
+        }
+
+        private void GivenAUserIsUpdated()
+        {
+            _userService.UpdateUser(Arg.Do<Store.Models.User>(x => _updatedUser = x));
+        }
+
+        private void GivenATokenIsCreated()
+        {
+            _createdToken = _fixture.Create<string>();
+
+            _tokenService.CreateToken(Arg.Any<Store.Models.User>()).Returns(_createdToken);
+        }
+
+        private void WhenACommandActionIsCreated()
+        {
+            _commandAction = async () => await _underTest.Handle(_command, CancellationToken.None);
+        }
+
+        private void ThenAnErrorIsThrown(string message, string description, HttpStatusCode httpStatusCode)
+        {
+            _commandAction.Should().Throw<PlexRequestException>()
+                          .WithMessage(message)
+                          .Where(x => x.Description == description)
+                          .Where(x => x.StatusCode == httpStatusCode);
+        }
+
+        private void ThenUserIsUpdatedCorrectly()
+        {
+            _commandAction.Should().NotThrow();
+
+            _updatedUser.Should().NotBeNull();
+
+            _updatedUser.Should().Be(_matchingDbUser);
 
             var now = DateTime.UtcNow;
 
-            await _underTest.Handle(command, CancellationToken.None);
+            var loginDiff = (_updatedUser.LastLogin - now).Milliseconds;
 
-            await _userService.Received().UpdateUser(Arg.Is(dbUser));
-
-            var loginDiff = (dbUser.LastLogin - now).Milliseconds;
-
-            loginDiff.ShouldBeLessThanOrEqualTo(500);
+            loginDiff.Should().BeLessOrEqualTo(500);
         }
 
-        [Test]
-        public async Task Token_Created_From_TokenService()
+        private async Task ThenATokenIsReturnedCorrectly()
         {
-            var command = _fixture.Create<UserLoginCommand>();
+            var response = await _commandAction();
 
-            MockPlexUserSignsIn();
-            var dbUser = MockGetDbUserFromPlexId();
-            MockCreateToken();
-
-            await _underTest.Handle(command, CancellationToken.None);
-
-            _tokenService.Received().CreateToken(Arg.Is(dbUser));
-        }
-
-        [Test]
-        public async Task Returns_Correct_Response()
-        {
-            var command = _fixture.Create<UserLoginCommand>();
-
-            MockPlexUserSignsIn();
-            MockGetDbUserFromPlexId();
-            var token = MockCreateToken();
-
-            var result = await _underTest.Handle(command, CancellationToken.None);
-
-            result.ShouldNotBeNull();
-            result.AccessToken.ShouldBe(token);
-        }
-
-        private User MockPlexUserSignsIn()
-        {
-            var plexSignInUser = _fixture.Create<User>();
-
-            _plexApi.SignIn(Arg.Any<string>(), Arg.Any<string>()).Returns(plexSignInUser);
-            
-            return plexSignInUser;
-        }
-
-        private Store.Models.User MockGetDbUserFromPlexId()
-        {
-            var user = _fixture.Build<Store.Models.User>()
-                .With(x => x.IsDisabled, false)
-                .Create();
-
-            _userService.GetUserFromPlexId(Arg.Any<int>()).Returns(user);
-
-            return user;
-        }
-
-        private string MockCreateToken()
-        {
-            var token = _fixture.Create<string>();
-            _tokenService.CreateToken(Arg.Any<Store.Models.User>()).Returns(token);
-            return token;
+            response.Should().NotBeNull();
+            response.AccessToken.Should().Be(_createdToken);
         }
     }
 }

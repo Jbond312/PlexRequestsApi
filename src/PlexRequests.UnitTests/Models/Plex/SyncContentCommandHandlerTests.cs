@@ -1,26 +1,29 @@
-﻿using System.Threading;
+﻿using System;
+using System.Threading;
 using System.Threading.Tasks;
 using AutoFixture;
+using FluentAssertions;
 using MediatR;
 using NSubstitute;
-using NUnit.Framework;
 using PlexRequests.Models.Plex;
 using PlexRequests.Sync;
+using TestStack.BDDfy;
+using Xunit;
 
 namespace PlexRequests.UnitTests.Models.Plex
 {
-    [TestFixture]
     public class SyncContentCommandHandlerTests
     {
-        private IRequestHandler<SyncContentCommand> _underTest;
+        private readonly IRequestHandler<SyncContentCommand> _underTest;
 
-        private IPlexSync _plexSync;
+        private readonly IPlexSync _plexSync;
 
-        private Fixture _fixture;
+        private readonly Fixture _fixture;
         
+        private SyncContentCommand _command;
+        private Func<Task> _commandAction;
 
-        [SetUp]
-        public void Setup()
+        public SyncContentCommandHandlerTests()
         {
             _plexSync = Substitute.For<IPlexSync>();
 
@@ -29,14 +32,30 @@ namespace PlexRequests.UnitTests.Models.Plex
             _fixture = new Fixture();
         }
 
-        [Test]
-        public async Task Calls_Plex_Synchronisation()
+        [Fact]
+        private void Invokes_Plex_Sync()
         {
-            var command = _fixture.Create<SyncContentCommand>();
+            this.Given(x => x.GivenACommand())
+                .When(x => x.WhenACommandActionIsCreated())
+                .Then(x => x.ThenPlexSyncShouldBeInvoked())
+                .BDDfy();
+        }
 
-            await _underTest.Handle(command, CancellationToken.None);
+        private void GivenACommand()
+        {
+            _command = _fixture.Create<SyncContentCommand>();
+        }
 
-            await _plexSync.Received(1).Synchronise(Arg.Is(command.FullRefresh));
+        private void WhenACommandActionIsCreated()
+        {
+            _commandAction = async () => await _underTest.Handle(_command, CancellationToken.None);
+        }
+
+        private void ThenPlexSyncShouldBeInvoked()
+        {
+            _commandAction.Should().NotThrow();
+
+            _plexSync.Received().Synchronise(Arg.Is(_command.FullRefresh));
         }
     }
 }

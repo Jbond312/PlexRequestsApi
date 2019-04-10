@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
+using PlexRequests.Core;
 using PlexRequests.Plex;
 using PlexRequests.Plex.Models;
 using PlexRequests.Store.Enums;
@@ -14,16 +15,19 @@ namespace PlexRequests.Sync.SyncProcessors
         private readonly IPlexApi _plexApi;
         private readonly IPlexService _plexService;
         private readonly IMediaItemProcessor _mediaItemProcessor;
+        private readonly IAgentGuidParser _agentGuidParser;
 
         public TvProcessor(
             IPlexApi plexApi,
             IPlexService plexService,
-            IMediaItemProcessor mediaItemProcessor
+            IMediaItemProcessor mediaItemProcessor,
+            IAgentGuidParser agentGuidParser
             )
         {
             _plexApi = plexApi;
             _plexService = plexService;
             _mediaItemProcessor = mediaItemProcessor;
+            _agentGuidParser = agentGuidParser;
         }
 
         public PlexMediaTypes Type => PlexMediaTypes.Show;
@@ -32,9 +36,7 @@ namespace PlexRequests.Sync.SyncProcessors
         {
             var syncResult = new SyncResult();
 
-            const PlexMediaTypes mediaType = PlexMediaTypes.Show;
-
-            var localMediaItems = await _plexService.GetMediaItems(x => x.MediaType == mediaType);
+            var localMediaItems = await _plexService.GetMediaItems(Type);
 
             var processedShowKeys = new List<int>();
             foreach (var remoteMediaItem in libraryContainer.MediaContainer.Metadata)
@@ -49,7 +51,7 @@ namespace PlexRequests.Sync.SyncProcessors
                 processedShowKeys.Add(ratingKey);
 
                 var (isNewItem, mediaItem) =
-                    await _mediaItemProcessor.GetMediaItem(ratingKey, mediaType, localMediaItems, authToken, plexUri);
+                    await _mediaItemProcessor.GetMediaItem(ratingKey, Type, localMediaItems, authToken, plexUri);
 
                 await GetChildMetadata(mediaItem, authToken, plexUri);
 
@@ -114,9 +116,9 @@ namespace PlexRequests.Sync.SyncProcessors
         {
             var itemInfo = await _plexApi.GetMetadata(authToken, plexUri, key);
 
-            var metadata = itemInfo.MediaContainer.Metadata.FirstOrDefault();
+            var metadata = itemInfo?.MediaContainer?.Metadata?.FirstOrDefault();
 
-            var agentDetails = _mediaItemProcessor.GetAgentDetails(metadata?.Guid);
+            var agentDetails = _agentGuidParser.TryGetAgentDetails(metadata?.Guid);
 
             return new ShowMediaItem
             {

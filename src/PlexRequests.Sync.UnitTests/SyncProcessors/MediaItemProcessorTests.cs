@@ -1,246 +1,224 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
 using System.Linq;
 using System.Net;
 using System.Threading.Tasks;
 using AutoFixture;
+using FluentAssertions;
 using NSubstitute;
-using NUnit.Framework;
+using PlexRequests.Core;
 using PlexRequests.Helpers;
 using PlexRequests.Plex;
 using PlexRequests.Plex.Models;
 using PlexRequests.Store.Enums;
 using PlexRequests.Store.Models;
 using PlexRequests.Sync.SyncProcessors;
-using Shouldly;
+using TestStack.BDDfy;
+using Xunit;
 
 namespace PlexRequests.Sync.UnitTests.SyncProcessors
 {
-    [TestFixture]
     public class MediaItemProcessorTests
     {
-        private const string ValidAgentGuid = "com.plexapp.agents.thetvdb://73141/15/7?lang=en";
-        private const AgentTypes ValidAgentGuidType = AgentTypes.TheTvDb;
-        private const string ValidAgentGuidId = "73141";
+        private readonly MediaItemProcessor _underTest;
 
-        private MediaItemProcessor _underTest;
+        private readonly IPlexApi _plexApi;
 
-        private IPlexApi _plexApi;
+        private readonly Fixture _fixture;
+        private readonly IAgentGuidParser _agentGuidParser;
+        
+        private Func<Task<(bool, PlexMediaItem)>> _getMediaItemAction;
+        private Action _updateResultAction;
+        private PlexMediaContainer _plexMetadataContainer;
+        private int _ratingKey;
+        private (AgentTypes agentType, string agentSourceId) _agentDetails;
+        private PlexMediaTypes _mediaType;
+        private List<PlexMediaItem> _localMedia;
+        private SyncResult _syncResult;
+        private PlexMediaItem _plexMediaItem;
 
-        private Fixture _fixture;
-
-        [SetUp]
-        public void Setup()
+        public MediaItemProcessorTests()
         {
             _plexApi = Substitute.For<IPlexApi>();
+            _agentGuidParser = Substitute.For<IAgentGuidParser>();
 
-            _underTest = new MediaItemProcessor(_plexApi);
+            _underTest = new MediaItemProcessor(_plexApi, _agentGuidParser);
 
             _fixture = new Fixture();
         }
 
-        [Test]
-        [TestCase(true)]
-        [TestCase(false)]
-        public void Updates_Correct_Items_If_New_Item(bool isNew)
+        [Fact]
+        private void GetMediaItem_Throws_Error_When_No_MediaContainer_Found()
         {
-            var result = _fixture.Create<SyncResult>();
-            var mediaItem = _fixture.Create<PlexMediaItem>();
+            const bool metadataExists = false;
+            const bool isExistingMediaItem = false;
+            
+            this.Given(x => x.GivenARatingKey())
+                .Given(x => x.GivenPlexMetadata(metadataExists))
+                .When(x => x.WhenGetMediaItemActionIsCreated(isExistingMediaItem))
+                .Then(x => x.ThenErrorIsThrown("Plex Metadata Error", $"No metadata was found for container with key: {_ratingKey}", HttpStatusCode.BadRequest))
+                .BDDfy();
+        }
 
-            _underTest.UpdateResult(result, isNew, mediaItem);
+        [Fact]
+        private void GetMediaItem_Returns_Correct_MediaItem_When_New_MediaItem()
+        {
+            const bool metadataExists = true;
+            const bool isExistingMediaItem = false;
+            
+            this.Given(x => x.GivenARatingKey())
+                .Given(x => x.GivenPlexMetadata(metadataExists))
+                .Given(x => x.GivenAgentDetails())
+                .When(x => x.WhenGetMediaItemActionIsCreated(isExistingMediaItem))
+                .Then(x => x.ThenMediaItemIsCorrect(!isExistingMediaItem))
+                .BDDfy();
+        }
+        
+        [Fact]
+        private void GetMediaItem_Returns_Correct_MediaItem_When_Existing_MediaItem()
+        {
+            const bool metadataExists = true;
+            const bool isExistingMediaItem = true;
+            
+            this.Given(x => x.GivenARatingKey())
+                .Given(x => x.GivenPlexMetadata(metadataExists))
+                .Given(x => x.GivenAgentDetails())
+                .When(x => x.WhenGetMediaItemActionIsCreated(isExistingMediaItem))
+                .Then(x => x.ThenMediaItemIsCorrect(!isExistingMediaItem))
+                .BDDfy();
+        }
 
-            if (isNew)
+        [Fact]
+        private void Update_Result_Adds_To_New_When_IsNew()
+        {
+            const bool isNew = true;
+            this.Given(x => x.GivenAPlexMediaItem())
+                .When(x => x.WhenUpdateResultActionIsCreated(isNew))
+                .Then(x => x.ThenUpdateResultItemsAreAddedCorrectly(isNew))
+                .BDDfy();
+        }
+        
+        [Fact]
+        private void Update_Result_Adds_To_Existing_When_Not_IsNew()
+        {
+            const bool isNew = false;
+            this.Given(x => x.GivenAPlexMediaItem())
+                .When(x => x.WhenUpdateResultActionIsCreated(isNew))
+                .Then(x => x.ThenUpdateResultItemsAreAddedCorrectly(isNew))
+                .BDDfy();
+        }
+        
+        private void GivenPlexMetadata(bool metadataExists)
+        {
+            _plexMetadataContainer = _fixture.Create<PlexMediaContainer>();
+
+            if (!metadataExists)
             {
-                result.NewItems.ShouldContain(mediaItem);
+                _plexMetadataContainer.MediaContainer.Metadata = null;
+            }
+
+            _plexApi.GetMetadata(Arg.Any<string>(), Arg.Any<string>(), Arg.Any<int>()).Returns(_plexMetadataContainer);
+        }
+
+        private void GivenARatingKey()
+        {
+            _ratingKey = _fixture.Create<int>();
+        }
+
+        private void GivenAgentDetails()
+        {
+            const AgentTypes agentType = AgentTypes.Imdb;
+            var agentSourceId = _fixture.Create<string>();
+
+            _agentDetails = (agentType: agentType, agentSourceId: agentSourceId);
+
+            _agentGuidParser.TryGetAgentDetails(Arg.Any<string>())
+                            .Returns(_agentDetails);
+        }
+
+        private void GivenAPlexMediaItem()
+        {
+            _plexMediaItem = _fixture.Create<PlexMediaItem>();
+        }
+
+        private void WhenGetMediaItemActionIsCreated(bool isExistingMediaItem)
+        {
+            _mediaType = PlexMediaTypes.Show;
+            _localMedia = _fixture.CreateMany<PlexMediaItem>().ToList();
+            var authToken = _fixture.Create<string>();
+            var plexUri = _fixture.Create<string>();
+
+            if (isExistingMediaItem)
+            {
+                var matchingMediaItem = _localMedia.First();
+                matchingMediaItem.Key = _ratingKey;
+                matchingMediaItem.MediaType = _mediaType;
+            }
+            
+            _getMediaItemAction = async () => await _underTest.GetMediaItem(_ratingKey, _mediaType, _localMedia, authToken, plexUri);
+        }
+
+        private void WhenUpdateResultActionIsCreated(bool isNew)
+        {
+            _syncResult = _fixture.Create<SyncResult>();
+
+            _updateResultAction = () => _underTest.UpdateResult(_syncResult, isNew, _plexMediaItem);
+
+        }
+        
+        private void ThenErrorIsThrown(string message, string description, HttpStatusCode statusCode)
+        {
+            _getMediaItemAction.Should().Throw<PlexRequestException>()
+                          .WithMessage(message)
+                          .Where(x => x.Description == description)
+                          .Where(x => x.StatusCode == statusCode);
+        }
+
+        private async Task ThenMediaItemIsCorrect(bool isNewMediaItem)
+        {
+            var (isNew, mediaItem) = await _getMediaItemAction();
+
+            isNew.Should().Be(isNewMediaItem);
+
+            var metadata = _plexMetadataContainer.MediaContainer.Metadata.First();
+            
+            mediaItem.Should().NotBeNull();
+            mediaItem.Key.Should().Be(_ratingKey);
+            mediaItem.MediaType.Should().Be(_mediaType);
+            mediaItem.Resolution.Should().Be(metadata.Media?.FirstOrDefault()?.VideoResolution);
+            mediaItem.AgentType.Should().Be(_agentDetails.agentType);
+            mediaItem.AgentSourceId.Should().Be(_agentDetails.agentSourceId);
+
+            if (isNewMediaItem)
+            {
+                mediaItem.Title.Should().Be(metadata.Title);
+                metadata.Year.Should().Be(metadata.Year);
             }
             else
             {
-                result.ExistingItems.ShouldContain(mediaItem);
+                var localMediaItem = _localMedia.First(x => x.Key == _ratingKey);
+                
+                mediaItem.Title.Should().Be(localMediaItem.Title);
+                mediaItem.Year.Should().Be(localMediaItem.Year);
             }
         }
 
-        [Test]
-        [TestCase("com.plexapp.agents.thetvdb://73141/15/7?lang=en", AgentTypes.TheTvDb, "73141")]
-        [TestCase("com.plexapp.agents.thetvdb://73141/15?lang=en", AgentTypes.TheTvDb, "73141")]
-        [TestCase("com.plexapp.agents.thetvdb://73141?lang=en", AgentTypes.TheTvDb, "73141")]
-        [TestCase("com.plexapp.agents.imdb://tt1727824?lang=en", AgentTypes.Imdb, "tt1727824")]
-        [TestCase("com.plexapp.agents.themoviedb://446021?lang=en", AgentTypes.TheMovieDb, "446021")]
-        public void Returns_Correct_Agent_Details(string agentGuid, AgentTypes expectedAgentType, string expectedAgentId)
+        private void ThenUpdateResultItemsAreAddedCorrectly(bool isNew)
         {
-            var (agentType, agentSourceId) = _underTest.GetAgentDetails(agentGuid);
-
-            agentType.ShouldBe(expectedAgentType);
-            agentSourceId.ShouldBe(expectedAgentId);
-        }
-
-        [Test]
-        [TestCase("")]
-        [TestCase(null)]
-        public void Throws_Error_When_No_AgentGuid_Specified(string agentGuid)
-        {
-            var exception = Should.Throw<PlexRequestException>(() => _underTest.GetAgentDetails(agentGuid));
-
-            exception.ShouldNotBeNull();
-            exception.Message.ShouldBe("PlexMetadataGuid");
-            exception.Description.ShouldBe("The PlexMetadataGuid should not be null or empty");
-            exception.StatusCode.ShouldBe(HttpStatusCode.InternalServerError);
-        }
-
-        [Test]
-        [TestCase("abcd")]
-        [TestCase("a.b.c.d")]
-        [TestCase("a.b.c.d:1234")]
-        [TestCase("a.b.c.d:/1234")]
-        [TestCase("a.b.c.d://1234")]
-        [TestCase("://1234")]
-        [TestCase("//1234")]
-        [TestCase("/1234")]
-        [TestCase("com.plexapp.agents.imdb:3141")]
-        [TestCase("com.plexapp.agents.imdb:/3141")]
-        [TestCase("com.plexapp.agents.imdb://3141")]
-        [TestCase("...themoviedb://446021?lang=en")]
-        public void Throws_Error_When_Invalid_AgentGuid_Specified(string agentGuid)
-        {
-            var exception = Should.Throw<PlexRequestException>(() => _underTest.GetAgentDetails(agentGuid));
-
-            exception.ShouldNotBeNull();
-            exception.Message.ShouldBe("PlexMetadataGuid");
-            exception.Description.ShouldBe("The PlexMetadataGuid was not in the expected format");
-            exception.LoggableObject.ShouldBe(agentGuid);
-            exception.StatusCode.ShouldBe(HttpStatusCode.InternalServerError);
-        }
-
-        [Test]
-        [TestCase("com.plexapp.agents.foo://73141/15/7?lang=en")]
-        public void Throws_Error_When_Invalid_AgentType_Found(string agentGuid)
-        {
-            var exception = Should.Throw<PlexRequestException>(() => _underTest.GetAgentDetails(agentGuid));
-
-            exception.ShouldNotBeNull();
-            exception.Message.ShouldBe("PlexMetadataGuid");
-            exception.Description.ShouldBe("No AgentType could be extracted from the agent guid");
-            exception.LoggableObject.ShouldBe(agentGuid);
-            exception.StatusCode.ShouldBe(HttpStatusCode.InternalServerError);
-        }
-
-        [Test]
-        public async Task Gets_Metadata_For_RatingKey()
-        {
-            var ratingKey = _fixture.Create<int>();
-            var authToken = _fixture.Create<string>();
-            var plexUri = _fixture.Create<string>();
-
-            MockGetMetadata();
-
-            await _underTest.GetMediaItem(ratingKey, PlexMediaTypes.Movie, new List<PlexMediaItem>(), authToken, plexUri);
-
-            await _plexApi.Received(1).GetMetadata(Arg.Is(authToken), Arg.Is(plexUri), Arg.Is(ratingKey));
-        }
-
-        [Test]
-        public async Task Sets_NewFlag_If_New_MediaItem()
-        {
-            var ratingKey = _fixture.Create<int>();
-            var authToken = _fixture.Create<string>();
-            var plexUri = _fixture.Create<string>();
-            var localMedia = _fixture.CreateMany<PlexMediaItem>().ToList();
-
-            MockGetMetadata();
+            _updateResultAction.Should().NotThrow();
             
-            var (isNew, _) = await _underTest.GetMediaItem(ratingKey, PlexMediaTypes.Movie, localMedia, authToken, plexUri);
+            _syncResult.Should().NotBeNull();
 
-            isNew.ShouldBeTrue();
-        }
-
-        [Test]
-        public async Task Sets_NewFlag_False_If_Exists()
-        {
-            var authToken = _fixture.Create<string>();
-            var plexUri = _fixture.Create<string>();
-            var localMedia = _fixture.CreateMany<PlexMediaItem>().ToList();
-
-            var remoteMetadata = MockGetMetadata();
-
-            var key = localMedia[0].Key;
-            remoteMetadata.MediaContainer.Metadata[0].Key = key.ToString();
-
-            var (isNew, _) = await _underTest.GetMediaItem(key, PlexMediaTypes.Movie, localMedia, authToken, plexUri);
-
-            isNew.ShouldBeFalse();
-        }
-
-        [Test]
-        public async Task VideoResolution_Correct_When_No_Media()
-        {
-            var ratingKey = _fixture.Create<int>();
-            var authToken = _fixture.Create<string>();
-            var plexUri = _fixture.Create<string>();
-            var localMedia = _fixture.CreateMany<PlexMediaItem>().ToList();
-            const PlexMediaTypes mediaType = PlexMediaTypes.Movie;
-
-            var remoteMetadata = MockGetMetadata();
-            remoteMetadata.MediaContainer.Metadata.First().Media = null;
-
-            var (_, mediaItem) = await _underTest.GetMediaItem(ratingKey, mediaType, localMedia, authToken, plexUri);
-
-            mediaItem.Resolution.ShouldBeNull();
-        }
-
-        [Test]
-        public async Task Throws_Error_When_No_Metadata_Found_On_Container()
-        {
-            var ratingKey = _fixture.Create<int>();
-            var authToken = _fixture.Create<string>();
-            var plexUri = _fixture.Create<string>();
-            var localMedia = _fixture.CreateMany<PlexMediaItem>().ToList();
-            const PlexMediaTypes mediaType = PlexMediaTypes.Movie;
-
-            var remoteMetadata = MockGetMetadata();
-            remoteMetadata.MediaContainer.Metadata = null;
-
-            var exception = await Should.ThrowAsync<PlexRequestException>(() =>
-                _underTest.GetMediaItem(ratingKey, mediaType, localMedia, authToken, plexUri));
-
-            exception.ShouldNotBeNull();
-            exception.Message.ShouldBe("PlexMediaContainer");
-            exception.Description.ShouldBe($"No metadata was found for container with key: {ratingKey}");
-        }
-
-        [Test]
-        public async Task MediaItem_Is_Correct_New_Item()
-        {
-            var ratingKey = _fixture.Create<int>();
-            var authToken = _fixture.Create<string>();
-            var plexUri = _fixture.Create<string>();
-            var localMedia = _fixture.CreateMany<PlexMediaItem>().ToList();
-            const PlexMediaTypes mediaType = PlexMediaTypes.Movie;
-
-            var remoteMetadata = MockGetMetadata();
-            
-            var (_, mediaItem) = await _underTest.GetMediaItem(ratingKey, mediaType, localMedia, authToken, plexUri);
-
-            var metadata = remoteMetadata.MediaContainer.Metadata.First();
-            var media = metadata.Media.First();
-
-            mediaItem.ShouldNotBeNull();
-            mediaItem.Key.ShouldBe(ratingKey);
-            mediaItem.MediaType.ShouldBe(mediaType);
-            mediaItem.Title.ShouldBe(metadata.Title);
-            mediaItem.Year.ShouldBe(metadata.Year);
-            media.VideoResolution = media.VideoResolution;
-            mediaItem.AgentType.ShouldBe(ValidAgentGuidType);
-            mediaItem.AgentSourceId.ShouldBe(ValidAgentGuidId);
-        }
-
-        private PlexMediaContainer MockGetMetadata()
-        {
-            var plexMediaContainer = _fixture.Create<PlexMediaContainer>();
-
-            _plexApi.GetMetadata(Arg.Any<string>(), Arg.Any<string>(), Arg.Any<int>())
-                .Returns(plexMediaContainer);
-
-            plexMediaContainer.MediaContainer.Metadata.First().Guid = ValidAgentGuid;
-
-            return plexMediaContainer;
+            if (isNew)
+            {
+                _syncResult.NewItems.Should().Contain(_plexMediaItem);
+                _syncResult.ExistingItems.Should().NotContain(_plexMediaItem);
+            }
+            else
+            {
+                _syncResult.NewItems.Should().NotContain(_plexMediaItem);
+                _syncResult.ExistingItems.Should().Contain(_plexMediaItem);
+            }
         }
     }
 }
