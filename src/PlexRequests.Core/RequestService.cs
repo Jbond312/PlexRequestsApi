@@ -1,6 +1,5 @@
 using System;
 using System.Collections.Generic;
-using System.Linq.Expressions;
 using System.Threading.Tasks;
 using PlexRequests.Store;
 using PlexRequests.Store.Enums;
@@ -18,15 +17,10 @@ namespace PlexRequests.Core
         {
             _requestRepository = requestRepository;
         }
-        
-        public async Task<List<Request>> GetMany(Expression<Func<Request, bool>> filter = null)
-        {
-            return await _requestRepository.GetMany(filter);
-        }
 
-        public async Task<Request> GetOne(Expression<Func<Request, bool>> filter = null)
+        public async Task<Request> GetRequestById(Guid id)
         {
-            return await _requestRepository.GetOne(filter);
+            return await _requestRepository.GetOne(x => x.Id == id);
         }
 
         public async Task<Request> GetExistingMovieRequest(AgentTypes agentType, string agentSourceId)
@@ -44,6 +38,11 @@ namespace PlexRequests.Core
         public async Task Create(Request request)
         {
             await _requestRepository.Create(request);
+        }
+
+        public async Task DeleteRequest(Guid id)
+        {
+            await _requestRepository.Delete(id);
         }
     }
 }

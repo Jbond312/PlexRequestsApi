@@ -30,6 +30,11 @@ namespace PlexRequests.Store
             return await cursor.FirstOrDefaultAsync();
         }
 
+        public async Task Delete(Guid id)
+        {
+            await Collection.DeleteOneAsync(x => x.Id == id);
+        }
+
         private async Task<IAsyncCursor<Request>> GetRequestsCursor(Expression<Func<Request, bool>> filter = null)
         {
             IAsyncCursor<Request> cursor;
