@@ -68,6 +68,7 @@ namespace PlexRequests
                     {"Bearer", new string[] { }},
                 };
                 options.AddSecurityRequirement(security);
+                options.DescribeAllEnumsAsStrings();
             });
 
             ConfigureLogging();

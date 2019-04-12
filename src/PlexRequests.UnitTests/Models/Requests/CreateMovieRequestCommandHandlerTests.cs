@@ -195,6 +195,7 @@ namespace PlexRequests.UnitTests.Models.Requests
             _createdRequest.Title.Should().Be(_movieDetails.Title);
             _createdRequest.ImagePath.Should().Be(_movieDetails.Poster_Path);
             _createdRequest.AirDate.Should().Be(DateTime.Parse(_movieDetails.Release_Date));
+            _createdRequest.Created.Should().BeCloseTo(DateTime.UtcNow, 500);
         }
 
         private void WhenCommandActionIsCreated()

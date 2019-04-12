@@ -347,6 +347,7 @@ namespace PlexRequests.UnitTests.Models.Requests
             _createdRequest.Title.Should().Be(_tvDetails.Name);
             _createdRequest.AirDate.Should().Be(DateTime.Parse(_tvDetails.First_Air_Date));
             _createdRequest.ImagePath.Should().Be(_tvDetails.Poster_Path);
+            _createdRequest.Created.Should().BeCloseTo(DateTime.UtcNow, 500);
 
             for (var i = 0; i < expectedSeasonCount; i++)
             {

@@ -5,6 +5,7 @@ using MediatR;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using PlexRequests.Models.Requests;
+using PlexRequests.Store.Enums;
 
 namespace PlexRequests.Controllers
 {
@@ -44,6 +45,26 @@ namespace PlexRequests.Controllers
             await _mediator.Send(command);
             
             return Ok();
+        }
+
+        [HttpGet("")]
+        public async Task<ActionResult<GetPagedRequestQueryResult>> GetRequests([FromQuery] string title,
+            [FromQuery] PlexMediaTypes? mediaType, [FromQuery] bool? includeCurrentUsersOnly, [FromQuery] bool? isApproved,
+            [FromQuery] int? page, [FromQuery] int? pageSize)
+        {
+            var query = new GetPagedRequestQuery
+            {
+                Title = title,
+                MediaType = mediaType,
+                IncludeCurrentUsersOnly = includeCurrentUsersOnly,
+                IsApproved = isApproved,
+                Page = page,
+                PageSize = pageSize
+            };
+
+            var response = await _mediator.Send(query);
+
+            return Ok(response);
         }
     }
 }
