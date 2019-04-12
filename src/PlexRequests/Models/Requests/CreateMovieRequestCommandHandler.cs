@@ -1,3 +1,4 @@
+using System;
 using System.Threading;
 using System.Threading.Tasks;
 using MediatR;
@@ -35,14 +36,21 @@ namespace PlexRequests.Models.Requests
         
         protected override async Task Handle(CreateMovieRequestCommand request, CancellationToken cancellationToken)
         {
+            var movieDetail = await GetMovieDetails(request.TheMovieDbId);
+            
             await ValidateRequestNotDuplicate(request);
             
             await ValidateRequestedItemNotInPlex(request);
 
-            await CreateRequest(request);
+            await CreateRequest(request, movieDetail);
         }
 
-        private async Task CreateRequest(CreateMovieRequestCommand request)
+        private async Task<MovieDetails> GetMovieDetails(int theMovieDbId)
+        {
+            return await _theMovieDbApi.GetMovieDetails(theMovieDbId);
+        }
+
+        private async Task CreateRequest(CreateMovieRequestCommand request, MovieDetails movieDetail)
         {
             var newRequest = new Request
             {
@@ -50,7 +58,10 @@ namespace PlexRequests.Models.Requests
                 AgentSourceId = request.TheMovieDbId.ToString(),
                 MediaType = PlexMediaTypes.Movie,
                 RequestedByUserId = _claimsPrincipalAccessor.UserId,
-                RequestedByUserName = _claimsPrincipalAccessor.Username
+                RequestedByUserName = _claimsPrincipalAccessor.Username,
+                Title = movieDetail.Title,
+                AirDate = DateTime.Parse(movieDetail.Release_Date),
+                ImagePath = movieDetail.Poster_Path
             };
 
             await _requestService.Create(newRequest);

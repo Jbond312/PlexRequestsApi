@@ -5,12 +5,15 @@ using System.Net;
 using System.Threading;
 using System.Threading.Tasks;
 using AutoFixture;
+using AutoMapper;
 using FluentAssertions;
 using MediatR;
 using NSubstitute;
 using PlexRequests.Core;
 using PlexRequests.Helpers;
+using PlexRequests.Mapping;
 using PlexRequests.Models.Requests;
+using PlexRequests.Models.ViewModels;
 using PlexRequests.Plex;
 using PlexRequests.Store.Enums;
 using PlexRequests.Store.Models;
@@ -39,6 +42,8 @@ namespace PlexRequests.UnitTests.Models.Requests
         private Request _createdRequest;
         private string _claimsUsername;
         private Guid _claimsUserId;
+        private TvDetails _tvDetails;
+        private TvSeasonDetails _season;
 
         public CreateTvRequestCommandHandlerTests()
         {
@@ -47,11 +52,38 @@ namespace PlexRequests.UnitTests.Models.Requests
             _plexService = Substitute.For<IPlexService>();
             _claimsPrincipalAccessor = Substitute.For<IClaimsPrincipalAccessor>();
             
-            _underTest = new CreateTvRequestCommandHandler(_requestService, _theMovieDbApi, _plexService, _claimsPrincipalAccessor);
+            var mapperConfig = new MapperConfiguration(opts => { opts.AddProfile(new RequestProfile()); });
+            var mapper = mapperConfig.CreateMapper();
+            
+            _underTest = new CreateTvRequestCommandHandler(mapper, _requestService, _theMovieDbApi, _plexService, _claimsPrincipalAccessor);
             
             _fixture = new Fixture();
         }
 
+        [Theory]
+        [InlineData(true)]
+        [InlineData(false)]
+        private void Throws_Error_If_No_Seasons_Requested(bool hasNullSeasons)
+        {
+            this.Given(x => x.GivenACommand())
+                .Given(x => x.GivenNoSeasons(hasNullSeasons))
+                .When(x => x.WhenCommandActionIsCreated())
+                .Then(x => x.ThenErrorIsThrown("Request not created", "At least one season must be given in a request.", HttpStatusCode.BadRequest))
+                .BDDfy();
+        }
+        
+        [Theory]
+        [InlineData(true)]
+        [InlineData(false)]
+        private void Throws_Error_If_All_Seasons_With_No_Episodes_Requested(bool hasNullEpisodes)
+        {
+            this.Given(x => x.GivenACommand())
+                .Given(x => x.GivenSeasonsWithNoEpisode(hasNullEpisodes))
+                .When(x => x.WhenCommandActionIsCreated())
+                .Then(x => x.ThenErrorIsThrown("Request not created", "Each requested season must have at least one episode.", HttpStatusCode.BadRequest))
+                .BDDfy();
+        }
+        
         [Fact]
         private void Throws_Error_If_All_Episodes_Already_Requested()
         {
@@ -90,39 +122,52 @@ namespace PlexRequests.UnitTests.Models.Requests
         [Fact]
         private void Creates_Request_Successfully_When_All_Episodes_Are_Valid()
         {
+            const int expectedSeasonCount = 3;
+            
             this.Given(x => x.GivenACommand())
+                .Given(x => x.GivenTheTvDetailsReturnedFromTheMovieDb())
+                .Given(x => x.GivenSeasonDetailsReturnedFromTheMovieDb())
                 .Given(x => x.GivenNoMatchingRequests())
                 .Given(x => x.GivenNoMatchingPlexContent())
                 .Given(x => x.GivenUserDetailsFromClaims())
                 .Given(x => x.GivenARequestIsCreated())
                 .When(x => x.WhenCommandActionIsCreated())
                 .Then(x => x.ThenRequestIsCreated(_command.Seasons.Count))
+                .Then(x => x.ThenTvSeasonDetailsWereRetrieved(expectedSeasonCount))
                 .BDDfy();
         }
 
         [Fact]
-        private void Creates_Request_Successfully_When_New_Episodes_But_One_Season_Already_Requested()
+        private void Creates_Request_Successfully_When_New_Episodes_But_All_But_One_Season_Already_Requested()
         {
+            const int expectedSeasonCount = 1;
+
             this.Given(x => x.GivenACommand())
+                .Given(x => x.GivenTheTvDetailsReturnedFromTheMovieDb())
+                .Given(x => x.GivenSeasonDetailsReturnedFromTheMovieDb())
                 .Given(x => x.GivenOneSeasonNotAlreadyRequested())
                 .Given(x => x.GivenNoMatchingPlexContent())
                 .Given(x => x.GivenUserDetailsFromClaims())
                 .Given(x => x.GivenARequestIsCreated())
                 .When(x => x.WhenCommandActionIsCreated())
-                .Then(x => x.ThenRequestIsCreated(1))
+                .Then(x => x.ThenRequestIsCreated(expectedSeasonCount))
                 .BDDfy();
         }
         
         [Fact]
-        private void Creates_Request_Successfully_When_New_Episodes_But_One_Season_Already_In_Plex()
+        private void Creates_Request_Successfully_When_New_Episodes_But_All_But_One_Season_Already_In_Plex()
         {
+            const int expectedSeasonCount = 1;
+
             this.Given(x => x.GivenACommand())
+                .Given(x => x.GivenTheTvDetailsReturnedFromTheMovieDb())
+                .Given(x => x.GivenSeasonDetailsReturnedFromTheMovieDb())
                 .Given(x => x.GivenNoMatchingRequests())
                 .Given(x => x.GivenOneSeasonNotMatchingPlexContent())
                 .Given(x => x.GivenUserDetailsFromClaims())
                 .Given(x => x.GivenARequestIsCreated())
                 .When(x => x.WhenCommandActionIsCreated())
-                .Then(x => x.ThenRequestIsCreated(1))
+                .Then(x => x.ThenRequestIsCreated(expectedSeasonCount))
                 .BDDfy();
         }
 
@@ -131,6 +176,19 @@ namespace PlexRequests.UnitTests.Models.Requests
             _command = _fixture.Create<CreateTvRequestCommand>();
         }
 
+        private void GivenNoSeasons(bool hasNullSeasons)
+        {
+            _command.Seasons = hasNullSeasons ? null : new List<RequestSeasonViewModel>();
+        }
+
+        private void GivenSeasonsWithNoEpisode(bool hasNullEpisodes)
+        {
+            foreach (var season in _command.Seasons)
+            {
+                season.Episodes = hasNullEpisodes ? null : new List<RequestEpisodeViewModel>();
+            }
+        }
+        
         private void GivenAllEpisodesAlreadyRequested()
         {
             CreateRequestsFromCommand();
@@ -226,6 +284,23 @@ namespace PlexRequests.UnitTests.Models.Requests
             _theMovieDbApi.GetTvExternalIds(Arg.Any<int>()).Returns(_fixture.Create<ExternalIds>());
         }
 
+        private void GivenTheTvDetailsReturnedFromTheMovieDb()
+        {
+            _tvDetails = _fixture.Build<TvDetails>()
+                                 .With(x => x.First_Air_Date, "2019-12-25")
+                                 .Create();
+            
+            _theMovieDbApi.GetTvDetails(_command.TheMovieDbId).Returns(_tvDetails);
+        }
+
+        private void GivenSeasonDetailsReturnedFromTheMovieDb()
+        {
+            _season = _fixture.Create<TvSeasonDetails>();
+
+            _theMovieDbApi.GetTvSeasonDetails(Arg.Any<int>(), Arg.Any<int>()).Returns(_season);
+
+        }
+        
         private void GivenARequestIsCreated()
         {
             _createdRequest = null;
@@ -269,11 +344,19 @@ namespace PlexRequests.UnitTests.Models.Requests
             _createdRequest.Seasons.Count.Should().Be(expectedSeasonCount);
             _createdRequest.RequestedByUserName.Should().Be(_claimsUsername);
             _createdRequest.RequestedByUserId.Should().Be(_claimsUserId);
+            _createdRequest.Title.Should().Be(_tvDetails.Name);
+            _createdRequest.AirDate.Should().Be(DateTime.Parse(_tvDetails.First_Air_Date));
+            _createdRequest.ImagePath.Should().Be(_tvDetails.Poster_Path);
 
             for (var i = 0; i < expectedSeasonCount; i++)
             {
                 _createdRequest.Seasons[i].Should().BeEquivalentTo(_command.Seasons[i]);
             }
+        }
+
+        private void ThenTvSeasonDetailsWereRetrieved(int expectedSeasonCount)
+        {
+            _theMovieDbApi.Received(expectedSeasonCount).GetTvSeasonDetails(Arg.Any<int>(), Arg.Any<int>());
         }
 
         private List<PlexSeason> CreatePlexSeasonsFromCommand()

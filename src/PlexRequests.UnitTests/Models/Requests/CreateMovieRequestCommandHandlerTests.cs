@@ -39,6 +39,7 @@ namespace PlexRequests.UnitTests.Models.Requests
         private Request _createdRequest;
         private string _claimsUsername;
         private Guid _claimsUserId;
+        private MovieDetails _movieDetails;
 
         public CreateMovieRequestCommandHandlerTests()
         {
@@ -58,6 +59,7 @@ namespace PlexRequests.UnitTests.Models.Requests
         private void Throws_Error_If_Movie_Already_Requested()
         {
             this.Given(x => x.GivenACommand())
+                .Given(x => GivenMovieIsInTheMovieDb())
                 .Given(x => x.GivenRequestAlreadyExists())
                 .When(x => x.WhenCommandActionIsCreated())
                 .Then(x => x.ThenErrorIsThrown("Request not created", "The Movie has already been requested.",
@@ -69,6 +71,7 @@ namespace PlexRequests.UnitTests.Models.Requests
         private void Throws_Error_If_Movie_Already_In_Plex_From_Primary_Agent_TheMovieDb()
         {
             this.Given(x => x.GivenACommand())
+                .Given(x => GivenMovieIsInTheMovieDb())
                 .Given(x => x.GivenNoRequestExists())
                 .Given(x => x.GivenMovieAlreadyInPlex())
                 .When(x => x.WhenCommandActionIsCreated())
@@ -81,6 +84,7 @@ namespace PlexRequests.UnitTests.Models.Requests
         private void Throws_Error_If_Movie_Already_In_Plex_From_Fallback_Agent_Imdb()
         {
             this.Given(x => x.GivenACommand())
+                .Given(x => GivenMovieIsInTheMovieDb())
                 .Given(x => x.GivenNoRequestExists())
                 .Given(x => x.GivenExternalIdsFromTheMovieDb())
                 .Given(x => x.GivenMovieAlreadyInPlexFromFallbackAgent())
@@ -94,6 +98,7 @@ namespace PlexRequests.UnitTests.Models.Requests
         private void Creates_Request_Successfully()
         {
             this.Given(x => x.GivenACommand())
+                .Given(x => GivenMovieIsInTheMovieDb())
                 .Given(x => x.GivenNoRequestExists())
                 .Given(x => x.GivenMovieNotInPlex())
                 .Given(x => x.GivenARequestIsCreated())
@@ -145,6 +150,15 @@ namespace PlexRequests.UnitTests.Models.Requests
                 .ReturnsNull();
         }
 
+        private void GivenMovieIsInTheMovieDb()
+        {
+            _movieDetails = _fixture.Build<MovieDetails>()
+                                    .With(x => x.Release_Date, "2019-12-25")
+                                    .Create();
+            
+            _theMovieDbApi.GetMovieDetails(Arg.Any<int>()).Returns(_movieDetails);
+        }
+
         private void GivenARequestIsCreated()
         {
             _requestService.Create(Arg.Do<Request>(x => _createdRequest = x));
@@ -178,6 +192,9 @@ namespace PlexRequests.UnitTests.Models.Requests
             _createdRequest.Seasons.Should().BeNull();
             _createdRequest.RequestedByUserName.Should().Be(_claimsUsername);
             _createdRequest.RequestedByUserId.Should().Be(_claimsUserId);
+            _createdRequest.Title.Should().Be(_movieDetails.Title);
+            _createdRequest.ImagePath.Should().Be(_movieDetails.Poster_Path);
+            _createdRequest.AirDate.Should().Be(DateTime.Parse(_movieDetails.Release_Date));
         }
 
         private void WhenCommandActionIsCreated()
