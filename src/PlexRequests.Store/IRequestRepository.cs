@@ -11,5 +11,6 @@ namespace PlexRequests.Store
         Task Create(Request request);
         Task<List<Request>> GetMany(Expression<Func<Request, bool>> filter = null);
         Task<Request> GetOne(Expression<Func<Request, bool>> filter = null);
+        Task Delete(Guid id);
     }
 }

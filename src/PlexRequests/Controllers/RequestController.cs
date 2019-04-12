@@ -1,3 +1,5 @@
+using System;
+using System.ComponentModel.DataAnnotations;
 using System.Threading.Tasks;
 using MediatR;
 using Microsoft.AspNetCore.Authorization;
@@ -31,6 +33,16 @@ namespace PlexRequests.Controllers
         {
             await _mediator.Send(command);
 
+            return Ok();
+        }
+
+        [HttpDelete("{id:guid}")]
+        public async Task<ActionResult> DeleteRequest([FromRoute][Required] Guid id)
+        {
+            var command = new DeleteRequestCommand(id);
+
+            await _mediator.Send(command);
+            
             return Ok();
         }
     }
