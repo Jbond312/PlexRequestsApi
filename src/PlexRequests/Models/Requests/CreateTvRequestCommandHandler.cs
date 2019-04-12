@@ -72,7 +72,8 @@ namespace PlexRequests.Models.Requests
                 RequestedByUserName = _claimsPrincipalAccessor.Username,
                 Title = tvDetails.Name,
                 AirDate = DateTime.Parse(tvDetails.First_Air_Date),
-                ImagePath = tvDetails.Poster_Path
+                ImagePath = tvDetails.Poster_Path,
+                Created = DateTime.UtcNow
             };
 
             await _requestService.Create(tvRequest);

@@ -22,7 +22,7 @@ namespace PlexRequests.TheMovieDb.Models
         public List<ProductionCountry> Production_Countries { get; set; }
         public string Release_Date { get; set; }
         public int Revenue { get; set; }
-        public int Runtime { get; set; }
+        public int? Runtime { get; set; }
         public List<SpokenLanguage> Spoken_Languages { get; set; }
         public string Status { get; set; }
         public string Tagline { get; set; }

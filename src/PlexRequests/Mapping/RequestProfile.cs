@@ -8,6 +8,7 @@ namespace PlexRequests.Mapping
     {
         public RequestProfile()
         {
+            CreateMap<RequestViewModel, Request>();
             CreateMap<RequestSeasonViewModel, RequestSeason>();
             CreateMap<RequestEpisodeViewModel, RequestEpisode>();
         }

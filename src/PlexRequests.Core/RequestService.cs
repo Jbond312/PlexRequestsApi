@@ -23,6 +23,11 @@ namespace PlexRequests.Core
             return await _requestRepository.GetOne(x => x.Id == id);
         }
 
+        public async Task<Paged<Request>> GetPaged(string title, PlexMediaTypes? mediaType, bool? isApproved, Guid? userId, int? page, int? pageSize)
+        {
+            return await _requestRepository.GetPaged(title, mediaType, isApproved, userId, page, pageSize);
+        }
+
         public async Task<Request> GetExistingMovieRequest(AgentTypes agentType, string agentSourceId)
         {
             return await _requestRepository.GetOne(x =>
