@@ -6,6 +6,7 @@ using FluentAssertions;
 using NSubstitute;
 using PlexRequests.Plex;
 using PlexRequests.Plex.Models;
+using PlexRequests.Settings;
 using PlexRequests.Store.Enums;
 using PlexRequests.Store.Models;
 using PlexRequests.Sync.SyncProcessors;
@@ -30,12 +31,14 @@ namespace PlexRequests.Sync.UnitTests.SyncProcessors
 
         public MovieProcessorTests()
         {
+            _fixture = new Fixture();
+            
             _plexService = Substitute.For<IPlexService>();
             _mediaItemProcessor = Substitute.For<IMediaItemProcessor>();
+            
+            var plexSettings = _fixture.Create<PlexSettings>();
 
-            _underTest = new MovieProcessor(_plexService, _mediaItemProcessor);
-
-            _fixture = new Fixture();
+            _underTest = new MovieProcessor(_plexService, _mediaItemProcessor, plexSettings);
         }
         
         [Fact]
@@ -97,7 +100,7 @@ namespace PlexRequests.Sync.UnitTests.SyncProcessors
             _plexMediaItem = _fixture.Create<PlexMediaItem>();
 
             _mediaItemProcessor.GetMediaItem(Arg.Any<int>(), Arg.Any<PlexMediaTypes>(), Arg.Any<List<PlexMediaItem>>(),
-                Arg.Any<string>(), Arg.Any<string>()).Returns((_isNewMediaItem, _plexMediaItem));
+                Arg.Any<string>(), Arg.Any<string>(), Arg.Any<string>(), Arg.Any<string>()).Returns((_isNewMediaItem, _plexMediaItem));
         }
 
         private void WhenAnActionIsCreated()
@@ -105,9 +108,10 @@ namespace PlexRequests.Sync.UnitTests.SyncProcessors
             var fullRefresh = _fixture.Create<bool>();
             var authToken = _fixture.Create<string>();
             var plexUri = _fixture.Create<string>();
+            var machineIdentifier = _fixture.Create<string>();
 
             _commandAction = async () =>
-                await _underTest.Synchronise(_plexMediaContainer, fullRefresh, authToken, plexUri);
+                await _underTest.Synchronise(_plexMediaContainer, fullRefresh, authToken, plexUri, machineIdentifier);
         }
 
         private void ThenIsSuccessful()
@@ -123,7 +127,7 @@ namespace PlexRequests.Sync.UnitTests.SyncProcessors
         private void ThenAMediaItemWasProcessed()
         {
             _mediaItemProcessor.Received().GetMediaItem(Arg.Any<int>(), Arg.Any<PlexMediaTypes>(), Arg.Any<List<PlexMediaItem>>(),
-                Arg.Any<string>(), Arg.Any<string>());
+                Arg.Any<string>(), Arg.Any<string>(), Arg.Any<string>(), Arg.Any<string>());
         }
 
         private void ThenAResultWasUpdated()

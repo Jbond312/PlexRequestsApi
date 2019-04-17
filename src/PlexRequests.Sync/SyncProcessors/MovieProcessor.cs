@@ -2,6 +2,7 @@
 using System.Threading.Tasks;
 using PlexRequests.Plex;
 using PlexRequests.Plex.Models;
+using PlexRequests.Settings;
 using PlexRequests.Store.Enums;
 
 namespace PlexRequests.Sync.SyncProcessors
@@ -10,19 +11,21 @@ namespace PlexRequests.Sync.SyncProcessors
     {
         private readonly IPlexService _plexService;
         private readonly IMediaItemProcessor _mediaItemProcessor;
+        private readonly PlexSettings _plexSettings;
 
         public MovieProcessor(
             IPlexService plexService,
-            IMediaItemProcessor mediaItemProcessor
-        )
+            IMediaItemProcessor mediaItemProcessor, 
+            PlexSettings plexSettings)
         {
             _plexService = plexService;
             _mediaItemProcessor = mediaItemProcessor;
+            _plexSettings = plexSettings;
         }
 
         public PlexMediaTypes Type => PlexMediaTypes.Movie;
 
-        public async Task<SyncResult> Synchronise(PlexMediaContainer libraryContainer, bool fullRefresh, string authToken, string plexUri)
+        public async Task<SyncResult> Synchronise(PlexMediaContainer libraryContainer, bool fullRefresh, string authToken, string plexUri, string machineIdentifier)
         {
             var syncResult = new SyncResult();
 
@@ -33,7 +36,7 @@ namespace PlexRequests.Sync.SyncProcessors
                 var ratingKey = Convert.ToInt32(remoteMediaItem.RatingKey);
 
                 var (isNewItem, mediaItem) =
-                    await _mediaItemProcessor.GetMediaItem(ratingKey, Type, localMediaItems, authToken, plexUri);
+                    await _mediaItemProcessor.GetMediaItem(ratingKey, Type, localMediaItems, authToken, plexUri, machineIdentifier, _plexSettings.PlexMediaItemUriFormat);
                 
                 _mediaItemProcessor.UpdateResult(syncResult, isNewItem, mediaItem);
             }

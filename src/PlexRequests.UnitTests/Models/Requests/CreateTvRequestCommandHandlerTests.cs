@@ -13,7 +13,7 @@ using PlexRequests.Core;
 using PlexRequests.Helpers;
 using PlexRequests.Mapping;
 using PlexRequests.Models.Requests;
-using PlexRequests.Models.ViewModels;
+using PlexRequests.Models.SubModels.Create;
 using PlexRequests.Plex;
 using PlexRequests.Store.Enums;
 using PlexRequests.Store.Models;
@@ -44,6 +44,7 @@ namespace PlexRequests.UnitTests.Models.Requests
         private Guid _claimsUserId;
         private TvDetails _tvDetails;
         private TvSeasonDetails _season;
+        private ExternalIds _externalIds;
 
         public CreateTvRequestCommandHandlerTests()
         {
@@ -127,6 +128,7 @@ namespace PlexRequests.UnitTests.Models.Requests
             this.Given(x => x.GivenACommand())
                 .Given(x => x.GivenTheTvDetailsReturnedFromTheMovieDb())
                 .Given(x => x.GivenSeasonDetailsReturnedFromTheMovieDb())
+                .Given(x => x.GivenTheTvDbExternalIdReturned())
                 .Given(x => x.GivenNoMatchingRequests())
                 .Given(x => x.GivenNoMatchingPlexContent())
                 .Given(x => x.GivenUserDetailsFromClaims())
@@ -145,6 +147,7 @@ namespace PlexRequests.UnitTests.Models.Requests
             this.Given(x => x.GivenACommand())
                 .Given(x => x.GivenTheTvDetailsReturnedFromTheMovieDb())
                 .Given(x => x.GivenSeasonDetailsReturnedFromTheMovieDb())
+                .Given(x => x.GivenTheTvDbExternalIdReturned())
                 .Given(x => x.GivenOneSeasonNotAlreadyRequested())
                 .Given(x => x.GivenNoMatchingPlexContent())
                 .Given(x => x.GivenUserDetailsFromClaims())
@@ -162,6 +165,7 @@ namespace PlexRequests.UnitTests.Models.Requests
             this.Given(x => x.GivenACommand())
                 .Given(x => x.GivenTheTvDetailsReturnedFromTheMovieDb())
                 .Given(x => x.GivenSeasonDetailsReturnedFromTheMovieDb())
+                .Given(x => x.GivenTheTvDbExternalIdReturned())
                 .Given(x => x.GivenNoMatchingRequests())
                 .Given(x => x.GivenOneSeasonNotMatchingPlexContent())
                 .Given(x => x.GivenUserDetailsFromClaims())
@@ -178,14 +182,14 @@ namespace PlexRequests.UnitTests.Models.Requests
 
         private void GivenNoSeasons(bool hasNullSeasons)
         {
-            _command.Seasons = hasNullSeasons ? null : new List<RequestSeasonViewModel>();
+            _command.Seasons = hasNullSeasons ? null : new List<TvRequestSeasonCreateModel>();
         }
 
         private void GivenSeasonsWithNoEpisode(bool hasNullEpisodes)
         {
             foreach (var season in _command.Seasons)
             {
-                season.Episodes = hasNullEpisodes ? null : new List<RequestEpisodeViewModel>();
+                season.Episodes = hasNullEpisodes ? null : new List<TvRequestEpisodeCreateModel>();
             }
         }
         
@@ -214,12 +218,12 @@ namespace PlexRequests.UnitTests.Models.Requests
             {
                 var requestEpisodes = season.Episodes.Select(episode => new RequestEpisode
                 {
-                    Episode = episode.Episode
+                    Index = episode.Index
                 });
 
                 var requestSeason = new RequestSeason
                 {
-                    Season = season.Season,
+                    Index = season.Index,
                     Episodes = requestEpisodes.ToList()
                 };
 
@@ -281,7 +285,9 @@ namespace PlexRequests.UnitTests.Models.Requests
 
         private void GivenTheTvDbExternalIdReturned()
         {
-            _theMovieDbApi.GetTvExternalIds(Arg.Any<int>()).Returns(_fixture.Create<ExternalIds>());
+            _externalIds = _fixture.Create<ExternalIds>();
+            
+            _theMovieDbApi.GetTvExternalIds(Arg.Any<int>()).Returns(_externalIds);
         }
 
         private void GivenTheTvDetailsReturnedFromTheMovieDb()
@@ -336,10 +342,10 @@ namespace PlexRequests.UnitTests.Models.Requests
             _createdRequest.Should().NotBeNull();
             _createdRequest.Id.Should().Be(Guid.Empty);
             _createdRequest.MediaType.Should().Be(PlexMediaTypes.Show);
-            _createdRequest.IsApproved.Should().BeFalse();
-            _createdRequest.AgentType.Should().Be(AgentTypes.TheMovieDb);
-            _createdRequest.AgentSourceId.Should().Be(_command.TheMovieDbId.ToString());
-            _createdRequest.PlexRatingKey.Should().BeNull();
+            _createdRequest.Status.Should().Be(RequestStatuses.PendingApproval);
+            _createdRequest.PrimaryAgent.AgentType.Should().Be(AgentTypes.TheMovieDb);
+            _createdRequest.PrimaryAgent.AgentSourceId.Should().Be(_command.TheMovieDbId.ToString());
+            _createdRequest.PlexMediaUri.Should().BeNull();
             _createdRequest.Seasons.Should().NotBeNull();
             _createdRequest.Seasons.Count.Should().Be(expectedSeasonCount);
             _createdRequest.RequestedByUserName.Should().Be(_claimsUsername);
@@ -353,6 +359,13 @@ namespace PlexRequests.UnitTests.Models.Requests
             {
                 _createdRequest.Seasons[i].Should().BeEquivalentTo(_command.Seasons[i]);
             }
+
+            var expectedAdditionalAgents = new List<RequestAgent>
+            {
+                new RequestAgent(AgentTypes.TheTvDb, _externalIds.TvDb_Id)
+            };
+            
+            _createdRequest.AdditionalAgents.Should().BeEquivalentTo(expectedAdditionalAgents);
         }
 
         private void ThenTvSeasonDetailsWereRetrieved(int expectedSeasonCount)
@@ -368,12 +381,12 @@ namespace PlexRequests.UnitTests.Models.Requests
             {
                 var plexEpisodes = season.Episodes.Select(episode => new PlexEpisode
                 {
-                    Episode = episode.Episode
+                    Episode = episode.Index
                 }).ToList();
                 
                 plexSeasons.Add(new PlexSeason
                 {
-                    Season = season.Season,
+                    Season = season.Index,
                     Episodes = plexEpisodes
                 });
             }

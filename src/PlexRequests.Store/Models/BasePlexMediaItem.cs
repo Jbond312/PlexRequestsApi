@@ -8,5 +8,6 @@ namespace PlexRequests.Store.Models
         public string Title { get; set; }
         public AgentTypes AgentType { get; set; }
         public string AgentSourceId { get; set; }
+        public string PlexMediaUri { get; set; }
     }
 }

@@ -24,7 +24,7 @@ namespace PlexRequests.Sync.SyncProcessors
             _agentGuidParser = agentGuidParser;
         }
 
-        public async Task<(bool, PlexMediaItem)> GetMediaItem(int ratingKey, PlexMediaTypes mediaType, List<PlexMediaItem> localMedia, string authToken, string plexUri)
+        public async Task<(bool, PlexMediaItem)> GetMediaItem(int ratingKey, PlexMediaTypes mediaType, List<PlexMediaItem> localMedia, string authToken, string plexUri, string machineIdentifier, string plexUriFormat)
         {
             var metadata = await TryGetPlexMetadata(ratingKey, authToken, plexUri);
 
@@ -48,6 +48,8 @@ namespace PlexRequests.Sync.SyncProcessors
             mediaItem.AgentType = agentType;
             mediaItem.AgentSourceId = agentSourceId;
 
+            mediaItem.PlexMediaUri = PlexHelper.GenerateMediaItemUri(plexUriFormat, machineIdentifier, ratingKey);
+            
             return (isNewItem, mediaItem);
         }
 

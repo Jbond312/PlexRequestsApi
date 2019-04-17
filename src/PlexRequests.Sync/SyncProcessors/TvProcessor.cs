@@ -3,8 +3,10 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
 using PlexRequests.Core;
+using PlexRequests.Helpers;
 using PlexRequests.Plex;
 using PlexRequests.Plex.Models;
+using PlexRequests.Settings;
 using PlexRequests.Store.Enums;
 using PlexRequests.Store.Models;
 
@@ -15,24 +17,27 @@ namespace PlexRequests.Sync.SyncProcessors
         private readonly IPlexApi _plexApi;
         private readonly IPlexService _plexService;
         private readonly IMediaItemProcessor _mediaItemProcessor;
+        private readonly PlexSettings _plexSettings;
         private readonly IAgentGuidParser _agentGuidParser;
 
         public TvProcessor(
             IPlexApi plexApi,
             IPlexService plexService,
             IMediaItemProcessor mediaItemProcessor,
+            PlexSettings plexSettings,
             IAgentGuidParser agentGuidParser
             )
         {
             _plexApi = plexApi;
             _plexService = plexService;
             _mediaItemProcessor = mediaItemProcessor;
+            _plexSettings = plexSettings;
             _agentGuidParser = agentGuidParser;
         }
 
         public PlexMediaTypes Type => PlexMediaTypes.Show;
 
-        public async Task<SyncResult> Synchronise(PlexMediaContainer libraryContainer, bool fullRefresh, string authToken, string plexUri)
+        public async Task<SyncResult> Synchronise(PlexMediaContainer libraryContainer, bool fullRefresh, string authToken, string plexUri, string machineIdentifier)
         {
             var syncResult = new SyncResult();
 
@@ -51,9 +56,9 @@ namespace PlexRequests.Sync.SyncProcessors
                 processedShowKeys.Add(ratingKey);
 
                 var (isNewItem, mediaItem) =
-                    await _mediaItemProcessor.GetMediaItem(ratingKey, Type, localMediaItems, authToken, plexUri);
+                    await _mediaItemProcessor.GetMediaItem(ratingKey, Type, localMediaItems, authToken, plexUri, machineIdentifier, _plexSettings.PlexMediaItemUriFormat);
 
-                await GetChildMetadata(mediaItem, authToken, plexUri);
+                await GetChildMetadata(mediaItem, authToken, plexUri, machineIdentifier);
 
                 _mediaItemProcessor.UpdateResult(syncResult, isNewItem, mediaItem);
             }
@@ -61,7 +66,7 @@ namespace PlexRequests.Sync.SyncProcessors
             return syncResult;
         }
 
-        private async Task GetChildMetadata(PlexMediaItem mediaItem, string authToken, string plexUri)
+        private async Task GetChildMetadata(PlexMediaItem mediaItem, string authToken, string plexUri, string machineIdentifier)
         {
             var seasonShowItems = await GetChildShowItems(mediaItem.Key, authToken, plexUri);
 
@@ -73,7 +78,8 @@ namespace PlexRequests.Sync.SyncProcessors
                     Title = seasonShowItem.Title,
                     AgentSourceId = seasonShowItem.AgentSourceId,
                     AgentType = seasonShowItem.AgentType,
-                    Season = seasonShowItem.Index
+                    Season = seasonShowItem.Index,
+                    PlexMediaUri = PlexHelper.GenerateMediaItemUri(_plexSettings.PlexMediaItemUriFormat, machineIdentifier, seasonShowItem.RatingKey)
                 };
 
                 var episodeShowItems = await GetChildShowItems(seasonShowItem.RatingKey, authToken, plexUri);
@@ -86,7 +92,8 @@ namespace PlexRequests.Sync.SyncProcessors
                     AgentType = ep.AgentType,
                     Episode = ep.Index,
                     Year = ep.Year,
-                    Resolution = ep.Resolution
+                    Resolution = ep.Resolution,
+                    PlexMediaUri = PlexHelper.GenerateMediaItemUri(_plexSettings.PlexMediaItemUriFormat, machineIdentifier, ep.RatingKey)
                 }).ToList();
 
                 mediaItem.Seasons.Add(plexSeason);

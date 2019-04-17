@@ -58,19 +58,20 @@ namespace PlexRequests
 
         private static void RegisterServices(IServiceCollection services)
         {
-            services.AddSingleton<IHttpContextAccessor, HttpContextAccessor>();
             services.AddTransient<IClaimsPrincipalAccessor, ClaimsPrincipalAccessor>();
-            
             services.AddTransient<IPlexApi, PlexApi>();
             services.AddTransient<ITheMovieDbApi, TheMovieDbApi>();
-            services.AddSingleton<IApiService, ApiService>();
             services.AddTransient<ICacheService, CacheService>();
             services.AddTransient<ISettingsService, SettingsService>();
             services.AddTransient<IUserService, UserService>();
             services.AddTransient<IPlexService, PlexService>();
             services.AddTransient<IRequestService, RequestService>();
-            services.AddSingleton<ITokenService, TokenService>();
+            services.AddTransient<ICompletionService, CompletionService>();
             services.AddTransient<IPlexSync, PlexSync>();
+
+            services.AddSingleton<IHttpContextAccessor, HttpContextAccessor>();
+            services.AddSingleton<ITokenService, TokenService>();
+            services.AddSingleton<IApiService, ApiService>();
             services.AddSingleton<IMediaItemProcessor, MediaItemProcessor>();
             services.AddSingleton<IProcessorProvider, ProcessorProvider>();
             services.AddSingleton<IPlexRequestsHttpClient, PlexRequestsHttpClient>();

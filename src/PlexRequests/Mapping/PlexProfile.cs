@@ -1,5 +1,5 @@
 ﻿using AutoMapper;
-using PlexRequests.Models.ViewModels;
+using PlexRequests.Models.SubModels.Detail;
 using PlexRequests.Store.Models;
 
 namespace PlexRequests.Mapping
@@ -8,7 +8,7 @@ namespace PlexRequests.Mapping
     {
         public PlexProfile()
         {
-            CreateMap<PlexServer, PlexServerViewModel>();
+            CreateMap<PlexServer, PlexServerDetailModel>();
         }
     }
 }

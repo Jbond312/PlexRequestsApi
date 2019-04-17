@@ -1,5 +1,6 @@
 using AutoMapper;
-using PlexRequests.Models.ViewModels;
+using PlexRequests.Models.SubModels.Create;
+using PlexRequests.Models.SubModels.Detail;
 using PlexRequests.Store.Models;
 
 namespace PlexRequests.Mapping
@@ -8,9 +9,11 @@ namespace PlexRequests.Mapping
     {
         public RequestProfile()
         {
-            CreateMap<RequestViewModel, Request>();
-            CreateMap<RequestSeasonViewModel, RequestSeason>();
-            CreateMap<RequestEpisodeViewModel, RequestEpisode>();
+            CreateMap<Request, MovieRequestDetailModel>();
+            CreateMap<RequestSeason, TvRequestSeasonDetailModel>();
+            CreateMap<RequestEpisode, TvRequestEpisodeDetailModel>();
+            CreateMap<TvRequestSeasonCreateModel, RequestSeason>();
+            CreateMap<TvRequestEpisodeCreateModel, RequestEpisode>();
         }
     }
 }

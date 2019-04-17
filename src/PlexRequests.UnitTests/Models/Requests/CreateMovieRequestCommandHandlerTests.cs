@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using System.Net;
 using System.Threading;
 using System.Threading.Tasks;
@@ -40,6 +41,7 @@ namespace PlexRequests.UnitTests.Models.Requests
         private string _claimsUsername;
         private Guid _claimsUserId;
         private MovieDetails _movieDetails;
+        private ExternalIds _externalIds;
 
         public CreateMovieRequestCommandHandlerTests()
         {
@@ -98,6 +100,7 @@ namespace PlexRequests.UnitTests.Models.Requests
         private void Creates_Request_Successfully()
         {
             this.Given(x => x.GivenACommand())
+                .Given(x => x.GivenExternalIdsFromTheMovieDb())
                 .Given(x => GivenMovieIsInTheMovieDb())
                 .Given(x => x.GivenNoRequestExists())
                 .Given(x => x.GivenMovieNotInPlex())
@@ -166,7 +169,8 @@ namespace PlexRequests.UnitTests.Models.Requests
 
         private void GivenExternalIdsFromTheMovieDb()
         {
-            _theMovieDbApi.GetMovieExternalIds(Arg.Any<int>()).Returns(_fixture.Create<ExternalIds>());
+            _externalIds = _fixture.Create<ExternalIds>(); 
+            _theMovieDbApi.GetMovieExternalIds(Arg.Any<int>()).Returns(_externalIds);
         }
 
         private void GivenUserDetailsFromClaims()
@@ -185,10 +189,10 @@ namespace PlexRequests.UnitTests.Models.Requests
             _createdRequest.Should().NotBeNull();
             _createdRequest.Id.Should().Be(Guid.Empty);
             _createdRequest.MediaType.Should().Be(PlexMediaTypes.Movie);
-            _createdRequest.IsApproved.Should().BeFalse();
-            _createdRequest.AgentType.Should().Be(AgentTypes.TheMovieDb);
-            _createdRequest.AgentSourceId.Should().Be(_command.TheMovieDbId.ToString());
-            _createdRequest.PlexRatingKey.Should().BeNull();
+            _createdRequest.Status.Should().Be(RequestStatuses.PendingApproval);
+            _createdRequest.PrimaryAgent.AgentType.Should().Be(AgentTypes.TheMovieDb);
+            _createdRequest.PrimaryAgent.AgentSourceId.Should().Be(_command.TheMovieDbId.ToString());
+            _createdRequest.PlexMediaUri.Should().BeNull();
             _createdRequest.Seasons.Should().BeNull();
             _createdRequest.RequestedByUserName.Should().Be(_claimsUsername);
             _createdRequest.RequestedByUserId.Should().Be(_claimsUserId);
@@ -196,6 +200,11 @@ namespace PlexRequests.UnitTests.Models.Requests
             _createdRequest.ImagePath.Should().Be(_movieDetails.Poster_Path);
             _createdRequest.AirDate.Should().Be(DateTime.Parse(_movieDetails.Release_Date));
             _createdRequest.Created.Should().BeCloseTo(DateTime.UtcNow, 500);
+
+            var additionalAgent = new RequestAgent(AgentTypes.Imdb, _externalIds.Imdb_Id);
+
+            _createdRequest.AdditionalAgents.Should().BeEquivalentTo(new List<RequestAgent> {additionalAgent});
+
         }
 
         private void WhenCommandActionIsCreated()

@@ -20,13 +20,18 @@ namespace PlexRequests.Store
             await Collection.InsertOneAsync(request);
         }
 
+        public async Task Update(Request request)
+        {
+            await Collection.FindOneAndReplaceAsync(x => x.Id == request.Id, request);
+        }
+
         public async Task<List<Request>> GetMany(Expression<Func<Request, bool>> filter = null)
         {
             var cursor = await GetRequestsCursor(filter);
             return await cursor.ToListAsync();
         }
 
-        public async Task<Paged<Request>> GetPaged(string title, PlexMediaTypes? mediaType, bool? isApproved, Guid? userId, int? page, int? pageSize)
+        public async Task<Paged<Request>> GetPaged(string title, PlexMediaTypes? mediaType, RequestStatuses? status, Guid? userId, int? page, int? pageSize)
         {
             var query = Collection.AsQueryable();
 
@@ -40,9 +45,9 @@ namespace PlexRequests.Store
                 query = query.Where(x => x.MediaType == mediaType);
             }
 
-            if (isApproved != null)
+            if (status != null)
             {
-                query = query.Where(x => x.IsApproved == isApproved);
+                query = query.Where(x => x.Status == status);
             }
 
             if (userId != null)

@@ -1,9 +1,9 @@
-﻿using PlexRequests.Models.ViewModels;
+﻿using PlexRequests.Models.SubModels.Detail;
 
 namespace PlexRequests.Models.Plex
 {
     public class GetPlexServerQueryResult
     {
-        public PlexServerViewModel Server { get; set; }
+        public PlexServerDetailModel Server { get; set; }
     }
 }
