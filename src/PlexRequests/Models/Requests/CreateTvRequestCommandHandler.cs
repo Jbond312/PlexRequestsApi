@@ -7,7 +7,7 @@ using AutoMapper;
 using MediatR;
 using PlexRequests.Core;
 using PlexRequests.Helpers;
-using PlexRequests.Models.ViewModels;
+using PlexRequests.Models.SubModels.Create;
 using PlexRequests.Plex;
 using PlexRequests.Store.Enums;
 using PlexRequests.Store.Models;
@@ -46,11 +46,13 @@ namespace PlexRequests.Models.Requests
 
             var tvDetails = await GetTvDetails(request.TheMovieDbId);
 
+            var externalIds = await _theMovieDbApi.GetTvExternalIds(request.TheMovieDbId);
+            
             await ValidateDuplicateEpisodeRequests(request.TheMovieDbId, seasons);
 
-            await ValidateRequestedEpisodesNotAlreadyInPlex(request.TheMovieDbId, seasons);
+            await ValidateRequestedEpisodesNotAlreadyInPlex(request.TheMovieDbId, seasons, externalIds);
 
-            await CreateRequest(request, seasons, tvDetails);
+            await CreateRequest(request, seasons, tvDetails, externalIds);
         }
 
         private async Task<TvDetails> GetTvDetails(int theMovieDbId)
@@ -59,14 +61,13 @@ namespace PlexRequests.Models.Requests
         }
 
         private async Task CreateRequest(CreateTvRequestCommand request, List<RequestSeason> seasons,
-            TvDetails tvDetails)
+            TvDetails tvDetails, ExternalIds externalIds)
         {
             var tvRequest = new Request
             {
                 MediaType = PlexMediaTypes.Show,
-                AgentType = AgentTypes.TheMovieDb,
-                AgentSourceId = request.TheMovieDbId.ToString(),
-                IsApproved = false,
+                PrimaryAgent = new RequestAgent(AgentTypes.TheMovieDb, request.TheMovieDbId.ToString()),
+                Status = RequestStatuses.PendingApproval,
                 Seasons = await SetSeasonData(request.TheMovieDbId, seasons, tvDetails),
                 RequestedByUserId = _claimsPrincipalAccessor.UserId,
                 RequestedByUserName = _claimsPrincipalAccessor.Username,
@@ -76,6 +77,14 @@ namespace PlexRequests.Models.Requests
                 Created = DateTime.UtcNow
             };
 
+            if (!string.IsNullOrEmpty(externalIds.TvDb_Id))
+            {
+                tvRequest.AdditionalAgents = new List<RequestAgent>
+                {
+                    new RequestAgent(AgentTypes.TheTvDb, externalIds.TvDb_Id)
+                };
+            }
+            
             await _requestService.Create(tvRequest);
         }
 
@@ -96,25 +105,30 @@ namespace PlexRequests.Models.Requests
 
         private async Task SetAdditionalEpisodeData(int theMovieDbId, RequestSeason season)
         {
-            var seasonDetails = await _theMovieDbApi.GetTvSeasonDetails(theMovieDbId, season.Season);
+            var seasonDetails = await _theMovieDbApi.GetTvSeasonDetails(theMovieDbId, season.Index);
 
             foreach (var episode in season.Episodes)
             {
                 var matchingEpisode =
-                    seasonDetails.Episodes.FirstOrDefault(x => x.Episode_Number == episode.Episode);
+                    seasonDetails.Episodes.FirstOrDefault(x => x.Episode_Number == episode.Index);
 
                 if (matchingEpisode != null)
                 {
                     episode.AirDate = DateTime.Parse(matchingEpisode.Air_Date);
                     episode.Title = matchingEpisode.Name;
                     episode.ImagePath = matchingEpisode.Still_Path;
+                    episode.Status = RequestStatuses.PendingApproval;
+                }
+                else
+                {
+                    episode.Status = RequestStatuses.Rejected;
                 }
             }
         }
 
-        private async Task ValidateRequestedEpisodesNotAlreadyInPlex(int theMovieDbId, List<RequestSeason> seasons)
+        private async Task ValidateRequestedEpisodesNotAlreadyInPlex(int theMovieDbId, List<RequestSeason> seasons, ExternalIds externalIds)
         {
-            var plexMediaItem = await GetPlexMediaItem(theMovieDbId);
+            var plexMediaItem = await GetPlexMediaItem(theMovieDbId, externalIds);
 
             if (plexMediaItem != null)
             {
@@ -128,7 +142,7 @@ namespace PlexRequests.Models.Requests
             }
         }
 
-        private async Task<PlexMediaItem> GetPlexMediaItem(int theMovieDbId)
+        private async Task<PlexMediaItem> GetPlexMediaItem(int theMovieDbId, ExternalIds externalIds)
         {
             var plexMediaItem = await _plexService.GetExistingMediaItemByAgent(PlexMediaTypes.Show,
                 AgentTypes.TheMovieDb,
@@ -138,8 +152,6 @@ namespace PlexRequests.Models.Requests
             {
                 return plexMediaItem;
             }
-
-            var externalIds = await _theMovieDbApi.GetTvExternalIds(theMovieDbId);
 
             if (!string.IsNullOrEmpty(externalIds.TvDb_Id))
             {
@@ -157,10 +169,10 @@ namespace PlexRequests.Models.Requests
 
             var existingSeasonEpisodeRequests = requests
                                                 .SelectMany(x => x.Seasons)
-                                                .GroupBy(x => x.Season)
+                                                .GroupBy(x => x.Index)
                                                 .ToDictionary(x => x.Key,
                                                     v => v.SelectMany(res =>
-                                                        res.Episodes.Select(re => re.Episode)
+                                                        res.Episodes.Select(re => re.Index)
                                                            .Distinct()
                                                     ));
 
@@ -174,7 +186,7 @@ namespace PlexRequests.Models.Requests
 
         private static void SetAdditionalSeasonData(TvDetails tvDetails, RequestSeason season)
         {
-            var matchingSeason = tvDetails.Seasons.FirstOrDefault(x => x.Season_Number == season.Season);
+            var matchingSeason = tvDetails.Seasons.FirstOrDefault(x => x.Season_Number == season.Index);
 
             if (matchingSeason != null)
             {
@@ -201,7 +213,7 @@ namespace PlexRequests.Models.Requests
             }
         }
 
-        private static void RemoveSeasonsWithNoEpisodes(List<RequestSeasonViewModel> seasons)
+        private static void RemoveSeasonsWithNoEpisodes(List<TvRequestSeasonCreateModel> seasons)
         {
             var emptySeasons = seasons.Where(x => x.Episodes == null || !x.Episodes.Any());
 
@@ -213,12 +225,12 @@ namespace PlexRequests.Models.Requests
         {
             foreach (var season in seasons)
             {
-                if (!existingSeasonEpisodeRequests.TryGetValue(season.Season, out var existingRequests))
+                if (!existingSeasonEpisodeRequests.TryGetValue(season.Index, out var existingRequests))
                 {
                     continue;
                 }
 
-                var duplicateEpisodes = season.Episodes.Where(x => existingRequests.Contains(x.Episode)).ToList();
+                var duplicateEpisodes = season.Episodes.Where(x => existingRequests.Contains(x.Index)).ToList();
                 season.Episodes.RemoveAll(x => duplicateEpisodes.Contains(x));
             }
         }
@@ -228,7 +240,7 @@ namespace PlexRequests.Models.Requests
         {
             foreach (var season in seasons)
             {
-                var matchingSeason = plexMediaItem.Seasons.FirstOrDefault(x => x.Season == season.Season);
+                var matchingSeason = plexMediaItem.Seasons.FirstOrDefault(x => x.Season == season.Index);
 
                 if (matchingSeason == null)
                 {
@@ -238,7 +250,7 @@ namespace PlexRequests.Models.Requests
                 var episodesToRemove = new List<RequestEpisode>();
                 foreach (var episode in matchingSeason.Episodes)
                 {
-                    var episodeInRequest = season.Episodes.FirstOrDefault(x => x.Episode == episode.Episode);
+                    var episodeInRequest = season.Episodes.FirstOrDefault(x => x.Index == episode.Episode);
 
                     if (episodeInRequest != null)
                     {

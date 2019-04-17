@@ -9,7 +9,9 @@ using PlexRequests.Settings;
 using PlexRequests.Store.Models;
 using System.Threading.Tasks;
 using FluentAssertions;
+using PlexRequests.Core;
 using PlexRequests.Plex.Models;
+using PlexRequests.Store.Enums;
 using PlexRequests.Sync.SyncProcessors;
 using TestStack.BDDfy;
 using Xunit;
@@ -23,9 +25,10 @@ namespace PlexRequests.Sync.UnitTests
         private readonly IPlexApi _plexApi;
         private readonly IPlexService _plexService;
         private readonly IProcessorProvider _processorProvider;
+        private readonly ICompletionService _completionService;
 
         private readonly Fixture _fixture;
-        
+
         private PlexServer _plexServer;
         private Func<Task> _commandAction;
         private PlexMediaContainer _remoteLibraryContainer;
@@ -39,6 +42,8 @@ namespace PlexRequests.Sync.UnitTests
             _plexApi = Substitute.For<IPlexApi>();
             _plexService = Substitute.For<IPlexService>();
             _processorProvider = Substitute.For<IProcessorProvider>();
+            _completionService = Substitute.For<ICompletionService>();
+            
             var logger = Substitute.For<ILogger<PlexSync>>();
 
             _fixture = new Fixture();
@@ -46,7 +51,7 @@ namespace PlexRequests.Sync.UnitTests
             var plexSettings = _fixture.Create<PlexSettings>();
             var options = Options.Create(plexSettings);
 
-            _underTest = new PlexSync(_plexApi, _plexService, _processorProvider, options, logger);
+            _underTest = new PlexSync(_plexApi, _plexService, _completionService, _processorProvider, options, logger);
         }
 
         [Fact]
@@ -113,6 +118,20 @@ namespace PlexRequests.Sync.UnitTests
                 .Then(x => x.ThenNoSynchronisationShouldOccur())
                 .BDDfy();
         }
+
+        [Fact]
+        private void Requests_Are_Auto_Completed_After_Sync()
+        {
+            this.Given(x => x.GivenAPlexServer())
+                .Given(x => x.GivenASingleEnabledLibrary())
+                .Given(x => x.GivenMatchingRemoteLibraries())
+                .Given(x => x.GivenASyncProcessor())
+                .Given(x => x.GivenSyncResultPersisted())
+                .When(x => x.WhenACommandActionIsCreated(true))
+                .Then(x => x.ThenCommandShouldBeSuccessful())
+                .Then(x => x.ThenRequestsAreAutoCompleted())
+                .BDDfy();
+        }
         
         private void GivenAPlexServer()
         {
@@ -163,7 +182,7 @@ namespace PlexRequests.Sync.UnitTests
             _syncProcessorResult = _fixture.Create<SyncResult>();
 
             _syncProcessor
-                .Synchronise(Arg.Any<PlexMediaContainer>(), Arg.Any<bool>(), Arg.Any<string>(), Arg.Any<string>())
+                .Synchronise(Arg.Any<PlexMediaContainer>(), Arg.Any<bool>(), Arg.Any<string>(), Arg.Any<string>(), Arg.Any<string>())
                 .Returns(_syncProcessorResult);
             
             _processorProvider.GetProcessor(Arg.Any<string>()).Returns(_syncProcessor);
@@ -209,7 +228,13 @@ namespace PlexRequests.Sync.UnitTests
         private void ThenNoSynchronisationShouldOccur()
         {
             _syncProcessor.DidNotReceive().Synchronise(Arg.Any<PlexMediaContainer>(), Arg.Any<bool>(),
-                Arg.Any<string>(), Arg.Any<string>());
+                Arg.Any<string>(), Arg.Any<string>(), Arg.Any<string>());
+        }
+
+        private void ThenRequestsAreAutoCompleted()
+        {
+            _completionService
+                .Received(1).AutoCompleteRequests(Arg.Any<Dictionary<RequestAgent, PlexMediaItem>>(), Arg.Any<PlexMediaTypes>());
         }
     }
 }

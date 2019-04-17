@@ -9,12 +9,13 @@ namespace PlexRequests.Core
     public interface IRequestService
     {
         Task<Request> GetRequestById(Guid id);
-
-        Task<Paged<Request>> GetPaged(string title, PlexMediaTypes? mediaType, bool? isApproved, Guid? userId, int? page,
+        Task<Paged<Request>> GetPaged(string title, PlexMediaTypes? mediaType, RequestStatuses? status, Guid? userId, int? page,
             int? pageSize);
         Task<Request> GetExistingMovieRequest(AgentTypes agentType, string agentSourceId);
         Task<List<Request>> GetExistingTvRequests(AgentTypes agentType, string agentSourceId);
+        Task<List<Request>> GetIncompleteRequests(PlexMediaTypes mediaType);
         Task Create(Request request);
+        Task Update(Request request);
         Task DeleteRequest(Guid id);
     }
 }

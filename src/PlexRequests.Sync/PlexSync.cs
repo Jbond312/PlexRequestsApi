@@ -2,9 +2,11 @@
 using System.Threading.Tasks;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
+using PlexRequests.Core;
 using PlexRequests.Plex;
 using PlexRequests.Plex.Models;
 using PlexRequests.Settings;
+using PlexRequests.Store.Enums;
 using PlexRequests.Store.Models;
 using PlexRequests.Sync.SyncProcessors;
 
@@ -14,20 +16,21 @@ namespace PlexRequests.Sync
     {
         private readonly IPlexApi _plexApi;
         private readonly IPlexService _plexService;
+        private readonly ICompletionService _completionService;
         private readonly IProcessorProvider _processorProvider;
         private readonly PlexSettings _plexSettings;
         private readonly ILogger<PlexSync> _logger;
 
-        public PlexSync(
-            IPlexApi plexApi,
+        public PlexSync(IPlexApi plexApi,
             IPlexService plexService,
+            ICompletionService completionService,
             IProcessorProvider processorProvider,
             IOptions<PlexSettings> plexSettings,
-            ILogger<PlexSync> logger
-            )
+            ILogger<PlexSync> logger)
         {
             _plexApi = plexApi;
             _plexService = plexService;
+            _completionService = completionService;
             _processorProvider = processorProvider;
             _plexSettings = plexSettings.Value;
             _logger = logger;
@@ -85,7 +88,7 @@ namespace PlexRequests.Sync
             var libraryContainer =
                 await GetLibraryContainer(libraryToSync, fullRefresh, plexServer.AccessToken, plexUrl);
 
-            var syncResult = await syncProcessor.Synchronise(libraryContainer, fullRefresh, plexServer.AccessToken, plexUrl);
+            var syncResult = await syncProcessor.Synchronise(libraryContainer, fullRefresh, plexServer.AccessToken, plexUrl, plexServer.MachineIdentifier);
 
             _logger.LogInformation($"Sync finished processing library type: {libraryToSync.Type}|{libraryToSync.Key}");
 
@@ -93,6 +96,16 @@ namespace PlexRequests.Sync
 
             await _plexService.CreateMany(syncResult.NewItems);
             await _plexService.UpdateMany(syncResult.ExistingItems);
+            await AutoCompleteRequests(syncResult, syncProcessor.Type);
+        }
+
+        private async Task AutoCompleteRequests(SyncResult syncResult, PlexMediaTypes syncProcessorType)
+        {
+            var plexKeysByAgentType = syncResult.NewItems.Concat(syncResult.ExistingItems)
+                                                .ToDictionary(x => new RequestAgent(x.AgentType, x.AgentSourceId),
+                                                    x => x);
+
+            await _completionService.AutoCompleteRequests(plexKeysByAgentType, syncProcessorType);
         }
 
         private async Task<PlexMediaContainer> GetLibraryContainer(PlexServerLibrary library, bool fullRefresh, string authToken, string plexUri)

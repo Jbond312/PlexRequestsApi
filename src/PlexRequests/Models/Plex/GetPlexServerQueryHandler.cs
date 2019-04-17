@@ -2,7 +2,7 @@
 using System.Threading.Tasks;
 using AutoMapper;
 using MediatR;
-using PlexRequests.Models.ViewModels;
+using PlexRequests.Models.SubModels.Detail;
 using PlexRequests.Plex;
 
 namespace PlexRequests.Models.Plex
@@ -24,7 +24,7 @@ namespace PlexRequests.Models.Plex
         public async Task<GetPlexServerQueryResult> Handle(GetServerQuery request, CancellationToken cancellationToken)
         {
             var server = await _plexService.GetServer();
-            var serverModel = _mapper.Map<PlexServerViewModel>(server);
+            var serverModel = _mapper.Map<PlexServerDetailModel>(server);
 
             return new GetPlexServerQueryResult
             {

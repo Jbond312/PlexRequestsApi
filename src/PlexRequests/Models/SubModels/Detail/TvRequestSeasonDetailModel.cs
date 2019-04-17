@@ -1,13 +1,13 @@
 using System;
 using System.Collections.Generic;
 
-namespace PlexRequests.Store.Models
+namespace PlexRequests.Models.SubModels.Detail
 {
-    public class RequestSeason
+    public class TvRequestSeasonDetailModel
     {
         public int Index { get; set; }
         public string PlexMediaUri { get; set; }
-        public List<RequestEpisode> Episodes { get; set; }
+        public List<TvRequestEpisodeDetailModel> Episodes { get; set; }
         public string ImagePath { get; set; }
         public DateTime? AirDate { get; set; }
     }

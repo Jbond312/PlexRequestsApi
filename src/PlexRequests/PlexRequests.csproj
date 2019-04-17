@@ -23,4 +23,8 @@
     <ProjectReference Include="..\PlexRequests.TheMovieDb\PlexRequests.TheMovieDb.csproj" />
   </ItemGroup>
 
+  <ItemGroup>
+    <Folder Include="Models\SubModels\Update" />
+  </ItemGroup>
+
 </Project>

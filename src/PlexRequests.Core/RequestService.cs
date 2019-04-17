@@ -23,26 +23,45 @@ namespace PlexRequests.Core
             return await _requestRepository.GetOne(x => x.Id == id);
         }
 
-        public async Task<Paged<Request>> GetPaged(string title, PlexMediaTypes? mediaType, bool? isApproved, Guid? userId, int? page, int? pageSize)
+        public async Task<Paged<Request>> GetPaged(string title, PlexMediaTypes? mediaType, RequestStatuses? status, Guid? userId, int? page, int? pageSize)
         {
-            return await _requestRepository.GetPaged(title, mediaType, isApproved, userId, page, pageSize);
+            return await _requestRepository.GetPaged(title, mediaType, status, userId, page, pageSize);
         }
 
         public async Task<Request> GetExistingMovieRequest(AgentTypes agentType, string agentSourceId)
         {
             return await _requestRepository.GetOne(x =>
-                x.MediaType == PlexMediaTypes.Movie && x.AgentType == agentType && x.AgentSourceId == agentSourceId);
+                x.MediaType == PlexMediaTypes.Movie && x.PrimaryAgent.AgentType == agentType && x.PrimaryAgent.AgentSourceId == agentSourceId);
         }
 
         public async Task<List<Request>> GetExistingTvRequests(AgentTypes agentType, string agentSourceId)
         {
             return await _requestRepository.GetMany(x =>
-                x.MediaType == PlexMediaTypes.Show && x.AgentType == agentType && x.AgentSourceId == agentSourceId);
+                x.MediaType == PlexMediaTypes.Show && x.PrimaryAgent.AgentType == agentType && x.PrimaryAgent.AgentSourceId == agentSourceId);
+        }
+
+        public async Task<List<Request>> GetIncompleteRequests(PlexMediaTypes mediaType)
+        {
+            var validRequestStatuses = new List<RequestStatuses>
+            {
+                RequestStatuses.Approved,
+                RequestStatuses.PendingApproval,
+                RequestStatuses.PartialCompletion
+            };
+            
+            return await _requestRepository.GetMany(x =>
+                x.MediaType == mediaType && validRequestStatuses.Contains(x.Status)
+                                         && x.PlexMediaUri == null);
         }
 
         public async Task Create(Request request)
         {
             await _requestRepository.Create(request);
+        }
+
+        public async Task Update(Request request)
+        {
+            await _requestRepository.Update(request);
         }
 
         public async Task DeleteRequest(Guid id)

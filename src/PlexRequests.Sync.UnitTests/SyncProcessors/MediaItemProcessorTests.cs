@@ -147,6 +147,8 @@ namespace PlexRequests.Sync.UnitTests.SyncProcessors
             _localMedia = _fixture.CreateMany<PlexMediaItem>().ToList();
             var authToken = _fixture.Create<string>();
             var plexUri = _fixture.Create<string>();
+            var machineIdentifier = _fixture.Create<string>();
+            var plexUriFormat = _fixture.Create<string>();
 
             if (isExistingMediaItem)
             {
@@ -155,7 +157,7 @@ namespace PlexRequests.Sync.UnitTests.SyncProcessors
                 matchingMediaItem.MediaType = _mediaType;
             }
             
-            _getMediaItemAction = async () => await _underTest.GetMediaItem(_ratingKey, _mediaType, _localMedia, authToken, plexUri);
+            _getMediaItemAction = async () => await _underTest.GetMediaItem(_ratingKey, _mediaType, _localMedia, authToken, plexUri, machineIdentifier, plexUriFormat);
         }
 
         private void WhenUpdateResultActionIsCreated(bool isNew)

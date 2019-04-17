@@ -4,5 +4,6 @@
     {
         public int DefaultLocalPort { get; set; }
         public bool ConnectLocally { get; set; }
+        public string PlexMediaItemUriFormat { get; set; }
     }
 }

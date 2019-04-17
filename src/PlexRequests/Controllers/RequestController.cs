@@ -47,17 +47,35 @@ namespace PlexRequests.Controllers
             return Ok();
         }
 
-        [HttpGet("")]
-        public async Task<ActionResult<GetPagedRequestQueryResult>> GetRequests([FromQuery] string title,
-            [FromQuery] PlexMediaTypes? mediaType, [FromQuery] bool? includeCurrentUsersOnly, [FromQuery] bool? isApproved,
+        [HttpGet("Movie")]
+        public async Task<ActionResult<GetMoviePagedRequestQueryResult>> GetMovieRequests([FromQuery] string title,
+            [FromQuery] bool? includeCurrentUsersOnly, [FromQuery] RequestStatuses? status,
             [FromQuery] int? page, [FromQuery] int? pageSize)
         {
-            var query = new GetPagedRequestQuery
+            var query = new GetMoviePagedRequestQuery
             {
                 Title = title,
-                MediaType = mediaType,
                 IncludeCurrentUsersOnly = includeCurrentUsersOnly,
-                IsApproved = isApproved,
+                Status = status,
+                Page = page,
+                PageSize = pageSize
+            };
+
+            var response = await _mediator.Send(query);
+
+            return Ok(response);
+        }
+
+        [HttpGet("Tv")]
+        public async Task<ActionResult<GetTvPagedRequestQueryResult>> GetTvRequests([FromQuery] string title,
+            [FromQuery] bool? includeCurrentUsersOnly, [FromQuery] RequestStatuses? status,
+            [FromQuery] int? page, [FromQuery] int? pageSize)
+        {
+            var query = new GetTvPagedRequestQuery
+            {
+                Title = title,
+                IncludeCurrentUsersOnly = includeCurrentUsersOnly,
+                Status = status,
                 Page = page,
                 PageSize = pageSize
             };

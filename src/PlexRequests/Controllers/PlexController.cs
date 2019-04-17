@@ -5,7 +5,7 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using PlexRequests.Attributes;
 using PlexRequests.Models.Plex;
-using PlexRequests.Models.ViewModels;
+using PlexRequests.Models.SubModels.Detail;
 
 namespace PlexRequests.Controllers
 {
@@ -34,7 +34,7 @@ namespace PlexRequests.Controllers
         [HttpPost]
         [Route("SyncLibraries")]
         [Admin]
-        public async Task<ActionResult<List<PlexServerLibraryViewModel>>> SyncLibraries()
+        public async Task<ActionResult<List<PlexServerLibraryDetailModel>>> SyncLibraries()
         {
             var result = await _mediator.Send(new SyncLibrariesCommand());
 
@@ -56,7 +56,7 @@ namespace PlexRequests.Controllers
         [HttpGet]
         [Route("Server")]
         [Admin]
-        public async Task<ActionResult<PlexServerViewModel>> GetServer()
+        public async Task<ActionResult<PlexServerDetailModel>> GetServer()
         {
             var query = new GetServerQuery();
 

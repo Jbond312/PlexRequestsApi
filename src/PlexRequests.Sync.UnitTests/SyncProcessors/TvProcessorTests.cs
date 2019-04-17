@@ -9,6 +9,7 @@ using NSubstitute.ReturnsExtensions;
 using PlexRequests.Core;
 using PlexRequests.Plex;
 using PlexRequests.Plex.Models;
+using PlexRequests.Settings;
 using PlexRequests.Store.Enums;
 using PlexRequests.Store.Models;
 using PlexRequests.Sync.SyncProcessors;
@@ -44,15 +45,15 @@ namespace PlexRequests.Sync.UnitTests.SyncProcessors
         private int _seasonRatingKey;
 
         public TvProcessorTests()
-        {
+        {            _fixture = new Fixture();
+            
             _plexApi = Substitute.For<IPlexApi>();
             _plexService = Substitute.For<IPlexService>();
             _mediaItemProcessor = Substitute.For<IMediaItemProcessor>();
             _agentGuidParser = Substitute.For<IAgentGuidParser>();
+            var plexSettings = _fixture.Create<PlexSettings>();
 
-            _underTest = new TvProcessor(_plexApi, _plexService, _mediaItemProcessor, _agentGuidParser);
-
-            _fixture = new Fixture();
+            _underTest = new TvProcessor(_plexApi, _plexService, _mediaItemProcessor, plexSettings, _agentGuidParser);
         }
 
         [Fact]
@@ -195,7 +196,7 @@ namespace PlexRequests.Sync.UnitTests.SyncProcessors
             }
             
             _mediaItemProcessor.GetMediaItem(Arg.Any<int>(), Arg.Any<PlexMediaTypes>(), Arg.Any<List<PlexMediaItem>>(),
-                                   Arg.Any<string>(), Arg.Any<string>())
+                                   Arg.Any<string>(), Arg.Any<string>(), Arg.Any<string>(), Arg.Any<string>())
                                .Returns((isNewMediaItem, _rootPlexMediaItem));
         }
 
@@ -249,9 +250,10 @@ namespace PlexRequests.Sync.UnitTests.SyncProcessors
         {
             var authToken = _fixture.Create<string>();
             var plexUri = _fixture.Create<string>();
+            var machineIdentifier = _fixture.Create<string>();
 
             _commandAction = async () =>
-                await _underTest.Synchronise(_plexLibraryContainer, fullRefresh, authToken, plexUri);
+                await _underTest.Synchronise(_plexLibraryContainer, fullRefresh, authToken, plexUri, machineIdentifier);
         }
 
         private void ThenTheResponseIsSuccessful()
@@ -271,7 +273,7 @@ namespace PlexRequests.Sync.UnitTests.SyncProcessors
             foreach (var key in grandParentKeys)
             {
                 _mediaItemProcessor.Received().GetMediaItem(Arg.Is(key), Arg.Any<PlexMediaTypes>(),
-                    Arg.Any<List<PlexMediaItem>>(), Arg.Any<string>(), Arg.Any<string>());
+                    Arg.Any<List<PlexMediaItem>>(), Arg.Any<string>(), Arg.Any<string>(), Arg.Any<string>(), Arg.Any<string>());
             }
         }
 
@@ -283,7 +285,7 @@ namespace PlexRequests.Sync.UnitTests.SyncProcessors
         private void ThenProcessedMediaItemWasReturned()
         {
             _mediaItemProcessor.Received().GetMediaItem(Arg.Any<int>(), Arg.Any<PlexMediaTypes>(),
-                Arg.Any<List<PlexMediaItem>>(), Arg.Any<string>(), Arg.Any<string>());
+                Arg.Any<List<PlexMediaItem>>(), Arg.Any<string>(), Arg.Any<string>(), Arg.Any<string>(), Arg.Any<string>());
         }
 
         private void ThenSyncResultWasUpdated()

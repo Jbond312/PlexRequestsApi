@@ -5,7 +5,7 @@ using System.Threading.Tasks;
 using AutoMapper;
 using MediatR;
 using Microsoft.Extensions.Options;
-using PlexRequests.Models.ViewModels;
+using PlexRequests.Models.SubModels.Detail;
 using PlexRequests.Plex;
 using PlexRequests.Plex.Models;
 using PlexRequests.Settings;
@@ -44,7 +44,7 @@ namespace PlexRequests.Models.Plex
 
             await _plexService.Update(server);
 
-            var libraries = _mapper.Map<List<PlexServerLibraryViewModel>>(server.Libraries);
+            var libraries = _mapper.Map<List<PlexServerLibraryDetailModel>>(server.Libraries);
 
             return new SyncLibrariesCommandResult
             {

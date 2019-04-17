@@ -5,17 +5,18 @@ using System.Threading.Tasks;
 using AutoMapper;
 using MediatR;
 using PlexRequests.Core;
-using PlexRequests.Models.ViewModels;
+using PlexRequests.Models.SubModels.Detail;
+using PlexRequests.Store.Enums;
 
 namespace PlexRequests.Models.Requests
 {
-    public class GetPagedRequestQueryHandler : IRequestHandler<GetPagedRequestQuery, GetPagedRequestQueryResult>
+    public class GetTvPagedRequestQueryHandler : IRequestHandler<GetTvPagedRequestQuery, GetTvPagedRequestQueryResult>
     {
         private readonly IMapper _mapper;
         private readonly IRequestService _requestService;
         private readonly IClaimsPrincipalAccessor _claimsAccessor;
 
-        public GetPagedRequestQueryHandler(IMapper mapper,
+        public GetTvPagedRequestQueryHandler(IMapper mapper,
             IRequestService requestService, 
             IClaimsPrincipalAccessor claimsAccessor)
         {
@@ -24,7 +25,7 @@ namespace PlexRequests.Models.Requests
             _claimsAccessor = claimsAccessor;
         }
 
-        public async Task<GetPagedRequestQueryResult> Handle(GetPagedRequestQuery request, CancellationToken cancellationToken)
+        public async Task<GetTvPagedRequestQueryResult> Handle(GetTvPagedRequestQuery request, CancellationToken cancellationToken)
         {
             Guid? userGuid = null;
 
@@ -33,12 +34,12 @@ namespace PlexRequests.Models.Requests
                 userGuid = _claimsAccessor.UserId;
             }
             
-            var pagedResponse = await _requestService.GetPaged(request.Title, request.MediaType, request.IsApproved,
+            var pagedResponse = await _requestService.GetPaged(request.Title, PlexMediaTypes.Show, request.Status,
                 userGuid, request.Page, request.PageSize);
 
-            var requestViewModels = _mapper.Map<List<RequestViewModel>>(pagedResponse.Items);
+            var requestViewModels = _mapper.Map<List<TvRequestDetailModel>>(pagedResponse.Items);
 
-            return new GetPagedRequestQueryResult
+            return new GetTvPagedRequestQueryResult
             {
                 Page = pagedResponse.Page,
                 PageSize = pagedResponse.PageSize,

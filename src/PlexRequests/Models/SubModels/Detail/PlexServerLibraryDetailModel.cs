@@ -1,6 +1,6 @@
-﻿namespace PlexRequests.Models.ViewModels
+﻿namespace PlexRequests.Models.SubModels.Detail
 {
-    public class PlexServerLibraryViewModel
+    public class PlexServerLibraryDetailModel
     {
         public string Key { get; set; }
         public string Type { get; set; }
