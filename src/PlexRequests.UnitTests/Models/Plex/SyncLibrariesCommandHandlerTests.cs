@@ -8,12 +8,12 @@ using AutoMapper;
 using FluentAssertions;
 using Microsoft.Extensions.Options;
 using NSubstitute;
+using PlexRequests.Core.Settings;
 using PlexRequests.Mapping;
 using PlexRequests.Models.Plex;
 using PlexRequests.Plex;
 using PlexRequests.Plex.Models;
-using PlexRequests.Settings;
-using PlexRequests.Store.Models;
+using PlexRequests.Repository.Models;
 using TestStack.BDDfy;
 using Xunit;
 

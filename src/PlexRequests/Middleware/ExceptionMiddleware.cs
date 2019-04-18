@@ -5,7 +5,8 @@ using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using Newtonsoft.Json;
-using PlexRequests.Helpers;
+using PlexRequests.Core;
+using PlexRequests.Core.Exceptions;
 
 namespace PlexRequests.Middleware
 {

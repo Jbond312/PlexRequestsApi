@@ -5,10 +5,12 @@ using System.Threading.Tasks;
 using MediatR;
 using Microsoft.Extensions.Logging;
 using PlexRequests.Core;
-using PlexRequests.Helpers;
+using PlexRequests.Core.Exceptions;
+using PlexRequests.Core.Helpers;
+using PlexRequests.Core.Services;
 using PlexRequests.Plex;
-using PlexRequests.Store.Enums;
-using PlexRequests.Store.Models;
+using PlexRequests.Repository.Enums;
+using PlexRequests.Repository.Models;
 using PlexRequests.TheMovieDb;
 using PlexRequests.TheMovieDb.Models;
 

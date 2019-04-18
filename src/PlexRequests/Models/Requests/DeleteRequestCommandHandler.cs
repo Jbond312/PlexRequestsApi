@@ -3,8 +3,10 @@ using System.Threading;
 using System.Threading.Tasks;
 using MediatR;
 using PlexRequests.Core;
-using PlexRequests.Helpers;
-using PlexRequests.Store.Models;
+using PlexRequests.Core.Exceptions;
+using PlexRequests.Core.Helpers;
+using PlexRequests.Core.Services;
+using PlexRequests.Repository.Models;
 
 namespace PlexRequests.Models.Requests
 {

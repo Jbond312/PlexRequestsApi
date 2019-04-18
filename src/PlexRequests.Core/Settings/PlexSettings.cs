@@ -1,4 +1,4 @@
-﻿namespace PlexRequests.Settings
+﻿namespace PlexRequests.Core.Settings
 {
     public class PlexSettings
     {

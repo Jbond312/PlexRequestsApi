@@ -4,13 +4,13 @@
   </PropertyGroup>
   <ItemGroup>
     <PackageReference Include="Microsoft.AspNetCore.Http.Abstractions" Version="2.2.0" />
+    <PackageReference Include="Microsoft.Extensions.Caching.Abstractions" Version="2.2.0" />
+    <PackageReference Include="Microsoft.Extensions.Options" Version="2.2.0" />
     <PackageReference Include="System.IdentityModel.Tokens.Jwt" Version="5.4.0" />
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\PlexRequests.Plex\PlexRequests.Plex.csproj" />
-    <ProjectReference Include="..\PlexRequests.Store\PlexRequests.Store.csproj" />
-    <ProjectReference Include="..\PlexRequests.TheMovieDb\PlexRequests.TheMovieDb.csproj" />
+    <ProjectReference Include="..\PlexRequests.Repository\PlexRequests.Repository.csproj" />
   </ItemGroup>
 
 </Project>

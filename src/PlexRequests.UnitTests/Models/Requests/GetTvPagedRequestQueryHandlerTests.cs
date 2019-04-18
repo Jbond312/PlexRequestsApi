@@ -5,11 +5,12 @@ using AutoFixture;
 using AutoMapper;
 using FluentAssertions;
 using NSubstitute;
-using PlexRequests.Core;
+using PlexRequests.Core.Helpers;
+using PlexRequests.Core.Services;
 using PlexRequests.Mapping;
 using PlexRequests.Models.Requests;
-using PlexRequests.Store.Enums;
-using PlexRequests.Store.Models;
+using PlexRequests.Repository.Enums;
+using PlexRequests.Repository.Models;
 using TestStack.BDDfy;
 using Xunit;
 

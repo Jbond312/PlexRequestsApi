@@ -8,7 +8,8 @@ using Microsoft.Extensions.Logging;
 using NSubstitute;
 using NSubstitute.ReturnsExtensions;
 using PlexRequests.Core;
-using PlexRequests.Helpers;
+using PlexRequests.Core.Exceptions;
+using PlexRequests.Core.Services;
 using PlexRequests.Models.Auth;
 using PlexRequests.Plex;
 using PlexRequests.Plex.Models;
@@ -26,8 +27,8 @@ namespace PlexRequests.UnitTests.Models.Auth
 
         private readonly Fixture _fixture;
         private UserLoginCommand _command;
-        private Store.Models.User _matchingDbUser;
-        private Store.Models.User _updatedUser;
+        private Repository.Models.User _matchingDbUser;
+        private Repository.Models.User _updatedUser;
         private string _createdToken;
         private Func<Task<UserLoginCommandResult>> _commandAction;
 
@@ -121,7 +122,7 @@ namespace PlexRequests.UnitTests.Models.Auth
 
         private void GivenAMatchingUser(bool isDisabled)
         {
-            _matchingDbUser = _fixture.Build<Store.Models.User>()
+            _matchingDbUser = _fixture.Build<Repository.Models.User>()
                                       .With(x => x.IsDisabled, isDisabled)
                                       .Create();
 
@@ -130,14 +131,14 @@ namespace PlexRequests.UnitTests.Models.Auth
 
         private void GivenAUserIsUpdated()
         {
-            _userService.UpdateUser(Arg.Do<Store.Models.User>(x => _updatedUser = x));
+            _userService.UpdateUser(Arg.Do<Repository.Models.User>(x => _updatedUser = x));
         }
 
         private void GivenATokenIsCreated()
         {
             _createdToken = _fixture.Create<string>();
 
-            _tokenService.CreateToken(Arg.Any<Store.Models.User>()).Returns(_createdToken);
+            _tokenService.CreateToken(Arg.Any<Repository.Models.User>()).Returns(_createdToken);
         }
 
         private void WhenACommandActionIsCreated()

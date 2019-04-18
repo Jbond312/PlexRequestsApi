@@ -2,10 +2,10 @@
 using System.Collections.Generic;
 using System.Linq.Expressions;
 using System.Threading.Tasks;
-using PlexRequests.Store.Models;
+using PlexRequests.Repository.Models;
 using MongoDB.Driver;
 
-namespace PlexRequests.Store
+namespace PlexRequests.Repository
 {
     public class PlexMediaRepository: BaseRepository<PlexMediaItem>, IPlexMediaRepository
     {

@@ -7,12 +7,14 @@ using MediatR;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using PlexRequests.Core;
-using PlexRequests.Helpers;
+using PlexRequests.Core.Auth;
+using PlexRequests.Core.Exceptions;
+using PlexRequests.Core.Services;
+using PlexRequests.Core.Settings;
 using PlexRequests.Plex;
 using PlexRequests.Plex.Models;
-using PlexRequests.Settings;
-using PlexRequests.Store.Models;
-using User = PlexRequests.Store.Models.User;
+using PlexRequests.Repository.Models;
+using User = PlexRequests.Repository.Models.User;
 
 namespace PlexRequests.Models.Auth
 {

@@ -2,11 +2,12 @@
 using System.Linq;
 using System.Threading.Tasks;
 using PlexRequests.Core;
-using PlexRequests.Helpers;
+using PlexRequests.Core.Exceptions;
+using PlexRequests.Core.Helpers;
 using PlexRequests.Plex;
 using PlexRequests.Plex.Models;
-using PlexRequests.Store.Enums;
-using PlexRequests.Store.Models;
+using PlexRequests.Repository.Enums;
+using PlexRequests.Repository.Models;
 
 namespace PlexRequests.Sync.SyncProcessors
 {

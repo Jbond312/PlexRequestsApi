@@ -8,9 +8,11 @@ using MediatR;
 using NSubstitute;
 using NSubstitute.ReturnsExtensions;
 using PlexRequests.Core;
-using PlexRequests.Helpers;
+using PlexRequests.Core.Exceptions;
+using PlexRequests.Core.Helpers;
+using PlexRequests.Core.Services;
 using PlexRequests.Models.Requests;
-using PlexRequests.Store.Models;
+using PlexRequests.Repository.Models;
 using TestStack.BDDfy;
 using Xunit;
 

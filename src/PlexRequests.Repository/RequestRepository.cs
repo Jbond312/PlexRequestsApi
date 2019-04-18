@@ -4,10 +4,10 @@ using System.Linq.Expressions;
 using System.Threading.Tasks;
 using MongoDB.Driver;
 using MongoDB.Driver.Linq;
-using PlexRequests.Store.Enums;
-using PlexRequests.Store.Models;
+using PlexRequests.Repository.Enums;
+using PlexRequests.Repository.Models;
 
-namespace PlexRequests.Store
+namespace PlexRequests.Repository
 {
     public class RequestRepository : BaseRepository<Request>, IRequestRepository
     {

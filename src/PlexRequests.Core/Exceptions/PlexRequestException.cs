@@ -1,7 +1,7 @@
 ﻿using System;
 using System.Net;
 
-namespace PlexRequests.Helpers
+namespace PlexRequests.Core.Exceptions
 {
     public class PlexRequestException : Exception
     {

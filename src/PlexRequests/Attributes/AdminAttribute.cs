@@ -1,5 +1,6 @@
 ﻿using Microsoft.AspNetCore.Authorization;
-using PlexRequests.Helpers;
+using PlexRequests.Core;
+using PlexRequests.Core.Auth;
 
 namespace PlexRequests.Attributes
 {

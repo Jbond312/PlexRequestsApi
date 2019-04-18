@@ -7,14 +7,14 @@ using AutoFixture;
 using FluentAssertions;
 using MediatR;
 using NSubstitute;
-using PlexRequests.Core;
+using PlexRequests.Core.Services;
 using PlexRequests.Models.Plex;
 using PlexRequests.Plex;
 using PlexRequests.Plex.Models;
-using PlexRequests.Store.Models;
+using PlexRequests.Repository.Models;
 using TestStack.BDDfy;
 using Xunit;
-using User = PlexRequests.Store.Models.User;
+using User = PlexRequests.Repository.Models.User;
 
 namespace PlexRequests.UnitTests.Models.Plex
 {

@@ -1,4 +1,4 @@
-﻿namespace PlexRequests.Helpers
+﻿namespace PlexRequests.Core.Auth
 {
     public static class PlexRequestRoles
     {

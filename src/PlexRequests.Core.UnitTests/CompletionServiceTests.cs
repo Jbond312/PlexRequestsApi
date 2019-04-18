@@ -5,8 +5,9 @@ using System.Threading.Tasks;
 using AutoFixture;
 using FluentAssertions;
 using NSubstitute;
-using PlexRequests.Store.Enums;
-using PlexRequests.Store.Models;
+using PlexRequests.Core.Services;
+using PlexRequests.Repository.Enums;
+using PlexRequests.Repository.Models;
 using TestStack.BDDfy;
 using Xunit;
 

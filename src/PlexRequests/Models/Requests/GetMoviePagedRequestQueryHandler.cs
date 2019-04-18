@@ -4,9 +4,10 @@ using System.Threading;
 using System.Threading.Tasks;
 using AutoMapper;
 using MediatR;
-using PlexRequests.Core;
+using PlexRequests.Core.Helpers;
+using PlexRequests.Core.Services;
 using PlexRequests.Models.SubModels.Detail;
-using PlexRequests.Store.Enums;
+using PlexRequests.Repository.Enums;
 
 namespace PlexRequests.Models.Requests
 {

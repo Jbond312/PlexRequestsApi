@@ -1,10 +1,11 @@
 ﻿using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
-using PlexRequests.Helpers;
-using PlexRequests.Store;
-using PlexRequests.Store.Enums;
-using PlexRequests.Store.Models;
+using PlexRequests.Core;
+using PlexRequests.Core.Exceptions;
+using PlexRequests.Repository;
+using PlexRequests.Repository.Enums;
+using PlexRequests.Repository.Models;
 
 namespace PlexRequests.Plex
 {

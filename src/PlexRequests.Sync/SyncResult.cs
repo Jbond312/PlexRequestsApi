@@ -1,5 +1,5 @@
 ﻿using System.Collections.Generic;
-using PlexRequests.Store.Models;
+using PlexRequests.Repository.Models;
 
 namespace PlexRequests.Sync
 {

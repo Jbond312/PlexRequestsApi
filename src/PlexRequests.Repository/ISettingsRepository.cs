@@ -1,7 +1,7 @@
 ﻿using System.Threading.Tasks;
-using PlexRequests.Store.Models;
+using PlexRequests.Repository.Models;
 
-namespace PlexRequests.Store
+namespace PlexRequests.Repository
 {
     public interface ISettingsRepository
     {

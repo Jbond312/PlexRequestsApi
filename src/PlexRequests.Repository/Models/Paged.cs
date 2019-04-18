@@ -1,6 +1,6 @@
 using System.Collections.Generic;
 
-namespace PlexRequests.Store.Models
+namespace PlexRequests.Repository.Models
 {
     public class Paged<T> where T : class
     {

@@ -1,6 +1,6 @@
 using System;
 
-namespace PlexRequests.Core
+namespace PlexRequests.Core.Helpers
 {
     public interface IClaimsPrincipalAccessor
     {

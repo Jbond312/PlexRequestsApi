@@ -2,12 +2,12 @@
 using System.Threading.Tasks;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
-using PlexRequests.Core;
+using PlexRequests.Core.Services;
+using PlexRequests.Core.Settings;
 using PlexRequests.Plex;
 using PlexRequests.Plex.Models;
-using PlexRequests.Settings;
-using PlexRequests.Store.Enums;
-using PlexRequests.Store.Models;
+using PlexRequests.Repository.Enums;
+using PlexRequests.Repository.Models;
 using PlexRequests.Sync.SyncProcessors;
 
 namespace PlexRequests.Sync

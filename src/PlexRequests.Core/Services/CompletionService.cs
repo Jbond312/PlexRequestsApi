@@ -1,10 +1,10 @@
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
-using PlexRequests.Store.Enums;
-using PlexRequests.Store.Models;
+using PlexRequests.Repository.Enums;
+using PlexRequests.Repository.Models;
 
-namespace PlexRequests.Core
+namespace PlexRequests.Core.Services
 {
     public class CompletionService : ICompletionService
     {

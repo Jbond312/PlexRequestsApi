@@ -1,4 +1,4 @@
-namespace PlexRequests.Helpers
+namespace PlexRequests.Core.Helpers
 {
     public class PlexHelper
     {

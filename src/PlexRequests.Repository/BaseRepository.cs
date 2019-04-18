@@ -1,7 +1,7 @@
 ﻿using MongoDB.Bson;
 using MongoDB.Driver;
 
-namespace PlexRequests.Store
+namespace PlexRequests.Repository
 {
     public class BaseRepository<T>
     {

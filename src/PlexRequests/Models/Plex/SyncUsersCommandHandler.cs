@@ -5,10 +5,11 @@ using System.Threading;
 using System.Threading.Tasks;
 using MediatR;
 using PlexRequests.Core;
-using PlexRequests.Helpers;
+using PlexRequests.Core.Auth;
+using PlexRequests.Core.Services;
 using PlexRequests.Plex;
 using PlexRequests.Plex.Models;
-using User = PlexRequests.Store.Models.User;
+using User = PlexRequests.Repository.Models.User;
 
 namespace PlexRequests.Models.Plex
 {

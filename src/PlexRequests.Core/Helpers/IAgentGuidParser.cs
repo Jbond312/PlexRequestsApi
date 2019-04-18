@@ -1,6 +1,6 @@
-using PlexRequests.Store.Enums;
+using PlexRequests.Repository.Enums;
 
-namespace PlexRequests.Core
+namespace PlexRequests.Core.Helpers
 {
     public interface IAgentGuidParser
     {

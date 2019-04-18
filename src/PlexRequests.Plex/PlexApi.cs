@@ -3,9 +3,9 @@ using System.Linq;
 using System.Net.Http;
 using System.Threading.Tasks;
 using PlexRequests.Api;
+using PlexRequests.Core.Settings;
 using PlexRequests.Plex.Models;
 using PlexRequests.Plex.Models.OAuth;
-using PlexRequests.Settings;
 
 namespace PlexRequests.Plex
 {

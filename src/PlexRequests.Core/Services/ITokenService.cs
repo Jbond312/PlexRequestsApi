@@ -1,6 +1,6 @@
-﻿using PlexRequests.Store.Models;
+﻿using PlexRequests.Repository.Models;
 
-namespace PlexRequests.Core
+namespace PlexRequests.Core.Services
 {
     public interface ITokenService
     {

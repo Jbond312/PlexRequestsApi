@@ -2,7 +2,7 @@
 using System.Collections.Generic;
 using MongoDB.Bson.Serialization.Attributes;
 
-namespace PlexRequests.Store.Models
+namespace PlexRequests.Repository.Models
 {
     public class User
     {

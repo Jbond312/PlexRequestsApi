@@ -1,5 +1,5 @@
 using MediatR;
-using PlexRequests.Store.Enums;
+using PlexRequests.Repository.Enums;
 
 namespace PlexRequests.Models.Requests
 {

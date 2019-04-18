@@ -1,7 +1,7 @@
 ﻿using System;
 using System.Threading.Tasks;
 
-namespace PlexRequests.Helpers
+namespace PlexRequests.Core.Services
 {
     public interface ICacheService
     {

@@ -12,8 +12,9 @@ using Microsoft.Extensions.Logging;
 using MongoDB.Driver;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Serialization;
+using PlexRequests.Core.Settings;
 using PlexRequests.Middleware;
-using PlexRequests.Settings;
+using PlexRequests.Repository.Models;
 using Serilog;
 using Serilog.Events;
 using Swashbuckle.AspNetCore.Swagger;
@@ -155,7 +156,7 @@ namespace PlexRequests
             var logger = app.ApplicationServices.GetService<ILogger<Startup>>();
             var settingsService = app.ApplicationServices.GetService<ISettingsService>();
 
-            var settings = configuration.GetSection(nameof(Settings)).Get<Store.Models.Settings>();
+            var settings = configuration.GetSection(nameof(Settings)).Get<Settings>();
 
             logger.LogDebug($"Persisting settings to database. Overwrite: {settings.OverwriteSettings}");
 

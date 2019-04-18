@@ -1,10 +1,10 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Threading.Tasks;
-using PlexRequests.Store;
-using PlexRequests.Store.Models;
+using PlexRequests.Repository;
+using PlexRequests.Repository.Models;
 
-namespace PlexRequests.Core
+namespace PlexRequests.Core.Services
 {
     public class UserService: IUserService
     {

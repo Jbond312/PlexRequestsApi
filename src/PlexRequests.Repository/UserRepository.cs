@@ -2,9 +2,9 @@
 using System.Collections.Generic;
 using System.Threading.Tasks;
 using MongoDB.Driver;
-using PlexRequests.Store.Models;
+using PlexRequests.Repository.Models;
 
-namespace PlexRequests.Store
+namespace PlexRequests.Repository
 {
     public class UserRepository : BaseRepository<User>, IUserRepository
     {

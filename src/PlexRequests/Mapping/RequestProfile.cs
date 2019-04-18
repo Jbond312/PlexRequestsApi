@@ -1,7 +1,7 @@
 using AutoMapper;
 using PlexRequests.Models.SubModels.Create;
 using PlexRequests.Models.SubModels.Detail;
-using PlexRequests.Store.Models;
+using PlexRequests.Repository.Models;
 
 namespace PlexRequests.Mapping
 {

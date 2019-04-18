@@ -1,7 +1,7 @@
 ﻿using System;
 using MongoDB.Bson.Serialization.Attributes;
 
-namespace PlexRequests.Store.Models
+namespace PlexRequests.Repository.Models
 {
     public class Settings
     {

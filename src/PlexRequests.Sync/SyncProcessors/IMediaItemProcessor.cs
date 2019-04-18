@@ -1,7 +1,7 @@
-﻿using PlexRequests.Store.Models;
+﻿using PlexRequests.Repository.Models;
 using System.Collections.Generic;
 using System.Threading.Tasks;
-using PlexRequests.Store.Enums;
+using PlexRequests.Repository.Enums;
 
 namespace PlexRequests.Sync.SyncProcessors
 {

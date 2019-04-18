@@ -1,8 +1,8 @@
 ﻿using System.Threading.Tasks;
-using PlexRequests.Helpers;
-using PlexRequests.Store;
+using PlexRequests.Core.Services;
+using PlexRequests.Repository;
 
-namespace PlexRequests.Settings
+namespace PlexRequests.Core.Settings
 {
     public class SettingsService : ISettingsService
     {
@@ -16,14 +16,14 @@ namespace PlexRequests.Settings
             _cacheService = cacheService;
         }
 
-        public async Task<Store.Models.Settings> Get()
+        public async Task<Repository.Models.Settings> Get()
         {
             return await _cacheService.GetOrCreate(CacheKey,
                 createFunc: async () => await _settingsRepository.GetSettings());
 
         }
 
-        public async Task Save(Store.Models.Settings settings)
+        public async Task Save(Repository.Models.Settings settings)
         {
             await _cacheService.GetOrCreate(CacheKey, async () =>
             {
@@ -32,7 +32,7 @@ namespace PlexRequests.Settings
             });
         }
 
-        public async Task PrimeSettings(Store.Models.Settings settings)
+        public async Task PrimeSettings(Repository.Models.Settings settings)
         {
             await _cacheService.GetOrCreate(CacheKey, async () =>
             {

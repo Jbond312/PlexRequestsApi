@@ -2,9 +2,9 @@
 using System.Collections.Generic;
 using System.Linq;
 using Microsoft.Extensions.Options;
-using PlexRequests.Core;
+using PlexRequests.Core.Helpers;
+using PlexRequests.Core.Settings;
 using PlexRequests.Plex;
-using PlexRequests.Settings;
 using PlexRequests.Sync.SyncProcessors;
 
 namespace PlexRequests.Sync

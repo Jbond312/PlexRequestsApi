@@ -1,9 +1,9 @@
 ﻿using System;
 using System.Collections.Generic;
 using MongoDB.Bson.Serialization.Attributes;
-using PlexRequests.Store.Enums;
+using PlexRequests.Repository.Enums;
 
-namespace PlexRequests.Store.Models
+namespace PlexRequests.Repository.Models
 {
     public class PlexMediaItem : BasePlexMediaItem
     {

@@ -1,8 +1,9 @@
 using System;
 using System.Net;
 using FluentAssertions;
-using PlexRequests.Helpers;
-using PlexRequests.Store.Enums;
+using PlexRequests.Core.Exceptions;
+using PlexRequests.Core.Helpers;
+using PlexRequests.Repository.Enums;
 using TestStack.BDDfy;
 using Xunit;
 

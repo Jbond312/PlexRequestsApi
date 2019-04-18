@@ -5,7 +5,7 @@ using MediatR;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using PlexRequests.Models.Requests;
-using PlexRequests.Store.Enums;
+using PlexRequests.Repository.Enums;
 
 namespace PlexRequests.Controllers
 {

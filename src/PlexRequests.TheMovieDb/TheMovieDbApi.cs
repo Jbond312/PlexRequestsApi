@@ -3,7 +3,7 @@ using System.Net.Http;
 using System.Threading.Tasks;
 using Microsoft.Extensions.Options;
 using PlexRequests.Api;
-using PlexRequests.Settings;
+using PlexRequests.Core.Settings;
 using PlexRequests.TheMovieDb.Models;
 
 namespace PlexRequests.TheMovieDb

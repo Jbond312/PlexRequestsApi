@@ -5,11 +5,11 @@ using System.Threading.Tasks;
 using AutoMapper;
 using MediatR;
 using Microsoft.Extensions.Options;
+using PlexRequests.Core.Settings;
 using PlexRequests.Models.SubModels.Detail;
 using PlexRequests.Plex;
 using PlexRequests.Plex.Models;
-using PlexRequests.Settings;
-using PlexRequests.Store.Models;
+using PlexRequests.Repository.Models;
 
 namespace PlexRequests.Models.Plex
 {

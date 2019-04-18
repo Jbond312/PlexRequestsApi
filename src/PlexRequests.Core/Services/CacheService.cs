@@ -2,7 +2,7 @@
 using System.Threading.Tasks;
 using Microsoft.Extensions.Caching.Memory;
 
-namespace PlexRequests.Helpers
+namespace PlexRequests.Core.Services
 {
     public class CacheService : ICacheService
     {

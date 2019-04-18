@@ -11,12 +11,14 @@ using Microsoft.Extensions.Options;
 using NSubstitute;
 using NSubstitute.ReturnsExtensions;
 using PlexRequests.Core;
-using PlexRequests.Helpers;
+using PlexRequests.Core.Auth;
+using PlexRequests.Core.Exceptions;
+using PlexRequests.Core.Services;
+using PlexRequests.Core.Settings;
 using PlexRequests.Models.Auth;
 using PlexRequests.Plex;
 using PlexRequests.Plex.Models;
-using PlexRequests.Settings;
-using PlexRequests.Store.Models;
+using PlexRequests.Repository.Models;
 using TestStack.BDDfy;
 using Xunit;
 using User = PlexRequests.Plex.Models.User;
@@ -39,7 +41,7 @@ namespace PlexRequests.UnitTests.Models.Auth
         private AddAdminCommand _command;
         private Func<Task<UserLoginCommandResult>> _commandAction;
         private User _plexUser;
-        private Store.Models.User _createdAdminUser;
+        private Repository.Models.User _createdAdminUser;
         private List<Server> _plexServers;
         private PlexServer _createdServer;
         private PlexMediaContainer _plexLibraryContainer;
@@ -164,7 +166,7 @@ namespace PlexRequests.UnitTests.Models.Auth
 
         private void GivenAnAdminIsCreated()
         {
-            _userService.CreateUser(Arg.Do<Store.Models.User>(x => _createdAdminUser = x));
+            _userService.CreateUser(Arg.Do<Repository.Models.User>(x => _createdAdminUser = x));
         }
 
         private void GivenAPlexServerWasFound()
@@ -195,7 +197,7 @@ namespace PlexRequests.UnitTests.Models.Auth
         {
             _createdToken = _fixture.Create<string>();
             
-            _tokenService.CreateToken(Arg.Any<Store.Models.User>()).Returns(_createdToken);
+            _tokenService.CreateToken(Arg.Any<Repository.Models.User>()).Returns(_createdToken);
         }
         
         private void ThenAnErrorIsThrown(string message, string description, HttpStatusCode httpStatusCode)

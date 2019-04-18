@@ -5,10 +5,10 @@ using System.Security.Claims;
 using System.Text;
 using Microsoft.Extensions.Options;
 using Microsoft.IdentityModel.Tokens;
-using PlexRequests.Settings;
-using PlexRequests.Store.Models;
+using PlexRequests.Core.Settings;
+using PlexRequests.Repository.Models;
 
-namespace PlexRequests.Core
+namespace PlexRequests.Core.Services
 {
     public class TokenService : ITokenService
     {

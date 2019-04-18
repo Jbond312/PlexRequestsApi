@@ -3,7 +3,7 @@ using System.Linq;
 using System.Security.Claims;
 using Microsoft.AspNetCore.Http;
 
-namespace PlexRequests.Core
+namespace PlexRequests.Core.Helpers
 {
     public class ClaimsPrincipalAccessor : IClaimsPrincipalAccessor
     {

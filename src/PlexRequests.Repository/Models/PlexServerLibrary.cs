@@ -1,4 +1,4 @@
-﻿namespace PlexRequests.Store.Models
+﻿namespace PlexRequests.Repository.Models
 {
     public class PlexServerLibrary
     {

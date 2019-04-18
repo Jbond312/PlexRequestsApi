@@ -1,8 +1,8 @@
 ﻿using System.Threading.Tasks;
 using MongoDB.Driver;
-using PlexRequests.Store.Models;
+using PlexRequests.Repository.Models;
 
-namespace PlexRequests.Store
+namespace PlexRequests.Repository
 {
     public class PlexServerRepository : BaseRepository<PlexServer>, IPlexServerRepository
     {

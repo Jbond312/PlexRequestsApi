@@ -1,6 +1,6 @@
-﻿using PlexRequests.Store.Enums;
+﻿using PlexRequests.Repository.Enums;
 
-namespace PlexRequests.Store.Models
+namespace PlexRequests.Repository.Models
 {
     public class BasePlexMediaItem
     {

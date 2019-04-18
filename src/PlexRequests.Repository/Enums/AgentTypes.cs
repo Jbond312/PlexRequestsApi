@@ -1,4 +1,4 @@
-﻿namespace PlexRequests.Store.Enums
+﻿namespace PlexRequests.Repository.Enums
 {
     public enum AgentTypes
     {
