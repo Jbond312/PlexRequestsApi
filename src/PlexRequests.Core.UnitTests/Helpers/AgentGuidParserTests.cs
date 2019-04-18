@@ -7,7 +7,7 @@ using PlexRequests.Repository.Enums;
 using TestStack.BDDfy;
 using Xunit;
 
-namespace PlexRequests.Core.UnitTests
+namespace PlexRequests.Core.UnitTests.Helpers
 {
     public class AgentGuidParserTests
     {

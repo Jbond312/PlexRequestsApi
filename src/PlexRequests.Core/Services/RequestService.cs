@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Threading.Tasks;
+using PlexRequests.Core.Helpers;
 using PlexRequests.Repository;
 using PlexRequests.Repository.Enums;
 using PlexRequests.Repository.Models;
@@ -10,12 +11,15 @@ namespace PlexRequests.Core.Services
     public class RequestService : IRequestService
     {
         private readonly IRequestRepository _requestRepository;
+        private readonly IRequestHelper _requestHelper;
 
         public RequestService(
-            IRequestRepository requestRepository
+            IRequestRepository requestRepository,
+            IRequestHelper requestHelper
             )
         {
             _requestRepository = requestRepository;
+            _requestHelper = requestHelper;
         }
 
         public async Task<Request> GetRequestById(Guid id)
@@ -67,6 +71,11 @@ namespace PlexRequests.Core.Services
         public async Task DeleteRequest(Guid id)
         {
             await _requestRepository.Delete(id);
+        }
+
+        public RequestStatuses CalculateAggregatedStatus(Request request)
+        {
+            return _requestHelper.CalculateAggregatedStatus(request);
         }
     }
 }
