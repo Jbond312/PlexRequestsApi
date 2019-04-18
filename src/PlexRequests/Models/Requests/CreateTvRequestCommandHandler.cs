@@ -49,7 +49,7 @@ namespace PlexRequests.Models.Requests
 
             var externalIds = await _theMovieDbApi.GetTvExternalIds(request.TheMovieDbId);
             
-            await ValidateDuplicateEpisodeRequests(request.TheMovieDbId, seasons);
+            await ValidateAndRemoveExistingEpisodeRequests(request.TheMovieDbId, seasons);
 
             await ValidateRequestedEpisodesNotAlreadyInPlex(request.TheMovieDbId, seasons, externalIds);
 
@@ -163,7 +163,7 @@ namespace PlexRequests.Models.Requests
             return plexMediaItem;
         }
 
-        private async Task ValidateDuplicateEpisodeRequests(int theMovieDbId, List<RequestSeason> seasons)
+        private async Task ValidateAndRemoveExistingEpisodeRequests(int theMovieDbId, List<RequestSeason> seasons)
         {
             var requests =
                 await _requestService.GetExistingTvRequests(AgentTypes.TheMovieDb, theMovieDbId.ToString());
@@ -204,6 +204,8 @@ namespace PlexRequests.Models.Requests
                     "At least one season must be given in a request.");
             }
 
+            ValidateNoDuplicateSeasonsOrEpisodes(request);
+
             RemoveSeasonsWithNoEpisodes(request.Seasons);
 
             if (!request.Seasons.Any())
@@ -211,6 +213,34 @@ namespace PlexRequests.Models.Requests
                 throw new PlexRequestException("Request not created",
                     "Each requested season must have at least one episode.");
 
+            }
+        }
+
+        private static void ValidateNoDuplicateSeasonsOrEpisodes(CreateTvRequestCommand request)
+        {
+            var existingSeasons = new List<int>();
+            for (var sIndex = 0; sIndex < request.Seasons?.Count; sIndex++)
+            {
+                var season = request.Seasons[sIndex];
+                
+                if (existingSeasons.Contains(season.Index))
+                {
+                    throw new PlexRequestException("Request not created", "All seasons in a request must be unique.");
+                }
+
+                existingSeasons.Add(season.Index);
+                
+                var existingEpisodes = new List<int>();
+                for (var eIndex = 0; eIndex < season.Episodes?.Count; eIndex++)
+                {
+                    var episode = season.Episodes[eIndex];
+                    if (existingEpisodes.Contains(episode.Index))
+                    {
+                        throw new PlexRequestException("Request not created", "All episodes in a season must be unique.");
+                    }
+                    
+                    existingEpisodes.Add(episode.Index);
+                }
             }
         }
 
