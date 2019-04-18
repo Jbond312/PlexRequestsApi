@@ -6,6 +6,7 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using PlexRequests.ApiRequests.Requests.Commands;
 using PlexRequests.ApiRequests.Requests.Queries;
+using PlexRequests.Attributes;
 using PlexRequests.Repository.Enums;
 using Swashbuckle.AspNetCore.Annotations;
 
@@ -29,6 +30,20 @@ namespace PlexRequests.Controllers
         [SwaggerResponse(401)]
         public async Task<ActionResult> CreateMovieRequest([FromBody] CreateMovieRequestCommand command)
         {
+            await _mediator.Send(command);
+
+            return Ok();
+        }
+        
+        [HttpPost("Movie/{id:guid}/Approve")]
+        [Admin]
+        [SwaggerResponse(200)]
+        [SwaggerResponse(400)]
+        [SwaggerResponse(401)]
+        public async Task<ActionResult> ApproveMovieRequest([FromRoute] Guid id)
+        {
+            var command = new ApproveMovieRequestCommand(id);
+            
             await _mediator.Send(command);
 
             return Ok();
