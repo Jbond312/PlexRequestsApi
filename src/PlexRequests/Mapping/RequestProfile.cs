@@ -1,6 +1,6 @@
 using AutoMapper;
-using PlexRequests.Models.SubModels.Create;
-using PlexRequests.Models.SubModels.Detail;
+using PlexRequests.ApiRequests.Requests.DTOs.Create;
+using PlexRequests.ApiRequests.Requests.DTOs.Detail;
 using PlexRequests.Repository.Models;
 
 namespace PlexRequests.Mapping

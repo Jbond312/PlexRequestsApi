@@ -5,7 +5,7 @@ using AutoFixture;
 using FluentAssertions;
 using MediatR;
 using NSubstitute;
-using PlexRequests.Models.Plex;
+using PlexRequests.ApiRequests.Plex.Commands;
 using PlexRequests.Sync;
 using TestStack.BDDfy;
 using Xunit;

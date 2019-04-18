@@ -2,7 +2,7 @@
 using MediatR;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
-using PlexRequests.Models.Auth;
+using PlexRequests.ApiRequests.Auth.Commands;
 using Swashbuckle.AspNetCore.Annotations;
 
 namespace PlexRequests.Controllers

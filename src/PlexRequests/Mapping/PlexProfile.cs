@@ -1,5 +1,5 @@
 ﻿using AutoMapper;
-using PlexRequests.Models.SubModels.Detail;
+using PlexRequests.ApiRequests.Plex.DTOs.Detail;
 using PlexRequests.Repository.Models;
 
 namespace PlexRequests.Mapping
