@@ -70,6 +70,7 @@ namespace PlexRequests
                 };
                 options.AddSecurityRequirement(security);
                 options.DescribeAllEnumsAsStrings();
+                options.EnableAnnotations();
             });
 
             ConfigureLogging();

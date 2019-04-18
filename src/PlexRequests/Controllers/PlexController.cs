@@ -5,6 +5,7 @@ using Microsoft.AspNetCore.Mvc;
 using PlexRequests.Attributes;
 using PlexRequests.Models.Plex;
 using PlexRequests.Models.SubModels.Detail;
+using Swashbuckle.AspNetCore.Annotations;
 
 namespace PlexRequests.Controllers
 {
@@ -23,7 +24,12 @@ namespace PlexRequests.Controllers
 
         [HttpPost("Users/Sync")]
         [Admin]
-        public async Task<IActionResult> SyncUsers()
+        [SwaggerOperation(
+            Description = "Synchronise all users associated with the Admin account. Sync can be called many times to refresh users.")]
+        [SwaggerResponse(200)]
+        [SwaggerResponse(400)]
+        [SwaggerResponse(401)]
+        public async Task<ActionResult> SyncUsers()
         {
             await _mediator.Send(new SyncUsersCommand());
 
@@ -33,6 +39,9 @@ namespace PlexRequests.Controllers
         [HttpGet]
         [Route("Libraries")]
         [Admin]
+        [SwaggerResponse(200)]
+        [SwaggerResponse(400)]
+        [SwaggerResponse(401)]
         public async Task<ActionResult<GetManyPlexServerLibraryQueryResult>> GetLibraries()
         {
             var query = new GetManyPlexServerLibraryQuery();
@@ -45,6 +54,9 @@ namespace PlexRequests.Controllers
         [HttpPut]
         [Route("Libraries/{key}")]
         [Admin]
+        [SwaggerResponse(200)]
+        [SwaggerResponse(400)]
+        [SwaggerResponse(401)]
         public async Task<ActionResult> UpdateLibrary(string key, UpdatePlexServerLibraryCommand command)
         {
             command.Key = key;
@@ -56,6 +68,11 @@ namespace PlexRequests.Controllers
         
         [HttpPost("Libraries/Sync")]
         [Admin]
+        [SwaggerOperation(
+            Description = "Synchronise all libraries associated with the Admin account. Sync can be called many times to refresh libraries.")]
+        [SwaggerResponse(200)]
+        [SwaggerResponse(400)]
+        [SwaggerResponse(401)]
         public async Task<ActionResult> SyncLibraries()
         {
             await _mediator.Send(new SyncLibrariesCommand());
@@ -65,6 +82,11 @@ namespace PlexRequests.Controllers
 
         [HttpPost("Content/Sync")]
         [Admin]
+        [SwaggerOperation(
+            Description = "Synchronise all Plex media content from any 'Enabled' library in PlexRequests.")]
+        [SwaggerResponse(200)]
+        [SwaggerResponse(400)]
+        [SwaggerResponse(401)]
         public async Task<ActionResult> SyncContent([FromQuery] bool fullRefresh = false)
         {
             var command = new SyncContentCommand(fullRefresh);
@@ -76,6 +98,9 @@ namespace PlexRequests.Controllers
 
         [HttpGet("Server")]
         [Admin]
+        [SwaggerResponse(200, null, typeof(PlexServerDetailModel))]
+        [SwaggerResponse(400)]
+        [SwaggerResponse(401)]
         public async Task<ActionResult<PlexServerDetailModel>> GetServer()
         {
             var query = new GetServerQuery();

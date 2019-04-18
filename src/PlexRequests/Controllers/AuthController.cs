@@ -3,6 +3,7 @@ using MediatR;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using PlexRequests.Models.Auth;
+using Swashbuckle.AspNetCore.Annotations;
 
 namespace PlexRequests.Controllers
 {
@@ -21,6 +22,8 @@ namespace PlexRequests.Controllers
 
         [HttpPost("Login")]
         [AllowAnonymous]
+        [SwaggerResponse(200, "Login was successful")]
+        [SwaggerResponse(400, "Login unsuccessful due to invalid account details")]
         public async Task<ActionResult<UserLoginCommandResult>> Login([FromBody] UserLoginCommand command)
         {
             var result = await _mediator.Send(command);
@@ -35,6 +38,10 @@ namespace PlexRequests.Controllers
 
         [HttpPost("CreateAdmin")]
         [AllowAnonymous]
+        [SwaggerOperation(
+            Description = "Creates and Admin account. Only one Admin account can exist at any time.")]
+        [SwaggerResponse(200, "Admin created successfully")]
+        [SwaggerResponse(400, "Unable to create Admin account")]
         public async Task<ActionResult<UserLoginCommandResult>> AddPlexAdmin([FromBody] AddAdminCommand command)
         {
             var result = await _mediator.Send(command);

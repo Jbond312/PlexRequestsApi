@@ -6,6 +6,7 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using PlexRequests.Models.Requests;
 using PlexRequests.Repository.Enums;
+using Swashbuckle.AspNetCore.Annotations;
 
 namespace PlexRequests.Controllers
 {
@@ -22,6 +23,9 @@ namespace PlexRequests.Controllers
         }
 
         [HttpPost("Movie")]
+        [SwaggerResponse(200)]
+        [SwaggerResponse(400)]
+        [SwaggerResponse(401)]
         public async Task<ActionResult> CreateMovieRequest([FromBody] CreateMovieRequestCommand command)
         {
             await _mediator.Send(command);
@@ -30,6 +34,9 @@ namespace PlexRequests.Controllers
         }
         
         [HttpPost("Tv")]
+        [SwaggerResponse(200)]
+        [SwaggerResponse(400)]
+        [SwaggerResponse(401)]
         public async Task<ActionResult> CreateTvRequest([FromBody] CreateTvRequestCommand command)
         {
             await _mediator.Send(command);
@@ -38,6 +45,10 @@ namespace PlexRequests.Controllers
         }
 
         [HttpDelete("{id:guid}")]
+        [SwaggerResponse(200)]
+        [SwaggerResponse(400)]
+        [SwaggerResponse(401)]
+        [SwaggerResponse(403)]
         public async Task<ActionResult> DeleteRequest([FromRoute][Required] Guid id)
         {
             var command = new DeleteRequestCommand(id);
@@ -48,6 +59,8 @@ namespace PlexRequests.Controllers
         }
 
         [HttpGet("Movie")]
+        [SwaggerResponse(200, null, typeof(GetMoviePagedRequestQueryResult))]
+        [SwaggerResponse(401)]
         public async Task<ActionResult<GetMoviePagedRequestQueryResult>> GetMovieRequests([FromQuery] string title,
             [FromQuery] bool? includeCurrentUsersOnly, [FromQuery] RequestStatuses? status,
             [FromQuery] int? page, [FromQuery] int? pageSize)
@@ -67,6 +80,8 @@ namespace PlexRequests.Controllers
         }
 
         [HttpGet("Tv")]
+        [SwaggerResponse(200, null, typeof(GetTvPagedRequestQueryResult))]
+        [SwaggerResponse(401)]
         public async Task<ActionResult<GetTvPagedRequestQueryResult>> GetTvRequests([FromQuery] string title,
             [FromQuery] bool? includeCurrentUsersOnly, [FromQuery] RequestStatuses? status,
             [FromQuery] int? page, [FromQuery] int? pageSize)
