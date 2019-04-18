@@ -122,6 +122,28 @@ namespace PlexRequests.UnitTests.Models.Requests
         }
 
         [Fact]
+        private void Throws_Error_When_Duplicate_Seasons_In_Request()
+        {
+            this.Given(x => x.GivenACommand())
+                .Given(x => x.GivenDuplicateSeasonsInCommand())
+                .When(x => x.WhenCommandActionIsCreated())
+                .Then(x => x.ThenErrorIsThrown("Request not created",
+                    "All seasons in a request must be unique.", HttpStatusCode.BadRequest))
+                .BDDfy();
+        }
+        
+        [Fact]
+        private void Throws_Error_When_Duplicate_Episodes_In_Request()
+        {
+            this.Given(x => x.GivenACommand())
+                .Given(x => x.GivenDuplicateEpisodesInCommand())
+                .When(x => x.WhenCommandActionIsCreated())
+                .Then(x => x.ThenErrorIsThrown("Request not created",
+                    "All episodes in a season must be unique.", HttpStatusCode.BadRequest))
+                .BDDfy();
+        }
+        
+        [Fact]
         private void Creates_Request_Successfully_When_All_Episodes_Are_Valid()
         {
             const int expectedSeasonCount = 3;
@@ -179,6 +201,26 @@ namespace PlexRequests.UnitTests.Models.Requests
         private void GivenACommand()
         {
             _command = _fixture.Create<CreateTvRequestCommand>();
+        }
+        
+        private void GivenDuplicateSeasonsInCommand()
+        {
+            var commandSeason = _command.Seasons[0];
+            var duplicateSeason = new TvRequestSeasonCreateModel
+            {
+                Index = commandSeason.Index
+            };
+            _command.Seasons.Add(duplicateSeason);
+        }
+        
+        private void GivenDuplicateEpisodesInCommand()
+        {
+            var commandSeason = _command.Seasons[0];
+            var duplicateEpisode = new TvRequestEpisodeCreateModel
+            {
+                Index = commandSeason.Episodes[0].Index
+            };
+            commandSeason.Episodes.Add(duplicateEpisode);
         }
 
         private void GivenNoSeasons(bool hasNullSeasons)
