@@ -1,7 +1,6 @@
 ﻿using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
-using PlexRequests.Core;
 using PlexRequests.Core.Exceptions;
 using PlexRequests.Repository;
 using PlexRequests.Repository.Enums;

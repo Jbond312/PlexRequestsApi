@@ -7,7 +7,6 @@ using System.Xml.Serialization;
 using Microsoft.Extensions.Logging;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Serialization;
-using PlexRequests.Core;
 using PlexRequests.Core.Exceptions;
 
 namespace PlexRequests.Api

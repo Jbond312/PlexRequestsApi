@@ -9,6 +9,7 @@ namespace PlexRequests.Mapping
         public PlexProfile()
         {
             CreateMap<PlexServer, PlexServerDetailModel>();
+            CreateMap<PlexServerLibrary, PlexServerLibraryDetailModel>();
         }
     }
 }

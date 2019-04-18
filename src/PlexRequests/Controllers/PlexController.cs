@@ -1,5 +1,4 @@
-﻿using System.Collections.Generic;
-using System.Threading.Tasks;
+﻿using System.Threading.Tasks;
 using MediatR;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
@@ -22,7 +21,7 @@ namespace PlexRequests.Controllers
             _mediator = mediator;
         }
 
-        [HttpPost("SyncUsers")]
+        [HttpPost("Users/Sync")]
         [Admin]
         public async Task<IActionResult> SyncUsers()
         {
@@ -31,18 +30,30 @@ namespace PlexRequests.Controllers
             return Ok();
         }
 
-        [HttpPost]
-        [Route("SyncLibraries")]
+        [HttpGet]
+        [Route("Libraries")]
         [Admin]
-        public async Task<ActionResult<List<PlexServerLibraryDetailModel>>> SyncLibraries()
+        public async Task<ActionResult<GetManyPlexServerLibraryQueryResult>> GetLibraries()
         {
-            var result = await _mediator.Send(new SyncLibrariesCommand());
+            var query = new GetManyPlexServerLibraryQuery();
 
-            return Ok(result.Libraries);
+            var libraries = await _mediator.Send(query);
+            
+            return Ok(libraries);
+        }
+        
+        [HttpPost]
+        [Route("Libraries/Sync")]
+        [Admin]
+        public async Task<ActionResult> SyncLibraries()
+        {
+            await _mediator.Send(new SyncLibrariesCommand());
+
+            return Ok();
         }
 
         [HttpPost]
-        [Route("SyncContent")]
+        [Route("Content/Sync")]
         [Admin]
         public async Task<ActionResult> SyncContent([FromQuery] bool fullRefresh = false)
         {

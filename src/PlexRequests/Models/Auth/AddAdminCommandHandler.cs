@@ -6,7 +6,6 @@ using System.Threading.Tasks;
 using MediatR;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
-using PlexRequests.Core;
 using PlexRequests.Core.Auth;
 using PlexRequests.Core.Exceptions;
 using PlexRequests.Core.Services;

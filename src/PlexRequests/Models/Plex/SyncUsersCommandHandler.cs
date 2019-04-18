@@ -4,7 +4,6 @@ using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 using MediatR;
-using PlexRequests.Core;
 using PlexRequests.Core.Auth;
 using PlexRequests.Core.Services;
 using PlexRequests.Plex;
