@@ -17,5 +17,6 @@ namespace PlexRequests.Core.Services
         Task Create(Request request);
         Task Update(Request request);
         Task DeleteRequest(Guid id);
+        RequestStatuses CalculateAggregatedStatus(Request request);
     }
 }

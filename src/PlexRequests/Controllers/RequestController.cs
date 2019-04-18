@@ -59,6 +59,20 @@ namespace PlexRequests.Controllers
 
             return Ok();
         }
+        
+        [HttpPost("Tv/{id:guid}/Approve")]
+        [Admin]
+        [SwaggerResponse(200)]
+        [SwaggerResponse(400)]
+        [SwaggerResponse(401)]
+        public async Task<ActionResult> ApproveTvRequest([FromRoute] Guid id, ApproveTvRequestCommand command)
+        {
+            command.RequestId = id;
+            
+            await _mediator.Send(command);
+
+            return Ok();
+        }
 
         [HttpDelete("{id:guid}")]
         [SwaggerResponse(200)]

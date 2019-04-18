@@ -11,7 +11,7 @@ using PlexRequests.Repository.Models;
 using TestStack.BDDfy;
 using Xunit;
 
-namespace PlexRequests.Core.UnitTests
+namespace PlexRequests.Core.UnitTests.Services
 {
     public class CompletionServiceTests
     {
