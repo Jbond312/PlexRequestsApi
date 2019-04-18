@@ -7,7 +7,6 @@ using FluentAssertions;
 using Microsoft.Extensions.Logging;
 using NSubstitute;
 using NSubstitute.ReturnsExtensions;
-using PlexRequests.Core;
 using PlexRequests.Core.Exceptions;
 using PlexRequests.Core.Services;
 using PlexRequests.Models.Auth;

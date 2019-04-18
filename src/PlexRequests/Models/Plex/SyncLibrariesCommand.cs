@@ -2,7 +2,7 @@
 
 namespace PlexRequests.Models.Plex
 {
-    public class SyncLibrariesCommand : IRequest<SyncLibrariesCommandResult>
+    public class SyncLibrariesCommand : IRequest
     {
     }
 }

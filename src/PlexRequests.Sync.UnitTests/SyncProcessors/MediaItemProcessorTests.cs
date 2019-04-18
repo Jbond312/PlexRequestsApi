@@ -6,7 +6,6 @@ using System.Threading.Tasks;
 using AutoFixture;
 using FluentAssertions;
 using NSubstitute;
-using PlexRequests.Core;
 using PlexRequests.Core.Exceptions;
 using PlexRequests.Core.Helpers;
 using PlexRequests.Plex;

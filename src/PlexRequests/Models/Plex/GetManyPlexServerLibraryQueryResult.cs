@@ -1,9 +1,9 @@
-﻿using System.Collections.Generic;
+using System.Collections.Generic;
 using PlexRequests.Models.SubModels.Detail;
 
 namespace PlexRequests.Models.Plex
 {
-    public class SyncLibrariesCommandResult
+    public class GetManyPlexServerLibraryQueryResult
     {
         public List<PlexServerLibraryDetailModel> Libraries { get; set; }
     }

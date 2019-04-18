@@ -1,38 +1,32 @@
-﻿using System.Collections.Generic;
-using System.Linq;
+﻿using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
-using AutoMapper;
 using MediatR;
 using Microsoft.Extensions.Options;
 using PlexRequests.Core.Settings;
-using PlexRequests.Models.SubModels.Detail;
 using PlexRequests.Plex;
 using PlexRequests.Plex.Models;
 using PlexRequests.Repository.Models;
 
 namespace PlexRequests.Models.Plex
 {
-    public class SyncLibrariesCommandHandler : IRequestHandler<SyncLibrariesCommand, SyncLibrariesCommandResult>
+    public class SyncLibrariesCommandHandler : AsyncRequestHandler<SyncLibrariesCommand>
     {
-        private readonly IMapper _mapper;
         private readonly IPlexApi _plexApi;
         private readonly IPlexService _plexService;
         private readonly PlexSettings _plexSettings;
 
         public SyncLibrariesCommandHandler(
-            IMapper mapper,
             IPlexApi plexApi,
             IPlexService plexService,
             IOptions<PlexSettings> plexSettings)
         {
-            _mapper = mapper;
             _plexApi = plexApi;
             _plexService = plexService;
             _plexSettings = plexSettings.Value;
         }
 
-        public async Task<SyncLibrariesCommandResult> Handle(SyncLibrariesCommand request, CancellationToken cancellationToken)
+        protected override async Task Handle(SyncLibrariesCommand request, CancellationToken cancellationToken)
         {
             var server = await _plexService.GetServer();
 
@@ -43,13 +37,6 @@ namespace PlexRequests.Models.Plex
             SetNewLibraries(libraryContainer, server);
 
             await _plexService.Update(server);
-
-            var libraries = _mapper.Map<List<PlexServerLibraryDetailModel>>(server.Libraries);
-
-            return new SyncLibrariesCommandResult
-            {
-                Libraries = libraries
-            };
         }
 
         private static void SetNewLibraries(PlexMediaContainer libraryContainer, PlexServer server)

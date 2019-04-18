@@ -4,12 +4,11 @@ using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 using AutoFixture;
-using AutoMapper;
 using FluentAssertions;
+using MediatR;
 using Microsoft.Extensions.Options;
 using NSubstitute;
 using PlexRequests.Core.Settings;
-using PlexRequests.Mapping;
 using PlexRequests.Models.Plex;
 using PlexRequests.Plex;
 using PlexRequests.Plex.Models;
@@ -21,7 +20,7 @@ namespace PlexRequests.UnitTests.Models.Plex
 {
     public class SyncLibrariesCommandHandlerTests
     {
-        private readonly SyncLibrariesCommandHandler _underTest;
+        private readonly IRequestHandler<SyncLibrariesCommand> _underTest;
 
         private readonly IPlexApi _plexApi;
         private readonly IPlexService _plexService;
@@ -36,9 +35,6 @@ namespace PlexRequests.UnitTests.Models.Plex
 
         public SyncLibrariesCommandHandlerTests()
         {
-            var mapperConfig = new MapperConfiguration(opts => { opts.AddProfile(new PlexProfile()); });
-            var mapper = mapperConfig.CreateMapper();
-
             _plexApi = Substitute.For<IPlexApi>();
             _plexService = Substitute.For<IPlexService>();
 
@@ -47,7 +43,7 @@ namespace PlexRequests.UnitTests.Models.Plex
             var plexSettings = _fixture.Create<PlexSettings>();
             var options = Options.Create(plexSettings);
 
-            _underTest = new SyncLibrariesCommandHandler(mapper, _plexApi, _plexService, options);
+            _underTest = new SyncLibrariesCommandHandler(_plexApi, _plexService, options);
         }
 
         [Fact]
