@@ -42,8 +42,19 @@ namespace PlexRequests.Controllers
             return Ok(libraries);
         }
         
-        [HttpPost]
-        [Route("Libraries/Sync")]
+        [HttpPut]
+        [Route("Libraries/{key}")]
+        [Admin]
+        public async Task<ActionResult> UpdateLibrary(string key, UpdatePlexServerLibraryCommand command)
+        {
+            command.Key = key;
+
+            var libraries = await _mediator.Send(command);
+            
+            return Ok(libraries);
+        }
+        
+        [HttpPost("Libraries/Sync")]
         [Admin]
         public async Task<ActionResult> SyncLibraries()
         {
@@ -52,8 +63,7 @@ namespace PlexRequests.Controllers
             return Ok();
         }
 
-        [HttpPost]
-        [Route("Content/Sync")]
+        [HttpPost("Content/Sync")]
         [Admin]
         public async Task<ActionResult> SyncContent([FromQuery] bool fullRefresh = false)
         {
@@ -64,8 +74,7 @@ namespace PlexRequests.Controllers
             return Ok();
         }
 
-        [HttpGet]
-        [Route("Server")]
+        [HttpGet("Server")]
         [Admin]
         public async Task<ActionResult<PlexServerDetailModel>> GetServer()
         {
