@@ -46,12 +46,22 @@ namespace PlexRequests.UnitTests.Models.Requests
                 .Then(x => x.ThenAnErrorIsThrown("Invalid request", "No request was found with the given Id", HttpStatusCode.NotFound))
                 .BDDfy();
         }
+        
+        [Fact]
+        private void Throws_Error_When_Request_Already_Completed()
+        {
+            this.Given(x => x.GivenACommand())
+                .Given(x => x.GivenARequestIsFoundWithStatus(RequestStatuses.Completed))
+                .When(x => x.WhenCommandActionIsCreated())
+                .Then(x => x.ThenAnErrorIsThrown("Invalid request", "Request has already been completed", HttpStatusCode.BadRequest))
+                .BDDfy();
+        }
 
         [Fact]
         private void Updates_Request_To_Approved_Successfully()
         {
             this.Given(x => x.GivenACommand())
-                .Given(x => x.GivenARequestIsFound())
+                .Given(x => x.GivenARequestIsFoundWithStatus(RequestStatuses.PendingApproval))
                 .Given(x => x.GivenARequestIsUpdated())
                 .When(x => x.WhenCommandActionIsCreated())
                 .Then(x => x.ThenTheCommandIsSuccessful())
@@ -69,10 +79,10 @@ namespace PlexRequests.UnitTests.Models.Requests
             _requestService.GetRequestById(Arg.Any<Guid>()).ReturnsNull();
         }
 
-        private void GivenARequestIsFound()
+        private void GivenARequestIsFoundWithStatus(RequestStatuses status)
         {
             var request = _fixture.Build<Request>()
-                                  .With(x => x.Status, RequestStatuses.PendingApproval)
+                                  .With(x => x.Status, status)
                                   .Create();
             
             _requestService.GetRequestById(Arg.Any<Guid>()).Returns(request);
