@@ -33,7 +33,6 @@ namespace PlexRequests.ApiRequests.Requests.Commands
             if (request.Status == RequestStatuses.Completed)
             {
                 throw new PlexRequestException("Invalid request", "Request has already been completed");
-
             }
 
             if (command.ApproveAll)

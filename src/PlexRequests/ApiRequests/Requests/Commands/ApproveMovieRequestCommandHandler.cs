@@ -27,6 +27,11 @@ namespace PlexRequests.ApiRequests.Requests.Commands
             {
                 throw new PlexRequestException("Invalid request", "No request was found with the given Id", HttpStatusCode.NotFound);
             }
+            
+            if (request.Status == RequestStatuses.Completed)
+            {
+                throw new PlexRequestException("Invalid request", "Request has already been completed");
+            }
 
             request.Status = RequestStatuses.Approved;
             
