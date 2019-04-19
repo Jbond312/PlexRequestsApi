@@ -25,6 +25,7 @@ namespace PlexRequests.Core.UnitTests.Services
         private List<Request> _requests;
         private Func<Task> _commandAction;
         private Request _updatedRequest;
+        private RequestStatuses _aggregateStatus;
 
         public CompletionServiceTests()
         {
@@ -75,38 +76,16 @@ namespace PlexRequests.Core.UnitTests.Services
         }
 
         [Fact]
-        private void When_Tv_All_Episodes_Match_Overall_Status_Should_Be_Complete()
+        private void Calls_Aggregate_Status_For_Tv_Shows()
         {
             this.Given(x => x.GivenRequestsAgentsForPlexMediaItems())
                 .Given(x => x.GivenAMatchingRequestWithAllMatchingEpisodes())
                 .Given(x => x.GivenARequestIsUpdated())
+                .Given(x => x.GivenAggregateStatusIsRetrieved())
                 .When(x => x.WhenCommandActionIsCreated(PlexMediaTypes.Show))
                 .Then(x => x.ThenResponseIsSuccessful())
                 .Then(x => x.ThenUpdatedRequestShouldBeCorrect(RequestStatuses.Completed))
-                .BDDfy();
-        }
-        
-        [Fact]
-        private void When_Tv_All_A_Season_Missing_But_Remaining_Match_Overall_Status_Should_Be_Partially_Complete()
-        {
-            this.Given(x => x.GivenRequestsAgentsForPlexMediaItems())
-                .Given(x => x.GivenAMissingSeasonButRemainingMatch())
-                .Given(x => x.GivenARequestIsUpdated())
-                .When(x => x.WhenCommandActionIsCreated(PlexMediaTypes.Show))
-                .Then(x => x.ThenResponseIsSuccessful())
-                .Then(x => x.ThenUpdatedRequestShouldBeCorrect(RequestStatuses.PartialCompletion))
-                .BDDfy();
-        }
-        
-        [Fact]
-        private void When_Tv_All_An_Episode_Missing_But_Remaining_Match_Overall_Status_Should_Be_Partially_Complete()
-        {
-            this.Given(x => x.GivenRequestsAgentsForPlexMediaItems())
-                .Given(x => x.GivenAMissingEpisodeButRemainingMatch())
-                .Given(x => x.GivenARequestIsUpdated())
-                .When(x => x.WhenCommandActionIsCreated(PlexMediaTypes.Show))
-                .Then(x => x.ThenResponseIsSuccessful())
-                .Then(x => x.ThenUpdatedRequestShouldBeCorrect(RequestStatuses.PartialCompletion))
+                .Then(x => x.ThenAggregateStatusIsCorrect())
                 .BDDfy();
         }
 
@@ -161,40 +140,16 @@ namespace PlexRequests.Core.UnitTests.Services
             
             _requestService.GetIncompleteRequests(Arg.Any<PlexMediaTypes>()).Returns(_requests);
         }
-        
-        private void GivenAMissingSeasonButRemainingMatch()
-        {
-            var plexItem = _agentsForPlexItems.First().Value;
-
-            var request = _fixture.Create<Request>();
-            request.PrimaryAgent = GetMatchingAgent();
-            request.Seasons = new List<RequestSeason>();
-
-            MirrorPlexSeasons(plexItem, request, true, false);
-
-            _requests = new List<Request>{request};
-            
-            _requestService.GetIncompleteRequests(Arg.Any<PlexMediaTypes>()).Returns(_requests);
-        }
-
-        private void GivenAMissingEpisodeButRemainingMatch()
-        {
-            var plexItem = _agentsForPlexItems.First().Value;
-
-            var request = _fixture.Create<Request>();
-            request.PrimaryAgent = GetMatchingAgent();
-            request.Seasons = new List<RequestSeason>();
-
-            MirrorPlexSeasons(plexItem, request, false, true);
-
-            _requests = new List<Request>{request};
-            
-            _requestService.GetIncompleteRequests(Arg.Any<PlexMediaTypes>()).Returns(_requests);
-        }
 
         private void GivenARequestIsUpdated()
         {
             _requestService.Update(Arg.Do<Request>(x => _updatedRequest = x));
+        }
+
+        private void GivenAggregateStatusIsRetrieved()
+        {
+            _aggregateStatus = RequestStatuses.Completed;
+            _requestService.CalculateAggregatedStatus(Arg.Any<Request>()).Returns(_aggregateStatus);
         }
 
         private void WhenCommandActionIsCreated(PlexMediaTypes mediaType)
@@ -221,6 +176,13 @@ namespace PlexRequests.Core.UnitTests.Services
         {
             _updatedRequest.Should().NotBeNull();
             _updatedRequest.Status.Should().Be(expectedStatus);
+        }
+
+        private void ThenAggregateStatusIsCorrect()
+        {
+            _updatedRequest.Should().NotBeNull();
+            _updatedRequest.Status.Should().Be(_aggregateStatus);
+            _requestService.Received().CalculateAggregatedStatus(Arg.Any<Request>());
         }
 
         private RequestAgent GetMatchingAgent()

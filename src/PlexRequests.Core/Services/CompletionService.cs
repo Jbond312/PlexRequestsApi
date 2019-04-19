@@ -48,18 +48,14 @@ namespace PlexRequests.Core.Services
             }
         }
         
-        private static void AutoCompleteTvSeasonEpisodes(Request incompleteRequest, PlexMediaItem plexMediaItem)
+        private void AutoCompleteTvSeasonEpisodes(Request incompleteRequest, PlexMediaItem plexMediaItem)
         {
-            var totalEpisodes = 0;
-            var totalCompletedEpisodes = 0;
-            var hasMissingSeasons = false;
             foreach (var season in incompleteRequest.Seasons)
             {
                 var matchingSeason = plexMediaItem.Seasons.FirstOrDefault(x => x.Season == season.Index);
 
                 if (matchingSeason == null)
                 {
-                    hasMissingSeasons = true;
                     continue;
                 }
 
@@ -67,11 +63,8 @@ namespace PlexRequests.Core.Services
 
                 foreach (var episode in season.Episodes)
                 {
-                    totalEpisodes++;
-
                     if (episode.Status == RequestStatuses.Completed)
                     {
-                        totalCompletedEpisodes++;
                         continue;
                     }
                     
@@ -83,22 +76,11 @@ namespace PlexRequests.Core.Services
                     }
 
                     episode.PlexMediaUri = matchingEpisode.PlexMediaUri;
-
-                    totalCompletedEpisodes++;
                     episode.Status = RequestStatuses.Completed;
                 }
             }
 
-            if (totalCompletedEpisodes > 0)
-            {
-                if (hasMissingSeasons || totalCompletedEpisodes != totalEpisodes)
-                {
-                    incompleteRequest.Status = RequestStatuses.PartialCompletion;
-                } else if (totalCompletedEpisodes == totalEpisodes)
-                {
-                    incompleteRequest.Status = RequestStatuses.Completed;
-                }
-            }
+            incompleteRequest.Status = _requestService.CalculateAggregatedStatus(incompleteRequest);
         }
     }
 }
