@@ -21,5 +21,6 @@ namespace PlexRequests.Repository.Models
         public DateTime AirDate { get; set; }
         public DateTime Created { get; set; }
         public List<RequestAgent> AdditionalAgents { get; set; }
+        public string Comment { get; set; }
     }
 }

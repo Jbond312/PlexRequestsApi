@@ -49,6 +49,20 @@ namespace PlexRequests.Controllers
             return Ok();
         }
         
+        [HttpPost("Movie/{id:guid}/Reject")]
+        [Admin]
+        [SwaggerResponse(200)]
+        [SwaggerResponse(400)]
+        [SwaggerResponse(401)]
+        public async Task<ActionResult> RejectMovieRequest([FromRoute] Guid id, [FromBody] RejectMovieRequestCommand command)
+        {
+            command.RequestId = id;
+            
+            await _mediator.Send(command);
+
+            return Ok();
+        }
+        
         [HttpPost("Tv")]
         [SwaggerResponse(200)]
         [SwaggerResponse(400)]
