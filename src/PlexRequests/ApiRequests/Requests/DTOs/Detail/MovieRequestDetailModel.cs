@@ -18,5 +18,6 @@ namespace PlexRequests.ApiRequests.Requests.DTOs.Detail
         public string ImagePath { get; set; }
         public DateTime AirDate { get; set; }
         public DateTime Created { get; set; }
+        public string Comment { get; set; }
     }
 }
