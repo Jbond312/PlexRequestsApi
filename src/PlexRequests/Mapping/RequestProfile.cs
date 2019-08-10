@@ -10,6 +10,7 @@ namespace PlexRequests.Mapping
         public RequestProfile()
         {
             CreateMap<Request, MovieRequestDetailModel>();
+            CreateMap<Request, TvRequestDetailModel>();
             CreateMap<RequestSeason, TvRequestSeasonDetailModel>();
             CreateMap<RequestEpisode, TvRequestEpisodeDetailModel>();
             CreateMap<TvRequestSeasonCreateModel, RequestSeason>();

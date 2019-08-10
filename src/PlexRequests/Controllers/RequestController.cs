@@ -34,7 +34,7 @@ namespace PlexRequests.Controllers
 
             return Ok();
         }
-        
+
         [HttpPost("Movie/{id:guid}/Approve")]
         [Admin]
         [SwaggerResponse(200)]
@@ -43,12 +43,26 @@ namespace PlexRequests.Controllers
         public async Task<ActionResult> ApproveMovieRequest([FromRoute] Guid id)
         {
             var command = new ApproveMovieRequestCommand(id);
-            
+
             await _mediator.Send(command);
 
             return Ok();
         }
-        
+
+        [HttpPost("Movie/{id:guid}/Reject")]
+        [Admin]
+        [SwaggerResponse(200)]
+        [SwaggerResponse(400)]
+        [SwaggerResponse(401)]
+        public async Task<ActionResult> RejectMovieRequest([FromRoute] Guid id, [FromBody] RejectMovieRequestCommand command)
+        {
+            command.RequestId = id;
+
+            await _mediator.Send(command);
+
+            return Ok();
+        }
+
         [HttpPost("Tv")]
         [SwaggerResponse(200)]
         [SwaggerResponse(400)]
@@ -59,7 +73,7 @@ namespace PlexRequests.Controllers
 
             return Ok();
         }
-        
+
         [HttpPost("Tv/{id:guid}/Approve")]
         [Admin]
         [SwaggerResponse(200)]
@@ -68,7 +82,21 @@ namespace PlexRequests.Controllers
         public async Task<ActionResult> ApproveTvRequest([FromRoute] Guid id, ApproveTvRequestCommand command)
         {
             command.RequestId = id;
-            
+
+            await _mediator.Send(command);
+
+            return Ok();
+        }
+
+        [HttpPost("Tv/{id:guid}/Reject")]
+        [Admin]
+        [SwaggerResponse(200)]
+        [SwaggerResponse(400)]
+        [SwaggerResponse(401)]
+        public async Task<ActionResult> RejectTvRequest([FromRoute] Guid id, [FromBody] RejectTvRequestCommand command)
+        {
+            command.RequestId = id;
+
             await _mediator.Send(command);
 
             return Ok();
@@ -84,7 +112,7 @@ namespace PlexRequests.Controllers
             var command = new DeleteRequestCommand(id);
 
             await _mediator.Send(command);
-            
+
             return Ok();
         }
 
