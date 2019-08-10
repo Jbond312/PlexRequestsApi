@@ -25,95 +25,100 @@ namespace PlexRequests.Controllers
         }
 
         [HttpPost("Movie")]
-        [SwaggerResponse(200)]
+        [SwaggerResponse(202)]
         [SwaggerResponse(400)]
         [SwaggerResponse(401)]
         public async Task<ActionResult> CreateMovieRequest([FromBody] CreateMovieRequestCommand command)
         {
             await _mediator.Send(command);
 
-            return Ok();
+            return NoContent();
         }
 
         [HttpPost("Movie/{id:guid}/Approve")]
         [Admin]
-        [SwaggerResponse(200)]
+        [SwaggerResponse(202)]
         [SwaggerResponse(400)]
         [SwaggerResponse(401)]
+        [SwaggerResponse(404)]
         public async Task<ActionResult> ApproveMovieRequest([FromRoute] Guid id)
         {
             var command = new ApproveMovieRequestCommand(id);
 
             await _mediator.Send(command);
 
-            return Ok();
+            return NoContent();
         }
 
         [HttpPost("Movie/{id:guid}/Reject")]
         [Admin]
-        [SwaggerResponse(200)]
+        [SwaggerResponse(202)]
         [SwaggerResponse(400)]
         [SwaggerResponse(401)]
+        [SwaggerResponse(404)]
         public async Task<ActionResult> RejectMovieRequest([FromRoute] Guid id, [FromBody] RejectMovieRequestCommand command)
         {
             command.RequestId = id;
 
             await _mediator.Send(command);
 
-            return Ok();
+            return NoContent();
         }
 
         [HttpPost("Tv")]
-        [SwaggerResponse(200)]
+        [SwaggerResponse(202)]
         [SwaggerResponse(400)]
         [SwaggerResponse(401)]
         public async Task<ActionResult> CreateTvRequest([FromBody] CreateTvRequestCommand command)
         {
             await _mediator.Send(command);
 
-            return Ok();
+            return NoContent();
         }
 
         [HttpPost("Tv/{id:guid}/Approve")]
         [Admin]
-        [SwaggerResponse(200)]
+        [SwaggerResponse(202)]
         [SwaggerResponse(400)]
         [SwaggerResponse(401)]
+        [SwaggerResponse(404)]
         public async Task<ActionResult> ApproveTvRequest([FromRoute] Guid id, ApproveTvRequestCommand command)
         {
             command.RequestId = id;
 
             await _mediator.Send(command);
 
-            return Ok();
+            return NoContent();
         }
 
         [HttpPost("Tv/{id:guid}/Reject")]
         [Admin]
-        [SwaggerResponse(200)]
+        [SwaggerResponse(202)]
         [SwaggerResponse(400)]
         [SwaggerResponse(401)]
+        [SwaggerResponse(404)]
         public async Task<ActionResult> RejectTvRequest([FromRoute] Guid id, [FromBody] RejectTvRequestCommand command)
         {
             command.RequestId = id;
 
             await _mediator.Send(command);
 
-            return Ok();
+            return NoContent();
         }
 
         [HttpDelete("{id:guid}")]
-        [SwaggerResponse(200)]
+        [SwaggerResponse(202)]
         [SwaggerResponse(400)]
         [SwaggerResponse(401)]
         [SwaggerResponse(403)]
+        [SwaggerResponse(404)]
         public async Task<ActionResult> DeleteRequest([FromRoute][Required] Guid id)
         {
             var command = new DeleteRequestCommand(id);
 
             await _mediator.Send(command);
 
-            return Ok();
+            return NoContent();
         }
 
         [HttpGet("Movie")]
