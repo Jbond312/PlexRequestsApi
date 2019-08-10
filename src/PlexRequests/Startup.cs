@@ -76,8 +76,10 @@ namespace PlexRequests
             ConfigureLogging();
 
             services.AddMemoryCache();
-            services.AddAutoMapper();
-            services.AddMediatR();
+
+            var assemblies = AppDomain.CurrentDomain.GetAssemblies();
+            services.AddAutoMapper(assemblies);
+            services.AddMediatR(assemblies);
 
             services.Configure<AuthenticationSettings>(Configuration.GetSection(nameof(AuthenticationSettings)));
             services.Configure<TheMovieDbSettings>(Configuration.GetSection(nameof(TheMovieDbSettings)));
@@ -86,8 +88,8 @@ namespace PlexRequests
 
             var authSettings = Configuration.GetSection(nameof(AuthenticationSettings)).Get<AuthenticationSettings>();
             var databaseSettings = Configuration.GetSection(nameof(DatabaseSettings)).Get<DatabaseSettings>();
-            
-            if(Environment.IsProduction())
+
+            if (Environment.IsProduction())
             {
                 var dbUser = System.Environment.GetEnvironmentVariable("MONGO_INITDB_ROOT_USERNAME");
                 var dbUserPass = System.Environment.GetEnvironmentVariable("MONGO_INITDB_ROOT_PASSWORD");
