@@ -8,7 +8,7 @@ namespace PlexRequests.TheMovieDb.Models
         public bool Adult { get; set; }
         public string Backdrop_Path { get; set; }
         public BelongsToCollection Belongs_To_Collection { get; set; }
-        public int Budget { get; set; }
+        public long Budget { get; set; }
         public List<Genre> Genres { get; set; }
         public string Homepage { get; set; }
         public int Id { get; set; }
@@ -21,7 +21,7 @@ namespace PlexRequests.TheMovieDb.Models
         public List<ProductionCompany> Production_Companies { get; set; }
         public List<ProductionCountry> Production_Countries { get; set; }
         public string Release_Date { get; set; }
-        public int Revenue { get; set; }
+        public long Revenue { get; set; }
         public int? Runtime { get; set; }
         public List<SpokenLanguage> Spoken_Languages { get; set; }
         public string Status { get; set; }
