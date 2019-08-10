@@ -46,16 +46,9 @@ namespace PlexRequests.Core.Services
 
         public async Task<List<Request>> GetIncompleteRequests(PlexMediaTypes mediaType)
         {
-            var validRequestStatuses = new List<RequestStatuses>
-            {
-                RequestStatuses.Approved,
-                RequestStatuses.PendingApproval,
-                RequestStatuses.PartialCompletion
-            };
-            
             return await _requestRepository.GetMany(x =>
-                x.MediaType == mediaType && validRequestStatuses.Contains(x.Status)
-                                         && x.PlexMediaUri == null);
+                x.MediaType == mediaType &&
+                x.Status != RequestStatuses.Completed && x.PlexMediaUri == null);
         }
 
         public async Task Create(Request request)
