@@ -7,6 +7,6 @@ namespace PlexRequests.Core.Services
 {
     public interface ICompletionService
     {
-        Task AutoCompleteRequests(Dictionary<RequestAgent, PlexMediaItem> agentsByPlexId, PlexMediaTypes mediaType);
+        Task AutoCompleteRequests(Dictionary<MediaAgent, PlexMediaItem> agentsByPlexId, PlexMediaTypes mediaType);
     }
 }

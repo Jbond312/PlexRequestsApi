@@ -35,15 +35,15 @@ namespace PlexRequests.ApiRequests.Requests.Commands
             _claimsPrincipalAccessor = claimsPrincipalAccessor;
             _logger = logger;
         }
-        
+
         protected override async Task Handle(CreateMovieRequestCommand request, CancellationToken cancellationToken)
         {
             var movieDetail = await GetMovieDetails(request.TheMovieDbId);
 
             var externalIds = await _theMovieDbApi.GetMovieExternalIds(request.TheMovieDbId);
-            
+
             await ValidateRequestNotDuplicate(request);
-            
+
             await ValidateRequestedItemNotInPlex(request.TheMovieDbId, externalIds);
 
             await CreateRequest(request, movieDetail, externalIds);
@@ -58,7 +58,7 @@ namespace PlexRequests.ApiRequests.Requests.Commands
         {
             var newRequest = new Request
             {
-                PrimaryAgent = new RequestAgent(AgentTypes.TheMovieDb, request.TheMovieDbId.ToString()),
+                PrimaryAgent = new MediaAgent(AgentTypes.TheMovieDb, request.TheMovieDbId.ToString()),
                 MediaType = PlexMediaTypes.Movie,
                 RequestedByUserId = _claimsPrincipalAccessor.UserId,
                 RequestedByUserName = _claimsPrincipalAccessor.Username,
@@ -67,12 +67,12 @@ namespace PlexRequests.ApiRequests.Requests.Commands
                 ImagePath = movieDetail.Poster_Path,
                 Created = DateTime.UtcNow
             };
-            
+
             if (!string.IsNullOrEmpty(externalIds.Imdb_Id))
             {
-                newRequest.AdditionalAgents = new List<RequestAgent>
+                newRequest.AdditionalAgents = new List<MediaAgent>
                 {
-                    new RequestAgent(AgentTypes.Imdb, externalIds.Imdb_Id)
+                    new MediaAgent(AgentTypes.Imdb, externalIds.Imdb_Id)
                 };
             }
 

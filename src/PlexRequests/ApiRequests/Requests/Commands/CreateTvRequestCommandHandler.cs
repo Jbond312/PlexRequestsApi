@@ -89,7 +89,7 @@ namespace PlexRequests.ApiRequests.Requests.Commands
             var tvRequest = new Request
             {
                 MediaType = PlexMediaTypes.Show,
-                PrimaryAgent = new RequestAgent(AgentTypes.TheMovieDb, request.TheMovieDbId.ToString()),
+                PrimaryAgent = new MediaAgent(AgentTypes.TheMovieDb, request.TheMovieDbId.ToString()),
                 Status = RequestStatuses.PendingApproval,
                 Seasons = await SetSeasonData(request.TheMovieDbId, seasons, tvDetails),
                 RequestedByUserId = _claimsPrincipalAccessor.UserId,
@@ -103,9 +103,9 @@ namespace PlexRequests.ApiRequests.Requests.Commands
 
             if (!string.IsNullOrEmpty(externalIds.TvDb_Id))
             {
-                tvRequest.AdditionalAgents = new List<RequestAgent>
+                tvRequest.AdditionalAgents = new List<MediaAgent>
                 {
-                    new RequestAgent(AgentTypes.TheTvDb, externalIds.TvDb_Id)
+                    new MediaAgent(AgentTypes.TheTvDb, externalIds.TvDb_Id)
                 };
             }
 

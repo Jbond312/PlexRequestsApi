@@ -43,7 +43,7 @@ namespace PlexRequests.Sync.UnitTests
             _plexService = Substitute.For<IPlexService>();
             _processorProvider = Substitute.For<IProcessorProvider>();
             _completionService = Substitute.For<ICompletionService>();
-            
+
             var logger = Substitute.For<ILogger<PlexSync>>();
 
             _fixture = new Fixture();
@@ -78,7 +78,7 @@ namespace PlexRequests.Sync.UnitTests
                 .Then(x => x.ThenAllLibraryMetadataIsRetrieved())
                 .BDDfy();
         }
-        
+
         [Fact]
         private void A_Partial_Refresh_Should_Gather_Only_Recently_Added_Plex_Library_Metadata()
         {
@@ -91,7 +91,7 @@ namespace PlexRequests.Sync.UnitTests
                 .Then(x => x.ThenRecentlyAddedMetadataIsRetrieved())
                 .BDDfy();
         }
-        
+
         [Fact]
         private void When_New_And_Existing_Items_In_Sync_Result_They_Are_Persisted()
         {
@@ -132,7 +132,7 @@ namespace PlexRequests.Sync.UnitTests
                 .Then(x => x.ThenRequestsAreAutoCompleted())
                 .BDDfy();
         }
-        
+
         private void GivenAPlexServer()
         {
             _plexServer = _fixture.Create<PlexServer>();
@@ -154,7 +154,7 @@ namespace PlexRequests.Sync.UnitTests
                                       .With(x => x.IsEnabled, true)
                                       .Create();
 
-            _plexServer.Libraries = new List<PlexServerLibrary> {plexLibrary};
+            _plexServer.Libraries = new List<PlexServerLibrary> { plexLibrary };
         }
 
         private void GivenMatchingRemoteLibraries()
@@ -165,7 +165,7 @@ namespace PlexRequests.Sync.UnitTests
             {
                 _remoteLibraryContainer.MediaContainer.Directory[i].Key = _plexServer.Libraries[i].Key;
             }
-            
+
             _plexApi.GetLibraries(Arg.Any<string>(), Arg.Any<string>()).Returns(_remoteLibraryContainer);
         }
 
@@ -184,7 +184,7 @@ namespace PlexRequests.Sync.UnitTests
             _syncProcessor
                 .Synchronise(Arg.Any<PlexMediaContainer>(), Arg.Any<bool>(), Arg.Any<string>(), Arg.Any<string>(), Arg.Any<string>())
                 .Returns(_syncProcessorResult);
-            
+
             _processorProvider.GetProcessor(Arg.Any<string>()).Returns(_syncProcessor);
         }
 
@@ -203,7 +203,7 @@ namespace PlexRequests.Sync.UnitTests
         {
             _commandAction.Should().NotThrow();
         }
-        
+
         private void ThenExistingPlexItemsAreDeleted()
         {
             _plexService.Received().DeleteAllMediaItems();
@@ -213,7 +213,7 @@ namespace PlexRequests.Sync.UnitTests
         {
             _plexApi.Received().GetLibrary(Arg.Any<string>(), Arg.Any<string>(), Arg.Any<string>());
         }
-        
+
         private void ThenRecentlyAddedMetadataIsRetrieved()
         {
             _plexApi.Received().GetRecentlyAdded(Arg.Any<string>(), Arg.Any<string>(), Arg.Any<string>());
@@ -234,7 +234,7 @@ namespace PlexRequests.Sync.UnitTests
         private void ThenRequestsAreAutoCompleted()
         {
             _completionService
-                .Received(1).AutoCompleteRequests(Arg.Any<Dictionary<RequestAgent, PlexMediaItem>>(), Arg.Any<PlexMediaTypes>());
+                .Received(1).AutoCompleteRequests(Arg.Any<Dictionary<MediaAgent, PlexMediaItem>>(), Arg.Any<PlexMediaTypes>());
         }
     }
 }
