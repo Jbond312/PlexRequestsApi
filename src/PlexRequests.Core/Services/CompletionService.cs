@@ -17,14 +17,14 @@ namespace PlexRequests.Core.Services
             _requestService = requestService;
         }
 
-        public async Task AutoCompleteRequests(Dictionary<RequestAgent, PlexMediaItem> agentsByPlexId, PlexMediaTypes mediaType)
+        public async Task AutoCompleteRequests(Dictionary<MediaAgent, PlexMediaItem> agentsByPlexId, PlexMediaTypes mediaType)
         {
             var incompleteRequests = await _requestService.GetIncompleteRequests(mediaType);
 
             foreach (var incompleteRequest in incompleteRequests)
             {
                 var allAgents =
-                    new List<RequestAgent> { incompleteRequest.PrimaryAgent }.Concat(incompleteRequest.AdditionalAgents);
+                    new List<MediaAgent> { incompleteRequest.PrimaryAgent }.Concat(incompleteRequest.AdditionalAgents);
 
                 foreach (var requestAgent in allAgents)
                 {

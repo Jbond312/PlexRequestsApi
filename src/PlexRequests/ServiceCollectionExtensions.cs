@@ -67,6 +67,7 @@ namespace PlexRequests
             services.AddTransient<IPlexService, PlexService>();
             services.AddTransient<IRequestService, RequestService>();
             services.AddTransient<ICompletionService, CompletionService>();
+            services.AddTransient<IIssueService, IssueService>();
             services.AddTransient<IPlexSync, PlexSync>();
 
             services.AddSingleton<IHttpContextAccessor, HttpContextAccessor>();
@@ -93,6 +94,8 @@ namespace PlexRequests
                 new PlexMediaRepository(connectionString, databaseSettings.Database));
             services.AddTransient<IRequestRepository>(repo =>
                 new RequestRepository(connectionString, databaseSettings.Database));
+            services.AddTransient<IIssuesRepository>(repo =>
+                new IssuesRepository(connectionString, databaseSettings.Database));
         }
 
         private static async Task OnTokenValidated(TokenValidatedContext tokenValidatedContext)

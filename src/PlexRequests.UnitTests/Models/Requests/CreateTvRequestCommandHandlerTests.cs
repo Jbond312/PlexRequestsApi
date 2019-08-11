@@ -452,9 +452,9 @@ namespace PlexRequests.UnitTests.Models.Requests
                 _createdRequest.Seasons[i].Should().BeEquivalentTo(_command.Seasons[i]);
             }
 
-            var expectedAdditionalAgents = new List<RequestAgent>
+            var expectedAdditionalAgents = new List<MediaAgent>
             {
-                new RequestAgent(AgentTypes.TheTvDb, _externalIds.TvDb_Id)
+                new MediaAgent(AgentTypes.TheTvDb, _externalIds.TvDb_Id)
             };
 
             _createdRequest.AdditionalAgents.Should().BeEquivalentTo(expectedAdditionalAgents);

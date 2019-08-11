@@ -33,7 +33,7 @@ namespace PlexRequests.UnitTests.Models.Requests
         private readonly IClaimsPrincipalAccessor _claimsPrincipalAccessor;
 
         private readonly Fixture _fixture;
-        
+
         private CreateMovieRequestCommand _command;
         private Request _request;
         private Func<Task> _commandAction;
@@ -82,7 +82,7 @@ namespace PlexRequests.UnitTests.Models.Requests
                     HttpStatusCode.BadRequest))
                 .BDDfy();
         }
-        
+
         [Fact]
         private void Throws_Error_If_Movie_Already_In_Plex_From_Fallback_Agent_Imdb()
         {
@@ -123,7 +123,7 @@ namespace PlexRequests.UnitTests.Models.Requests
 
             _requestService.GetExistingMovieRequest(Arg.Any<AgentTypes>(), Arg.Any<string>()).Returns(_request);
         }
-        
+
         private void GivenNoRequestExists()
         {
             _requestService.GetExistingMovieRequest(Arg.Any<AgentTypes>(), Arg.Any<string>()).ReturnsNull();
@@ -137,7 +137,7 @@ namespace PlexRequests.UnitTests.Models.Requests
                 .GetExistingMediaItemByAgent(Arg.Any<PlexMediaTypes>(), Arg.Any<AgentTypes>(), Arg.Any<string>())
                 .Returns(_plexMediaItem);
         }
-        
+
         private void GivenMovieAlreadyInPlexFromFallbackAgent()
         {
             _plexMediaItem = _fixture.Create<PlexMediaItem>();
@@ -159,7 +159,7 @@ namespace PlexRequests.UnitTests.Models.Requests
             _movieDetails = _fixture.Build<MovieDetails>()
                                     .With(x => x.Release_Date, "2019-12-25")
                                     .Create();
-            
+
             _theMovieDbApi.GetMovieDetails(Arg.Any<int>()).Returns(_movieDetails);
         }
 
@@ -170,7 +170,7 @@ namespace PlexRequests.UnitTests.Models.Requests
 
         private void GivenExternalIdsFromTheMovieDb()
         {
-            _externalIds = _fixture.Create<ExternalIds>(); 
+            _externalIds = _fixture.Create<ExternalIds>();
             _theMovieDbApi.GetMovieExternalIds(Arg.Any<int>()).Returns(_externalIds);
         }
 
@@ -202,9 +202,9 @@ namespace PlexRequests.UnitTests.Models.Requests
             _createdRequest.AirDate.Should().Be(DateTime.Parse(_movieDetails.Release_Date));
             _createdRequest.Created.Should().BeCloseTo(DateTime.UtcNow, 500);
 
-            var additionalAgent = new RequestAgent(AgentTypes.Imdb, _externalIds.Imdb_Id);
+            var additionalAgent = new MediaAgent(AgentTypes.Imdb, _externalIds.Imdb_Id);
 
-            _createdRequest.AdditionalAgents.Should().BeEquivalentTo(new List<RequestAgent> {additionalAgent});
+            _createdRequest.AdditionalAgents.Should().BeEquivalentTo(new List<MediaAgent> { additionalAgent });
 
         }
 

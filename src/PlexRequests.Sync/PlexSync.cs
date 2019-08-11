@@ -102,7 +102,7 @@ namespace PlexRequests.Sync
         private async Task AutoCompleteRequests(SyncResult syncResult, PlexMediaTypes syncProcessorType)
         {
             var plexKeysByAgentType = syncResult.NewItems.Concat(syncResult.ExistingItems)
-                                                .ToDictionary(x => new RequestAgent(x.AgentType, x.AgentSourceId),
+                                                .ToDictionary(x => new MediaAgent(x.AgentType, x.AgentSourceId),
                                                     x => x);
 
             await _completionService.AutoCompleteRequests(plexKeysByAgentType, syncProcessorType);

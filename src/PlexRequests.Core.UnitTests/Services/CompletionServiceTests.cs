@@ -21,7 +21,7 @@ namespace PlexRequests.Core.UnitTests.Services
 
         private readonly Fixture _fixture;
 
-        private Dictionary<RequestAgent, PlexMediaItem> _agentsForPlexItems;
+        private Dictionary<MediaAgent, PlexMediaItem> _agentsForPlexItems;
         private List<Request> _requests;
         private Func<Task> _commandAction;
         private Request _updatedRequest;
@@ -104,7 +104,7 @@ namespace PlexRequests.Core.UnitTests.Services
 
         private void GivenRequestsAgentsForPlexMediaItems()
         {
-            _agentsForPlexItems = _fixture.CreateMany<KeyValuePair<RequestAgent, PlexMediaItem>>().ToDictionary(x => x.Key, x => x.Value);
+            _agentsForPlexItems = _fixture.CreateMany<KeyValuePair<MediaAgent, PlexMediaItem>>().ToDictionary(x => x.Key, x => x.Value);
         }
 
         private void GivenNoMatchingRequests()
@@ -138,8 +138,8 @@ namespace PlexRequests.Core.UnitTests.Services
 
             var firstPlexAgent = _agentsForPlexItems.First().Key;
 
-            var additionalAgent = new RequestAgent(firstPlexAgent.AgentType, firstPlexAgent.AgentSourceId);
-            request.AdditionalAgents = new List<RequestAgent> { additionalAgent };
+            var additionalAgent = new MediaAgent(firstPlexAgent.AgentType, firstPlexAgent.AgentSourceId);
+            request.AdditionalAgents = new List<MediaAgent> { additionalAgent };
 
             _requests = new List<Request> { request };
 
@@ -214,11 +214,11 @@ namespace PlexRequests.Core.UnitTests.Services
             _requestService.DidNotReceive().Update(Arg.Any<Request>());
         }
 
-        private RequestAgent GetMatchingAgent()
+        private MediaAgent GetMatchingAgent()
         {
             var firstPlexAgent = _agentsForPlexItems.First().Key;
 
-            return new RequestAgent(firstPlexAgent.AgentType, firstPlexAgent.AgentSourceId);
+            return new MediaAgent(firstPlexAgent.AgentType, firstPlexAgent.AgentSourceId);
         }
 
         private void MirrorPlexSeasons(PlexMediaItem plexItem, Request request, bool createExtraSeason, bool createExtraEpisode)

@@ -2,18 +2,18 @@ using PlexRequests.Repository.Enums;
 
 namespace PlexRequests.Repository.Models
 {
-    public class RequestAgent
+    public class MediaAgent
     {
         public AgentTypes AgentType { get; }
         public string AgentSourceId { get; }
 
-        public RequestAgent(AgentTypes agentType, string agentSourceId)
+        public MediaAgent(AgentTypes agentType, string agentSourceId)
         {
             AgentType = agentType;
             AgentSourceId = agentSourceId;
         }
 
-        protected bool Equals(RequestAgent other)
+        protected bool Equals(MediaAgent other)
         {
             return AgentType == other.AgentType && string.Equals(AgentSourceId, other.AgentSourceId);
         }
@@ -35,14 +35,14 @@ namespace PlexRequests.Repository.Models
                 return false;
             }
 
-            return Equals((RequestAgent) obj);
+            return Equals((MediaAgent)obj);
         }
 
         public override int GetHashCode()
         {
             unchecked
             {
-                return ((int) AgentType * 397) ^ (AgentSourceId != null ? AgentSourceId.GetHashCode() : 0);
+                return ((int)AgentType * 397) ^ (AgentSourceId != null ? AgentSourceId.GetHashCode() : 0);
             }
         }
     }

@@ -11,6 +11,7 @@ using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using MongoDB.Driver;
 using Newtonsoft.Json;
+using Newtonsoft.Json.Converters;
 using Newtonsoft.Json.Serialization;
 using PlexRequests.Core.Settings;
 using PlexRequests.Middleware;
@@ -45,6 +46,7 @@ namespace PlexRequests
                 {
                     options.SerializerSettings.ContractResolver = new CamelCasePropertyNamesContractResolver();
                     options.SerializerSettings.Formatting = Formatting.Indented;
+                    options.SerializerSettings.Converters.Add(new StringEnumConverter());
                 })
                 .SetCompatibilityVersion(CompatibilityVersion.Version_2_2);
 
