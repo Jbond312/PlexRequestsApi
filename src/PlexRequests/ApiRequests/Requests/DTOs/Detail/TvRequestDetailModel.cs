@@ -21,5 +21,6 @@ namespace PlexRequests.ApiRequests.Requests.DTOs.Detail
         public DateTime Created { get; set; }
         public List<TvRequestSeasonDetailModel> Seasons { get; set; }
         public string Comment { get; set; }
+        public bool TrackShow { get; set; }
     }
 }

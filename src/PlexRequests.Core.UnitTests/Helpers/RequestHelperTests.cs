@@ -12,16 +12,16 @@ namespace PlexRequests.Core.UnitTests.Helpers
     public class RequestHelperTests
     {
         private readonly RequestHelper _underTest;
-        
+
         private readonly Fixture _fixture;
-        
+
         private Request _request;
         private Func<RequestStatuses> _commandAction;
 
         public RequestHelperTests()
         {
             _fixture = new Fixture();
-            
+
             _underTest = new RequestHelper();
         }
 
@@ -37,7 +37,7 @@ namespace PlexRequests.Core.UnitTests.Helpers
                 .Then(x => x.ThenOverallStatusIsCorrect(status))
                 .BDDfy();
         }
-        
+
         [Theory]
         [InlineData(RequestStatuses.Approved)]
         [InlineData(RequestStatuses.Rejected)]
@@ -49,7 +49,7 @@ namespace PlexRequests.Core.UnitTests.Helpers
                 .Then(x => x.ThenOverallStatusIsCorrect(RequestStatuses.PartialCompletion))
                 .BDDfy();
         }
-        
+
         [Theory]
         [InlineData(RequestStatuses.Rejected)]
         [InlineData(RequestStatuses.PendingApproval)]
@@ -61,20 +61,47 @@ namespace PlexRequests.Core.UnitTests.Helpers
                 .BDDfy();
         }
 
+        [Theory]
+        [InlineData(RequestStatuses.PendingApproval)]
+        [InlineData(RequestStatuses.Approved)]
+        [InlineData(RequestStatuses.Completed)]
+        [InlineData(RequestStatuses.PartialApproval)]
+        [InlineData(RequestStatuses.PartialCompletion)]
+        [InlineData(RequestStatuses.Rejected)]
+        private void AggregateStatus_Sets_Status_To_Request_Status_When_Request_Is_Show_Tracking(RequestStatuses status)
+        {
+            this.Given(x => x.GivenTrackedRequest(status))
+            .When(x => x.WhenACommandActionIsCreated())
+            .Then(x => x.ThenOverallStatusIsCorrect(status))
+            .BDDfy();
+        }
+
         private void GivenAllRequestEpisodesOfStatus(RequestStatuses status)
         {
-            _request = _fixture.Create<Request>();
+            _request = _fixture.Build<Request>()
+            .With(x => x.Track, false)
+            .Create();
 
             SetEpisodeStatuses(status);
         }
-        
+
         private void GivenOneEpisodeOfStatus(RequestStatuses status, RequestStatuses allOtherEpisodeStatus)
         {
-            _request = _fixture.Create<Request>();
+            _request = _fixture.Build<Request>()
+            .With(x => x.Track, false)
+            .Create();
 
             SetEpisodeStatuses(allOtherEpisodeStatus);
-            
+
             _request.Seasons[0].Episodes[0].Status = status;
+        }
+
+        private void GivenTrackedRequest(RequestStatuses status)
+        {
+            _request = _fixture.Build<Request>()
+            .With(x => x.Track, true)
+            .With(x => x.Status, status)
+            .Create();
         }
 
         private void WhenACommandActionIsCreated()

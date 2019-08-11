@@ -37,7 +37,7 @@ namespace PlexRequests.UnitTests.Models.Requests
             _fixture = new Fixture();
 
             _requestService = Substitute.For<IRequestService>();
-            
+
             _underTest = new ApproveTvRequestCommandHandler(_requestService);
         }
 
@@ -51,7 +51,7 @@ namespace PlexRequests.UnitTests.Models.Requests
                 .Then(x => x.ThenAnErrorIsThrown("Invalid request", "No request was found with the given Id", HttpStatusCode.NotFound))
                 .BDDfy();
         }
-        
+
         [Fact]
         private void Throws_Error_When_Request_Already_Has_Complete_Overall_Status()
         {
@@ -76,7 +76,7 @@ namespace PlexRequests.UnitTests.Models.Requests
                 .Then(x => x.ThenAllSeasonEpisodesAreApproved())
                 .BDDfy();
         }
-        
+
         [Fact]
         private void When_ApproveAll_Already_Completed_Episode_Not_Altered()
         {
@@ -121,6 +121,21 @@ namespace PlexRequests.UnitTests.Models.Requests
                 .BDDfy();
         }
 
+        [Fact]
+        private void Approved_When_Request_Is_Tracked_Show()
+        {
+            const bool approveAll = false;
+
+            this.Given(x => x.GivenACommand(approveAll))
+            .Given(x => x.GivenARequestIsFound())
+            .Given(x => x.GivenRequestIsTrackedShow())
+            .Given(x => x.GivenARequestIsUpdated())
+            .When(x => x.WhenACommandActionIsCreated())
+            .Then(x => x.ThenCommandIsSuccessful())
+            .Then(x => x.ThenTrackedShowIsApproved())
+            .BDDfy();
+        }
+
         private void GivenACommand(bool approveAll)
         {
             _command = _fixture.Build<ApproveTvRequestCommand>()
@@ -137,11 +152,17 @@ namespace PlexRequests.UnitTests.Models.Requests
         {
             _request = _fixture.Build<Request>()
                                   .With(x => x.Status, RequestStatuses.PendingApproval)
+                                  .With(x => x.Track, false)
                                   .Create();
 
             SetEpisodeStatus(_request, RequestStatuses.PendingApproval);
-            
+
             _requestService.GetRequestById(Arg.Any<Guid>()).Returns(_request);
+        }
+
+        private void GivenRequestIsTrackedShow()
+        {
+            _request.Track = true;
         }
 
         private void GivenARequestIsFoundWithACompletedEpisode()
@@ -153,8 +174,8 @@ namespace PlexRequests.UnitTests.Models.Requests
             SetEpisodeStatus(_request, RequestStatuses.PendingApproval);
 
             _request.Seasons[0].Episodes[0].Status = RequestStatuses.Completed;
-            
-            _requestService.GetRequestById(Arg.Any<Guid>()).Returns(_request);   
+
+            _requestService.GetRequestById(Arg.Any<Guid>()).Returns(_request);
         }
 
         private void GivenARequestIsUpdated()
@@ -175,7 +196,7 @@ namespace PlexRequests.UnitTests.Models.Requests
 
             _command.EpisodesBySeason = new Dictionary<int, List<int>>
             {
-                [firstRequestSeason.Index] = new List<int> {firstRequestEpisode.Index}
+                [firstRequestSeason.Index] = new List<int> { firstRequestEpisode.Index }
             };
         }
 
@@ -239,7 +260,13 @@ namespace PlexRequests.UnitTests.Models.Requests
 
             episode.Should().NotBeNull();
         }
-        
+
+        private void ThenTrackedShowIsApproved()
+        {
+            _updatedRequest.Should().NotBeNull();
+            _updatedRequest.Status.Should().Be(RequestStatuses.Approved);
+        }
+
         private static void SetEpisodeStatus(Request request, RequestStatuses status)
         {
             foreach (var season in request.Seasons)

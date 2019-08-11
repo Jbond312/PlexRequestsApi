@@ -38,16 +38,24 @@ namespace PlexRequests.ApiRequests.Requests.Commands
                 throw new PlexRequestException("Invalid request", "Request has already been completed");
             }
 
-            if (command.RejectAll)
+            if (request.Track)
             {
-                RejectAll(request);
+                request.Status = RequestStatuses.Rejected;
             }
             else
             {
-                PartialReject(request, command.EpisodesBySeason);
+                if (command.RejectAll)
+                {
+                    RejectAll(request);
+                }
+                else
+                {
+                    PartialReject(request, command.EpisodesBySeason);
+                }
+
+                request.Status = _requestService.CalculateAggregatedStatus(request);
             }
 
-            request.Status = _requestService.CalculateAggregatedStatus(request);
             request.Comment = command.Comment;
 
             await _requestService.Update(request);

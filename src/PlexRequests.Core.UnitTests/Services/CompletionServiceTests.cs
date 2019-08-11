@@ -16,11 +16,11 @@ namespace PlexRequests.Core.UnitTests.Services
     public class CompletionServiceTests
     {
         private readonly CompletionService _underTest;
-        
+
         private readonly IRequestService _requestService;
 
         private readonly Fixture _fixture;
-        
+
         private Dictionary<RequestAgent, PlexMediaItem> _agentsForPlexItems;
         private List<Request> _requests;
         private Func<Task> _commandAction;
@@ -30,9 +30,9 @@ namespace PlexRequests.Core.UnitTests.Services
         public CompletionServiceTests()
         {
             _fixture = new Fixture();
-            
+
             _requestService = Substitute.For<IRequestService>();
-            
+
             _underTest = new CompletionService(_requestService);
         }
 
@@ -61,7 +61,7 @@ namespace PlexRequests.Core.UnitTests.Services
                 .Then(x => x.ThenOneRequestWasUpdated())
                 .BDDfy();
         }
-        
+
         [Theory]
         [InlineData(PlexMediaTypes.Show)]
         [InlineData(PlexMediaTypes.Movie)]
@@ -78,14 +78,27 @@ namespace PlexRequests.Core.UnitTests.Services
         [Fact]
         private void Calls_Aggregate_Status_For_Tv_Shows()
         {
+            bool isTracked = false;
             this.Given(x => x.GivenRequestsAgentsForPlexMediaItems())
-                .Given(x => x.GivenAMatchingRequestWithAllMatchingEpisodes())
+                .Given(x => x.GivenAMatchingRequestWithAllMatchingEpisodes(isTracked))
                 .Given(x => x.GivenARequestIsUpdated())
                 .Given(x => x.GivenAggregateStatusIsRetrieved())
                 .When(x => x.WhenCommandActionIsCreated(PlexMediaTypes.Show))
                 .Then(x => x.ThenResponseIsSuccessful())
                 .Then(x => x.ThenUpdatedRequestShouldBeCorrect(RequestStatuses.Completed))
                 .Then(x => x.ThenAggregateStatusIsCorrect())
+                .BDDfy();
+        }
+
+        [Fact]
+        private void Request_Not_Updated_For_Tracked_Tv_Show()
+        {
+            bool isTracked = true;
+            this.Given(x => x.GivenRequestsAgentsForPlexMediaItems())
+                .Given(x => x.GivenAMatchingRequestWithAllMatchingEpisodes(isTracked))
+                .When(x => x.WhenCommandActionIsCreated(PlexMediaTypes.Show))
+                .Then(x => x.ThenResponseIsSuccessful())
+                .Then(x => x.ThenNoRequestIsUpdated())
                 .BDDfy();
         }
 
@@ -96,48 +109,59 @@ namespace PlexRequests.Core.UnitTests.Services
 
         private void GivenNoMatchingRequests()
         {
-            _requests = _fixture.CreateMany<Request>().ToList();
+            _requests = _fixture.Build<Request>()
+                .With(x => x.Track, false)
+                .CreateMany()
+                .ToList();
 
             _requestService.GetIncompleteRequests(Arg.Any<PlexMediaTypes>()).Returns(_requests);
         }
 
         private void GivenASingleMatchingRequestPrimaryAgent()
         {
-            var request = _fixture.Create<Request>();
+            var request = _fixture.Build<Request>()
+            .With(x => x.Track, false)
+            .Create();
 
             request.PrimaryAgent = GetMatchingAgent();
-            
-            _requests = new List<Request>{request};
-            
+
+            _requests = new List<Request> { request };
+
             _requestService.GetIncompleteRequests(Arg.Any<PlexMediaTypes>()).Returns(_requests);
         }
-        
+
         private void GivenASingleMatchingRequestSecondaryAgent()
         {
-            var request = _fixture.Create<Request>();
+            var request = _fixture.Build<Request>()
+            .With(x => x.Track, false)
+            .Create();
 
             var firstPlexAgent = _agentsForPlexItems.First().Key;
 
             var additionalAgent = new RequestAgent(firstPlexAgent.AgentType, firstPlexAgent.AgentSourceId);
-            request.AdditionalAgents = new List<RequestAgent> {additionalAgent};
+            request.AdditionalAgents = new List<RequestAgent> { additionalAgent };
 
-            _requests = new List<Request>{request};
-            
+            _requests = new List<Request> { request };
+
             _requestService.GetIncompleteRequests(Arg.Any<PlexMediaTypes>()).Returns(_requests);
         }
 
-        private void GivenAMatchingRequestWithAllMatchingEpisodes()
+        private void GivenAMatchingRequestWithAllMatchingEpisodes(bool istracked)
         {
             var plexItem = _agentsForPlexItems.First().Value;
 
             var request = _fixture.Create<Request>();
             request.PrimaryAgent = GetMatchingAgent();
             request.Seasons = new List<RequestSeason>();
+            request.Track = istracked;
 
-            MirrorPlexSeasons(plexItem, request, false, false);
+            if (!istracked)
+            {
+                MirrorPlexSeasons(plexItem, request, false, false);
+            }
 
-            _requests = new List<Request>{request};
-            
+            _requests = new List<Request> { request };
+
             _requestService.GetIncompleteRequests(Arg.Any<PlexMediaTypes>()).Returns(_requests);
         }
 
@@ -183,6 +207,11 @@ namespace PlexRequests.Core.UnitTests.Services
             _updatedRequest.Should().NotBeNull();
             _updatedRequest.Status.Should().Be(_aggregateStatus);
             _requestService.Received().CalculateAggregatedStatus(Arg.Any<Request>());
+        }
+
+        private void ThenNoRequestIsUpdated()
+        {
+            _requestService.DidNotReceive().Update(Arg.Any<Request>());
         }
 
         private RequestAgent GetMatchingAgent()

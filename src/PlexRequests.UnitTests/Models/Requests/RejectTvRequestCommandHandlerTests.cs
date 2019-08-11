@@ -160,6 +160,21 @@ namespace PlexRequests.UnitTests.Models.Requests
                 .BDDfy();
         }
 
+        [Fact]
+        private void Rejected_When_Request_Is_Tracked_Show()
+        {
+            const bool rejectAll = false;
+
+            this.Given(x => x.GivenACommand(rejectAll))
+            .Given(x => x.GivenARequestIsFound())
+            .Given(x => x.GivenRequestIsTrackedShow())
+            .Given(x => x.GivenARequestIsUpdated())
+            .When(x => x.WhenACommandActionIsCreated())
+            .Then(x => x.ThenCommandIsSuccessful())
+            .Then(x => x.ThenTrackedShowIsRejected())
+            .BDDfy();
+        }
+
         private void GivenACommand(bool rejectAll)
         {
             _command = _fixture.Build<RejectTvRequestCommand>()
@@ -195,11 +210,17 @@ namespace PlexRequests.UnitTests.Models.Requests
         {
             _request = _fixture.Build<Request>()
                                   .With(x => x.Status, RequestStatuses.PendingApproval)
+                                  .With(x => x.Track, false)
                                   .Create();
 
             SetEpisodeStatus(_request, RequestStatuses.PendingApproval);
 
             _requestService.GetRequestById(Arg.Any<Guid>()).Returns(_request);
+        }
+
+        private void GivenRequestIsTrackedShow()
+        {
+            _request.Track = true;
         }
 
         private void GivenARequestIsFoundWithACompletedEpisode()
@@ -264,6 +285,12 @@ namespace PlexRequests.UnitTests.Models.Requests
         {
             _updatedRequest.Should().NotBeNull();
             _updatedRequest.Seasons.SelectMany(x => x.Episodes).All(x => x.Status == RequestStatuses.Rejected).Should().BeTrue();
+        }
+
+        private void ThenTrackedShowIsRejected()
+        {
+            _updatedRequest.Should().NotBeNull();
+            _updatedRequest.Status.Should().Be(RequestStatuses.Rejected);
         }
 
         private void ThenCompletedEpisodeNotAltered()

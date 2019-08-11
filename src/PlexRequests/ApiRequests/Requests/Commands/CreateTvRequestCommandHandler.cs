@@ -48,12 +48,34 @@ namespace PlexRequests.ApiRequests.Requests.Commands
             var tvDetails = await GetTvDetails(request.TheMovieDbId);
 
             var externalIds = await _theMovieDbApi.GetTvExternalIds(request.TheMovieDbId);
-            
-            await ValidateAndRemoveExistingEpisodeRequests(request.TheMovieDbId, seasons);
 
-            await ValidateRequestedEpisodesNotAlreadyInPlex(request.TheMovieDbId, seasons, externalIds);
+            if (request.TrackShow)
+            {
+                if (!tvDetails.In_Production)
+                {
+                    throw new PlexRequestException("Request not created", "Cannot track a TV Show that is no longer in production");
+                }
+
+                await ValidateShowIsntAlreadyTracked(request.TheMovieDbId);
+            }
+            else
+            {
+                await ValidateAndRemoveExistingEpisodeRequests(request.TheMovieDbId, seasons);
+
+                await ValidateRequestedEpisodesNotAlreadyInPlex(request.TheMovieDbId, seasons, externalIds);
+            }
 
             await CreateRequest(request, seasons, tvDetails, externalIds);
+        }
+
+        private async Task ValidateShowIsntAlreadyTracked(int theMovieDbId)
+        {
+            var existingRequests = await _requestService.GetExistingTvRequests(AgentTypes.TheMovieDb, theMovieDbId.ToString());
+
+            if (existingRequests.Any(x => x.Track))
+            {
+                throw new PlexRequestException("Request not created", "TV Show is already being tracked");
+            }
         }
 
         private async Task<TvDetails> GetTvDetails(int theMovieDbId)
@@ -75,7 +97,8 @@ namespace PlexRequests.ApiRequests.Requests.Commands
                 Title = tvDetails.Name,
                 AirDate = DateTime.Parse(tvDetails.First_Air_Date),
                 ImagePath = tvDetails.Poster_Path,
-                Created = DateTime.UtcNow
+                Created = DateTime.UtcNow,
+                Track = request.TrackShow
             };
 
             if (!string.IsNullOrEmpty(externalIds.TvDb_Id))
@@ -85,13 +108,18 @@ namespace PlexRequests.ApiRequests.Requests.Commands
                     new RequestAgent(AgentTypes.TheTvDb, externalIds.TvDb_Id)
                 };
             }
-            
+
             await _requestService.Create(tvRequest);
         }
 
         private async Task<List<RequestSeason>> SetSeasonData(int theMovieDbId, List<RequestSeason> seasons,
             TvDetails tvDetails)
         {
+            if (seasons == null)
+            {
+                return new List<RequestSeason>();
+            }
+
             seasons = seasons.Where(x => x.Episodes.Any()).ToList();
 
             foreach (var season in seasons)
@@ -107,6 +135,8 @@ namespace PlexRequests.ApiRequests.Requests.Commands
         private async Task SetAdditionalEpisodeData(int theMovieDbId, RequestSeason season)
         {
             var seasonDetails = await _theMovieDbApi.GetTvSeasonDetails(theMovieDbId, season.Index);
+
+            season.Episodes = season.Episodes ?? new List<RequestEpisode>();
 
             foreach (var episode in season.Episodes)
             {
@@ -198,21 +228,29 @@ namespace PlexRequests.ApiRequests.Requests.Commands
 
         private static void ValidateRequestIsCorrect(CreateTvRequestCommand request)
         {
-            if (request.Seasons == null || !request.Seasons.Any())
+            if (request.TrackShow && request.Seasons != null && request.Seasons.Count > 0)
             {
-                throw new PlexRequestException("Request not created",
-                    "At least one season must be given in a request.");
+                throw new PlexRequestException("Request not created", "Requests to track and for specific episodes must be made separately.");
             }
 
-            ValidateNoDuplicateSeasonsOrEpisodes(request);
-
-            RemoveSeasonsWithNoEpisodes(request.Seasons);
-
-            if (!request.Seasons.Any())
+            if (!request.TrackShow)
             {
-                throw new PlexRequestException("Request not created",
-                    "Each requested season must have at least one episode.");
+                if (request.Seasons == null || !request.Seasons.Any())
+                {
+                    throw new PlexRequestException("Request not created",
+                        "At least one season must be given in a request.");
+                }
 
+                ValidateNoDuplicateSeasonsOrEpisodes(request);
+
+                RemoveSeasonsWithNoEpisodes(request.Seasons);
+
+                if (!request.Seasons.Any())
+                {
+                    throw new PlexRequestException("Request not created",
+                        "Each requested season must have at least one episode.");
+
+                }
             }
         }
 
@@ -222,14 +260,14 @@ namespace PlexRequests.ApiRequests.Requests.Commands
             for (var sIndex = 0; sIndex < request.Seasons?.Count; sIndex++)
             {
                 var season = request.Seasons[sIndex];
-                
+
                 if (existingSeasons.Contains(season.Index))
                 {
                     throw new PlexRequestException("Request not created", "All seasons in a request must be unique.");
                 }
 
                 existingSeasons.Add(season.Index);
-                
+
                 var existingEpisodes = new List<int>();
                 for (var eIndex = 0; eIndex < season.Episodes?.Count; eIndex++)
                 {
@@ -238,7 +276,7 @@ namespace PlexRequests.ApiRequests.Requests.Commands
                     {
                         throw new PlexRequestException("Request not created", "All episodes in a season must be unique.");
                     }
-                    
+
                     existingEpisodes.Add(episode.Index);
                 }
             }
