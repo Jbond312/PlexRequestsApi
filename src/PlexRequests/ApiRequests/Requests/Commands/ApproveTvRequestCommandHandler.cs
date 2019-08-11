@@ -20,7 +20,7 @@ namespace PlexRequests.ApiRequests.Requests.Commands
         {
             _requestService = requestService;
         }
-        
+
         protected override async Task Handle(ApproveTvRequestCommand command, CancellationToken cancellationToken)
         {
             var request = await _requestService.GetRequestById(command.RequestId);
@@ -35,17 +35,24 @@ namespace PlexRequests.ApiRequests.Requests.Commands
                 throw new PlexRequestException("Invalid request", "Request has already been completed");
             }
 
-            if (command.ApproveAll)
+            if (request.Track)
             {
-                ApproveAllEpisodes(request);
+                request.Status = RequestStatuses.Approved;
             }
             else
             {
-                ApproveEpisodes(request, command.EpisodesBySeason);
+                if (command.ApproveAll)
+                {
+                    ApproveAllEpisodes(request);
+                }
+                else
+                {
+                    ApproveEpisodes(request, command.EpisodesBySeason);
+                }
+
+                request.Status = _requestService.CalculateAggregatedStatus(request);
             }
-            
-            request.Status = _requestService.CalculateAggregatedStatus(request); 
-            
+
             await _requestService.Update(request);
         }
 

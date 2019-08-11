@@ -7,7 +7,7 @@ namespace PlexRequests.Repository.Models
 {
     public class Request
     {
-        [BsonId] 
+        [BsonId]
         public Guid Id { get; set; }
         public string Title { get; set; }
         public PlexMediaTypes MediaType { get; set; }
@@ -22,5 +22,6 @@ namespace PlexRequests.Repository.Models
         public DateTime Created { get; set; }
         public List<RequestAgent> AdditionalAgents { get; set; }
         public string Comment { get; set; }
+        public bool Track { get; set; }
     }
 }

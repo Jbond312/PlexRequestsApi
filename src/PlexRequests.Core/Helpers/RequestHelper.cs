@@ -9,6 +9,11 @@ namespace PlexRequests.Core.Helpers
     {
         public RequestStatuses CalculateAggregatedStatus(Request request)
         {
+            if (request.Track)
+            {
+                return request.Status;
+            }
+
             var possibleStatus = Enum.GetValues(typeof(RequestStatuses)).Cast<RequestStatuses>();
             var statusCounts = possibleStatus.ToDictionary(status => status, count => 0);
 
@@ -30,7 +35,7 @@ namespace PlexRequests.Core.Helpers
                     overallStatus = status;
                     break;
                 }
-                
+
                 if (count == 0 || status == RequestStatuses.Rejected)
                 {
                     continue;

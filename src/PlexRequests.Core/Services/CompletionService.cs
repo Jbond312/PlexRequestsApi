@@ -16,7 +16,7 @@ namespace PlexRequests.Core.Services
         {
             _requestService = requestService;
         }
-        
+
         public async Task AutoCompleteRequests(Dictionary<RequestAgent, PlexMediaItem> agentsByPlexId, PlexMediaTypes mediaType)
         {
             var incompleteRequests = await _requestService.GetIncompleteRequests(mediaType);
@@ -24,8 +24,8 @@ namespace PlexRequests.Core.Services
             foreach (var incompleteRequest in incompleteRequests)
             {
                 var allAgents =
-                    new List<RequestAgent> {incompleteRequest.PrimaryAgent}.Concat(incompleteRequest.AdditionalAgents);
-                
+                    new List<RequestAgent> { incompleteRequest.PrimaryAgent }.Concat(incompleteRequest.AdditionalAgents);
+
                 foreach (var requestAgent in allAgents)
                 {
                     if (!agentsByPlexId.TryGetValue(requestAgent, out var plexMediaItem))
@@ -38,16 +38,21 @@ namespace PlexRequests.Core.Services
 
                     if (mediaType == PlexMediaTypes.Show)
                     {
+                        if (incompleteRequest.Track)
+                        {
+                            continue;
+                        }
+
                         AutoCompleteTvSeasonEpisodes(incompleteRequest, plexMediaItem);
                     }
-                    
+
                     await _requestService.Update(incompleteRequest);
-                    
+
                     break;
                 }
             }
         }
-        
+
         private void AutoCompleteTvSeasonEpisodes(Request incompleteRequest, PlexMediaItem plexMediaItem)
         {
             foreach (var season in incompleteRequest.Seasons)
@@ -67,7 +72,7 @@ namespace PlexRequests.Core.Services
                     {
                         continue;
                     }
-                    
+
                     var matchingEpisode = matchingSeason.Episodes.FirstOrDefault(x => x.Episode == episode.Index);
 
                     if (matchingEpisode == null)
