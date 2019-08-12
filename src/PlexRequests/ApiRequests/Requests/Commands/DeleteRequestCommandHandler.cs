@@ -6,6 +6,7 @@ using PlexRequests.Core.Exceptions;
 using PlexRequests.Core.Helpers;
 using PlexRequests.Core.Services;
 using PlexRequests.Repository.Models;
+// ReSharper disable ParameterOnlyUsedForPreconditionCheck.Local
 
 namespace PlexRequests.ApiRequests.Requests.Commands
 {

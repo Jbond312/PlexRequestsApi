@@ -1,6 +1,6 @@
 using MediatR;
 
-namespace PlexRequests.ApiRequests.Requests.Queries
+namespace PlexRequests.ApiRequests.Issues.Queries
 {
     public class GetPagedIssueQuery : IRequest<GetPagedIssueQueryResult>
     {

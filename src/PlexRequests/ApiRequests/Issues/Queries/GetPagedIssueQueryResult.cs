@@ -1,7 +1,7 @@
 using System.Collections.Generic;
-using PlexRequests.ApiRequests.Requests.DTOs;
+using PlexRequests.ApiRequests.Issues.DTOs.ListDetail;
 
-namespace PlexRequests.ApiRequests.Requests.Queries
+namespace PlexRequests.ApiRequests.Issues.Queries
 {
     public class GetPagedIssueQueryResult
     {

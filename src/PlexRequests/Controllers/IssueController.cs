@@ -4,8 +4,8 @@ using System.Threading.Tasks;
 using MediatR;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
-using PlexRequests.ApiRequests.Requests.Commands;
-using PlexRequests.ApiRequests.Requests.Queries;
+using PlexRequests.ApiRequests.Issues.Commands;
+using PlexRequests.ApiRequests.Issues.Queries;
 using PlexRequests.Attributes;
 using Swashbuckle.AspNetCore.Annotations;
 

@@ -9,8 +9,9 @@ using PlexRequests.Core.Services;
 using PlexRequests.Repository.Enums;
 using PlexRequests.Repository.Models;
 using PlexRequests.TheMovieDb;
+// ReSharper disable ParameterOnlyUsedForPreconditionCheck.Local
 
-namespace PlexRequests.ApiRequests.Requests.Commands
+namespace PlexRequests.ApiRequests.Issues.Commands
 {
     public class CreateIssueCommandHandler : AsyncRequestHandler<CreateIssueCommand>
     {

@@ -3,11 +3,11 @@ using System.Threading;
 using System.Threading.Tasks;
 using AutoMapper;
 using MediatR;
-using PlexRequests.ApiRequests.Requests.DTOs;
+using PlexRequests.ApiRequests.Issues.DTOs.ListDetail;
 using PlexRequests.Core.Services;
 using PlexRequests.Repository.Enums;
 
-namespace PlexRequests.ApiRequests.Requests.Queries
+namespace PlexRequests.ApiRequests.Issues.Queries
 {
     public class GetPagedIssueQueryHandler : IRequestHandler<GetPagedIssueQuery, GetPagedIssueQueryResult>
     {

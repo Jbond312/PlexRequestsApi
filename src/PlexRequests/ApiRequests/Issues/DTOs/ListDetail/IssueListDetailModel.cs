@@ -1,7 +1,7 @@
 using System;
 using PlexRequests.Repository.Enums;
 
-namespace PlexRequests.ApiRequests.Requests.DTOs
+namespace PlexRequests.ApiRequests.Issues.DTOs.ListDetail
 {
     public class IssueListDetailModel
     {

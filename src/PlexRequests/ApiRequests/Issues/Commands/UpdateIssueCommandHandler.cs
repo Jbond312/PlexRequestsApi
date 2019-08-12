@@ -5,8 +5,9 @@ using MediatR;
 using PlexRequests.Core.Exceptions;
 using PlexRequests.Core.Services;
 using PlexRequests.Repository.Enums;
+// ReSharper disable ParameterOnlyUsedForPreconditionCheck.Local
 
-namespace PlexRequests.ApiRequests.Requests.Commands
+namespace PlexRequests.ApiRequests.Issues.Commands
 {
     public class UpdateIssueCommandHandler : AsyncRequestHandler<UpdateIssueCommand>
     {

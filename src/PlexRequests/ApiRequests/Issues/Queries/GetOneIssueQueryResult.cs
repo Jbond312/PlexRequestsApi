@@ -1,6 +1,6 @@
-using PlexRequests.ApiRequests.Requests.DTOs;
+using PlexRequests.ApiRequests.Issues.DTOs.Detail;
 
-namespace PlexRequests.ApiRequests.Requests.Queries
+namespace PlexRequests.ApiRequests.Issues.Queries
 {
     public class GetOneIssueQueryResult
     {

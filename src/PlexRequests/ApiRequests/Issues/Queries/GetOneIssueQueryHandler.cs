@@ -3,11 +3,11 @@ using System.Threading;
 using System.Threading.Tasks;
 using AutoMapper;
 using MediatR;
-using PlexRequests.ApiRequests.Requests.DTOs;
+using PlexRequests.ApiRequests.Issues.DTOs.Detail;
 using PlexRequests.Core.Exceptions;
 using PlexRequests.Core.Services;
 
-namespace PlexRequests.ApiRequests.Requests.Queries
+namespace PlexRequests.ApiRequests.Issues.Queries
 {
     public class GetOneIssueQueryHandler : IRequestHandler<GetOneIssueQuery, GetOneIssueQueryResult>
     {

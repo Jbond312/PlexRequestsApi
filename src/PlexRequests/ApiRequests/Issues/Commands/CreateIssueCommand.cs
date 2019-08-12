@@ -1,7 +1,7 @@
 using MediatR;
 using PlexRequests.Repository.Enums;
 
-namespace PlexRequests.ApiRequests.Requests.Commands
+namespace PlexRequests.ApiRequests.Issues.Commands
 {
     public class CreateIssueCommand : IRequest
     {

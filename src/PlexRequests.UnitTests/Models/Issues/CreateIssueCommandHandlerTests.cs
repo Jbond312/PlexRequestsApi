@@ -6,7 +6,7 @@ using AutoFixture;
 using FluentAssertions;
 using MediatR;
 using NSubstitute;
-using PlexRequests.ApiRequests.Requests.Commands;
+using PlexRequests.ApiRequests.Issues.Commands;
 using PlexRequests.Core.Exceptions;
 using PlexRequests.Core.Helpers;
 using PlexRequests.Core.Services;
@@ -17,7 +17,7 @@ using PlexRequests.TheMovieDb.Models;
 using TestStack.BDDfy;
 using Xunit;
 
-namespace PlexRequests.UnitTests.Models.Requests
+namespace PlexRequests.UnitTests.Models.Issues
 {
     public class CreateIssueCommandHandlerTests
     {

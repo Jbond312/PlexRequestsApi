@@ -6,7 +6,7 @@ using AutoFixture;
 using AutoMapper;
 using FluentAssertions;
 using NSubstitute;
-using PlexRequests.ApiRequests.Requests.Queries;
+using PlexRequests.ApiRequests.Issues.Queries;
 using PlexRequests.Core.Services;
 using PlexRequests.Mapping;
 using PlexRequests.Repository.Enums;
@@ -14,7 +14,7 @@ using PlexRequests.Repository.Models;
 using TestStack.BDDfy;
 using Xunit;
 
-namespace PlexRequests.UnitTests.Models.Requests
+namespace PlexRequests.UnitTests.Models.Issues
 {
     public class GetPagedIssueQueryHandlerTests
     {

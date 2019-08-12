@@ -1,6 +1,6 @@
 using System;
 
-namespace PlexRequests.ApiRequests.Requests.DTOs
+namespace PlexRequests.ApiRequests.Issues.DTOs.Detail
 {
     public class IssueCommentDetailModel
     {

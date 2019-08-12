@@ -2,7 +2,7 @@ using System;
 using MediatR;
 using Newtonsoft.Json;
 
-namespace PlexRequests.ApiRequests.Requests.Commands
+namespace PlexRequests.ApiRequests.Issues.Commands
 {
     public class CreateIssueCommentCommand : IRequest
     {

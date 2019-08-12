@@ -1,7 +1,7 @@
 using System;
 using MediatR;
 
-namespace PlexRequests.ApiRequests.Requests.Queries
+namespace PlexRequests.ApiRequests.Issues.Queries
 {
     public class GetOneIssueQuery : IRequest<GetOneIssueQueryResult>
     {
