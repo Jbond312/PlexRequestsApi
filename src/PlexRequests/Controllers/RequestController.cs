@@ -13,7 +13,6 @@ using Swashbuckle.AspNetCore.Annotations;
 namespace PlexRequests.Controllers
 {
     [Route("api/[controller]")]
-    [ApiController]
     [Authorize]
     public class RequestController : Controller
     {
@@ -25,8 +24,8 @@ namespace PlexRequests.Controllers
         }
 
         [HttpPost("Movie")]
-        [SwaggerResponse(202)]
-        [SwaggerResponse(400)]
+        [SwaggerResponse(204)]
+        [SwaggerResponse(400, null, typeof(ApiErrorResponse))]
         [SwaggerResponse(401)]
         public async Task<ActionResult> CreateMovieRequest([FromBody] CreateMovieRequestCommand command)
         {
@@ -37,8 +36,8 @@ namespace PlexRequests.Controllers
 
         [HttpPost("Movie/{id:guid}/Approve")]
         [Admin]
-        [SwaggerResponse(202)]
-        [SwaggerResponse(400)]
+        [SwaggerResponse(204)]
+        [SwaggerResponse(400, null, typeof(ApiErrorResponse))]
         [SwaggerResponse(401)]
         [SwaggerResponse(404)]
         public async Task<ActionResult> ApproveMovieRequest([FromRoute] Guid id)
@@ -52,8 +51,8 @@ namespace PlexRequests.Controllers
 
         [HttpPost("Movie/{id:guid}/Reject")]
         [Admin]
-        [SwaggerResponse(202)]
-        [SwaggerResponse(400)]
+        [SwaggerResponse(204)]
+        [SwaggerResponse(400, null, typeof(ApiErrorResponse))]
         [SwaggerResponse(401)]
         [SwaggerResponse(404)]
         public async Task<ActionResult> RejectMovieRequest([FromRoute] Guid id, [FromBody] RejectMovieRequestCommand command)
@@ -66,8 +65,8 @@ namespace PlexRequests.Controllers
         }
 
         [HttpPost("Tv")]
-        [SwaggerResponse(202)]
-        [SwaggerResponse(400)]
+        [SwaggerResponse(204)]
+        [SwaggerResponse(400, null, typeof(ApiErrorResponse))]
         [SwaggerResponse(401)]
         public async Task<ActionResult> CreateTvRequest([FromBody] CreateTvRequestCommand command)
         {
@@ -78,11 +77,11 @@ namespace PlexRequests.Controllers
 
         [HttpPost("Tv/{id:guid}/Approve")]
         [Admin]
-        [SwaggerResponse(202)]
-        [SwaggerResponse(400)]
+        [SwaggerResponse(204)]
+        [SwaggerResponse(400, null, typeof(ApiErrorResponse))]
         [SwaggerResponse(401)]
         [SwaggerResponse(404)]
-        public async Task<ActionResult> ApproveTvRequest([FromRoute] Guid id, ApproveTvRequestCommand command)
+        public async Task<ActionResult> ApproveTvRequest([FromRoute] Guid id, [FromBody] ApproveTvRequestCommand command)
         {
             command.RequestId = id;
 
@@ -93,8 +92,8 @@ namespace PlexRequests.Controllers
 
         [HttpPost("Tv/{id:guid}/Reject")]
         [Admin]
-        [SwaggerResponse(202)]
-        [SwaggerResponse(400)]
+        [SwaggerResponse(204)]
+        [SwaggerResponse(400, null, typeof(ApiErrorResponse))]
         [SwaggerResponse(401)]
         [SwaggerResponse(404)]
         public async Task<ActionResult> RejectTvRequest([FromRoute] Guid id, [FromBody] RejectTvRequestCommand command)
@@ -107,8 +106,8 @@ namespace PlexRequests.Controllers
         }
 
         [HttpDelete("{id:guid}")]
-        [SwaggerResponse(202)]
-        [SwaggerResponse(400)]
+        [SwaggerResponse(204)]
+        [SwaggerResponse(400, null, typeof(ApiErrorResponse))]
         [SwaggerResponse(401)]
         [SwaggerResponse(403)]
         [SwaggerResponse(404)]
@@ -124,19 +123,8 @@ namespace PlexRequests.Controllers
         [HttpGet("Movie")]
         [SwaggerResponse(200, null, typeof(GetMoviePagedRequestQueryResult))]
         [SwaggerResponse(401)]
-        public async Task<ActionResult<GetMoviePagedRequestQueryResult>> GetMovieRequests([FromQuery] string title,
-            [FromQuery] bool? includeCurrentUsersOnly, [FromQuery] RequestStatuses? status,
-            [FromQuery] int? page, [FromQuery] int? pageSize)
+        public async Task<ActionResult<GetMoviePagedRequestQueryResult>> GetMovieRequests([FromQuery] GetMoviePagedRequestQuery query)
         {
-            var query = new GetMoviePagedRequestQuery
-            {
-                Title = title,
-                IncludeCurrentUsersOnly = includeCurrentUsersOnly,
-                Status = status,
-                Page = page,
-                PageSize = pageSize
-            };
-
             var response = await _mediator.Send(query);
 
             return Ok(response);
@@ -145,19 +133,8 @@ namespace PlexRequests.Controllers
         [HttpGet("Tv")]
         [SwaggerResponse(200, null, typeof(GetTvPagedRequestQueryResult))]
         [SwaggerResponse(401)]
-        public async Task<ActionResult<GetTvPagedRequestQueryResult>> GetTvRequests([FromQuery] string title,
-            [FromQuery] bool? includeCurrentUsersOnly, [FromQuery] RequestStatuses? status,
-            [FromQuery] int? page, [FromQuery] int? pageSize)
+        public async Task<ActionResult<GetTvPagedRequestQueryResult>> GetTvRequests([FromQuery] GetTvPagedRequestQuery query)
         {
-            var query = new GetTvPagedRequestQuery
-            {
-                Title = title,
-                IncludeCurrentUsersOnly = includeCurrentUsersOnly,
-                Status = status,
-                Page = page,
-                PageSize = pageSize
-            };
-
             var response = await _mediator.Send(query);
 
             return Ok(response);

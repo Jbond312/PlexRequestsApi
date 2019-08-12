@@ -10,7 +10,6 @@ using Swashbuckle.AspNetCore.Annotations;
 namespace PlexRequests.Controllers
 {
     [Route("api/[controller]")]
-    [ApiController]
     [Authorize]
     public class TheMovieDbController : Controller
     {

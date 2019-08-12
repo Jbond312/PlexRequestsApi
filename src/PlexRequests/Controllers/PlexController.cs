@@ -1,4 +1,5 @@
-﻿using System.Threading.Tasks;
+﻿using System.ComponentModel.DataAnnotations;
+using System.Threading.Tasks;
 using MediatR;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
@@ -11,7 +12,6 @@ using Swashbuckle.AspNetCore.Annotations;
 namespace PlexRequests.Controllers
 {
     [Route("api/[controller]")]
-    [ApiController]
     [Authorize]
     public class PlexController : Controller
     {
@@ -27,8 +27,8 @@ namespace PlexRequests.Controllers
         [Admin]
         [SwaggerOperation(
             Description = "Synchronise all users associated with the Admin account. Sync can be called many times to refresh users.")]
-        [SwaggerResponse(202)]
-        [SwaggerResponse(400)]
+        [SwaggerResponse(204)]
+        [SwaggerResponse(400, null, typeof(ApiErrorResponse))]
         [SwaggerResponse(401)]
         public async Task<ActionResult> SyncUsers()
         {
@@ -40,8 +40,8 @@ namespace PlexRequests.Controllers
         [HttpGet]
         [Route("Libraries")]
         [Admin]
-        [SwaggerResponse(200)]
-        [SwaggerResponse(400)]
+        [SwaggerResponse(200, null, typeof(GetManyPlexServerLibraryQueryResult))]
+        [SwaggerResponse(400, null, typeof(ApiErrorResponse))]
         [SwaggerResponse(401)]
         public async Task<ActionResult<GetManyPlexServerLibraryQueryResult>> GetLibraries()
         {
@@ -55,25 +55,25 @@ namespace PlexRequests.Controllers
         [HttpPut]
         [Route("Libraries/{key}")]
         [Admin]
-        [SwaggerResponse(200)]
-        [SwaggerResponse(400)]
+        [SwaggerResponse(204)]
+        [SwaggerResponse(400, null, typeof(ApiErrorResponse))]
         [SwaggerResponse(401)]
         [SwaggerResponse(404)]
-        public async Task<ActionResult> UpdateLibrary(string key, UpdatePlexServerLibraryCommand command)
+        public async Task<ActionResult> UpdateLibrary([FromRoute] string key, [FromBody] UpdatePlexServerLibraryCommand command)
         {
             command.Key = key;
 
-            var libraries = await _mediator.Send(command);
+            await _mediator.Send(command);
 
-            return Ok(libraries);
+            return NoContent();
         }
 
         [HttpPost("Libraries/Sync")]
         [Admin]
         [SwaggerOperation(
             Description = "Synchronise all libraries associated with the Admin account. Sync can be called many times to refresh libraries.")]
-        [SwaggerResponse(202)]
-        [SwaggerResponse(400)]
+        [SwaggerResponse(204)]
+        [SwaggerResponse(400, null, typeof(ApiErrorResponse))]
         [SwaggerResponse(401)]
         public async Task<ActionResult> SyncLibraries()
         {
@@ -86,13 +86,11 @@ namespace PlexRequests.Controllers
         [Admin]
         [SwaggerOperation(
             Description = "Synchronise all Plex media content from any 'Enabled' library in PlexRequests.")]
-        [SwaggerResponse(202)]
-        [SwaggerResponse(400)]
+        [SwaggerResponse(204)]
+        [SwaggerResponse(400, null, typeof(ApiErrorResponse))]
         [SwaggerResponse(401)]
-        public async Task<ActionResult> SyncContent([FromQuery] bool fullRefresh = false)
+        public async Task<ActionResult> SyncContent([FromQuery] SyncContentCommand command)
         {
-            var command = new SyncContentCommand(fullRefresh);
-
             await _mediator.Send(command);
 
             return NoContent();
@@ -101,7 +99,7 @@ namespace PlexRequests.Controllers
         [HttpGet("Server")]
         [Admin]
         [SwaggerResponse(200, null, typeof(PlexServerDetailModel))]
-        [SwaggerResponse(400)]
+        [SwaggerResponse(400, null, typeof(ApiErrorResponse))]
         [SwaggerResponse(401)]
         public async Task<ActionResult<PlexServerDetailModel>> GetServer()
         {

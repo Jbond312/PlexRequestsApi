@@ -12,7 +12,6 @@ using Swashbuckle.AspNetCore.Annotations;
 namespace PlexRequests.Controllers
 {
     [Route("api/[controller]")]
-    [ApiController]
     [Authorize]
     public class IssueController : Controller
     {
@@ -25,7 +24,7 @@ namespace PlexRequests.Controllers
 
         [HttpPost("")]
         [SwaggerResponse(204)]
-        [SwaggerResponse(400)]
+        [SwaggerResponse(400, null, typeof(ApiErrorResponse))]
         [SwaggerResponse(401)]
         [SwaggerResponse(424)]
         public async Task<ActionResult> CreateIssue([FromBody] CreateIssueCommand command)
@@ -37,7 +36,7 @@ namespace PlexRequests.Controllers
 
         [HttpPut("{id:guid}")]
         [SwaggerResponse(204)]
-        [SwaggerResponse(400)]
+        [SwaggerResponse(400, null, typeof(ApiErrorResponse))]
         [SwaggerResponse(401)]
         [Admin]
         public async Task<ActionResult> UpdateIssue([FromRoute][Required] Guid id, [FromBody] UpdateIssueCommand command)
@@ -50,7 +49,7 @@ namespace PlexRequests.Controllers
 
         [HttpPost("{id:guid}/Comment")]
         [SwaggerResponse(204)]
-        [SwaggerResponse(400)]
+        [SwaggerResponse(400, null, typeof(ApiErrorResponse))]
         [SwaggerResponse(401)]
         [SwaggerResponse(424)]
         public async Task<ActionResult> CreateComment([FromRoute][Required] Guid id, [FromBody] CreateIssueCommentCommand command)
@@ -63,7 +62,7 @@ namespace PlexRequests.Controllers
 
         [HttpGet("{id:guid}")]
         [SwaggerResponse(204)]
-        [SwaggerResponse(400)]
+        [SwaggerResponse(400, null, typeof(ApiErrorResponse))]
         [SwaggerResponse(401)]
         [SwaggerResponse(424)]
         public async Task<ActionResult> GetIssue([FromRoute][Required] Guid id)
@@ -77,15 +76,8 @@ namespace PlexRequests.Controllers
         [HttpGet("")]
         [SwaggerResponse(200, null, typeof(GetPagedIssueQueryResult))]
         [SwaggerResponse(401)]
-        public async Task<ActionResult<GetPagedIssueQueryResult>> GetPagedIssues([FromQuery] int? page, [FromQuery] int? pageSize, [FromQuery] bool includeResolved = false)
+        public async Task<ActionResult<GetPagedIssueQueryResult>> GetPagedIssues([FromQuery] GetPagedIssueQuery query)
         {
-            var query = new GetPagedIssueQuery
-            {
-                Page = page,
-                PageSize = pageSize,
-                IncludeResolved = includeResolved
-            };
-
             var response = await _mediator.Send(query);
 
             return Ok(response);

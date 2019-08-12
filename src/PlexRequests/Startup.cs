@@ -14,6 +14,7 @@ using Newtonsoft.Json;
 using Newtonsoft.Json.Converters;
 using Newtonsoft.Json.Serialization;
 using PlexRequests.Core.Settings;
+using PlexRequests.Filters;
 using PlexRequests.Middleware;
 using PlexRequests.Repository.Models;
 using Serilog;
@@ -38,9 +39,11 @@ namespace PlexRequests
         {
             services
                 .AddMvcCore()
+                .AddMvcOptions(options => options.Filters.Add(typeof(ValidationFilter)))
                 .AddAuthorization()
                 .AddJsonFormatters()
                 .AddApiExplorer()
+                .AddDataAnnotations()
                 .AddJsonOptions(
                 options =>
                 {

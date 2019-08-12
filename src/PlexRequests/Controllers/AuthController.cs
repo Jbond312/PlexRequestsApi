@@ -8,7 +8,6 @@ using Swashbuckle.AspNetCore.Annotations;
 namespace PlexRequests.Controllers
 {
     [Route("api/[controller]")]
-    [ApiController]
     [Authorize]
     public class AuthController : Controller
     {
@@ -23,7 +22,7 @@ namespace PlexRequests.Controllers
         [HttpPost("Login")]
         [AllowAnonymous]
         [SwaggerResponse(200, "Login was successful")]
-        [SwaggerResponse(400, "Login unsuccessful due to invalid account details")]
+        [SwaggerResponse(400, "Login unsuccessful due to invalid account details", typeof(ApiErrorResponse))]
         public async Task<ActionResult<UserLoginCommandResult>> Login([FromBody] UserLoginCommand command)
         {
             var result = await _mediator.Send(command);
@@ -40,8 +39,8 @@ namespace PlexRequests.Controllers
         [AllowAnonymous]
         [SwaggerOperation(
             Description = "Creates and Admin account. Only one Admin account can exist at any time.")]
-        [SwaggerResponse(200, "Admin created successfully")]
-        [SwaggerResponse(400, "Unable to create Admin account")]
+        [SwaggerResponse(200, "Admin created successfully", typeof(UserLoginCommandResult))]
+        [SwaggerResponse(400, "Unable to create Admin account", typeof(ApiErrorResponse))]
         public async Task<ActionResult<UserLoginCommandResult>> AddPlexAdmin([FromBody] AddAdminCommand command)
         {
             var result = await _mediator.Send(command);
