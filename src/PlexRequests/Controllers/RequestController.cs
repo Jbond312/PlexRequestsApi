@@ -7,7 +7,6 @@ using Microsoft.AspNetCore.Mvc;
 using PlexRequests.ApiRequests.Requests.Commands;
 using PlexRequests.ApiRequests.Requests.Queries;
 using PlexRequests.Attributes;
-using PlexRequests.Repository.Enums;
 using Swashbuckle.AspNetCore.Annotations;
 
 namespace PlexRequests.Controllers
