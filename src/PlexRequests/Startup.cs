@@ -110,11 +110,9 @@ namespace PlexRequests
 
         private void ConfigureLogging()
         {
-
-            var logPath = Path.Combine("logs", "log-{Date}.txt");
             var loggerConfiguration = new LoggerConfiguration()
                 .MinimumLevel.Debug()
-                .WriteTo.RollingFile(logPath);
+                .WriteTo.Console();
 
             if (Environment.IsProduction())
             {
