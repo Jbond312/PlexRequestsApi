@@ -10,7 +10,7 @@ namespace PlexRequests.ApiRequests.TheMovieDb.DTOs
         public string Overview { get; set; }
         public string PosterPath { get; set; }
         public string BackdropPath { get; set; }
-        public DateTime ReleaseDate { get; set; }
+        public DateTime? ReleaseDate { get; set; }
         public int? EpisodeCount { get; set; }
         public int? SeasonCount { get; set; }
         public bool InProduction { get; set; }

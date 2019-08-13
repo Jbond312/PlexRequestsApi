@@ -10,7 +10,7 @@ namespace PlexRequests.ApiRequests.TheMovieDb.DTOs
         public string Name { get; set; }
         public string Overview { get; set; }
         public string PosterPath { get; set; }
-        public DateTime AirDate { get; set; }
+        public DateTime? AirDate { get; set; }
         public List<EpisodeModel> Episodes { get; set; }
     }
 }
