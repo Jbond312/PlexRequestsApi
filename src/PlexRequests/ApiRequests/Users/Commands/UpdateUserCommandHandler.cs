@@ -29,6 +29,7 @@ namespace PlexRequests.ApiRequests.Users.Commands
         private async Task UpdateUser(UpdateUserCommand command, User user)
         {
             user.IsDisabled = command.IsDisabled;
+            user.Roles = command.Roles;
 
             await _userService.UpdateUser(user);
         }
