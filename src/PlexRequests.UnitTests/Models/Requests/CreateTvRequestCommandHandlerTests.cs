@@ -10,7 +10,7 @@ using FluentAssertions;
 using MediatR;
 using NSubstitute;
 using PlexRequests.ApiRequests.Requests.Commands;
-using PlexRequests.ApiRequests.Requests.DTOs.Create;
+using PlexRequests.ApiRequests.Requests.Models.Create;
 using PlexRequests.Core.Exceptions;
 using PlexRequests.Core.Helpers;
 using PlexRequests.Core.Services;

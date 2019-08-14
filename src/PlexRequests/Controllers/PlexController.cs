@@ -3,7 +3,7 @@ using MediatR;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using PlexRequests.ApiRequests.Plex.Commands;
-using PlexRequests.ApiRequests.Plex.DTOs.Detail;
+using PlexRequests.ApiRequests.Plex.Models.Detail;
 using PlexRequests.ApiRequests.Plex.Queries;
 using PlexRequests.Attributes;
 using Swashbuckle.AspNetCore.Annotations;

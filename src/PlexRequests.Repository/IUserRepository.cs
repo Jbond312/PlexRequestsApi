@@ -7,7 +7,7 @@ namespace PlexRequests.Repository
 {
     public interface IUserRepository
     {
-        Task<List<User>> GetAllUsers();
+        Task<List<User>> GetAllUsers(bool includeDisabled = false, bool includeAdmin = false);
         Task<User> GetAdmin();
         Task<User> GetUser(Guid id);
         Task<User> GetUser(int plexAccountId);

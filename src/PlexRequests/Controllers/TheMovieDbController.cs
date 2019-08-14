@@ -4,7 +4,7 @@ using System.Threading.Tasks;
 using AutoMapper;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
-using PlexRequests.ApiRequests.TheMovieDb.DTOs;
+using PlexRequests.ApiRequests.TheMovieDb.Models;
 using PlexRequests.TheMovieDb;
 using Swashbuckle.AspNetCore.Annotations;
 

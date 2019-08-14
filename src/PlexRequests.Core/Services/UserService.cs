@@ -15,9 +15,9 @@ namespace PlexRequests.Core.Services
             _userRepository = userRepository;
         }
 
-        public async Task<List<User>> GetAllUsers()
+        public async Task<List<User>> GetAllUsers(bool includeDisabled = false, bool includeAdmin = false)
         {
-            return await _userRepository.GetAllUsers();
+            return await _userRepository.GetAllUsers(includeDisabled, includeAdmin);
         }
 
         public async Task<User> GetUser(Guid id)

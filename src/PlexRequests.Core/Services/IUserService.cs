@@ -7,7 +7,7 @@ namespace PlexRequests.Core.Services
 {
     public interface IUserService
     {
-        Task<List<User>> GetAllUsers();
+        Task<List<User>> GetAllUsers(bool includeDisabled = false, bool includeAdmin = false);
         Task<User> GetUser(Guid id);
         Task<User> GetUserFromPlexId(int plexAccountId);
         Task CreateUser(User user);

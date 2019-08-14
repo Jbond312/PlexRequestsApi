@@ -1,7 +1,7 @@
 using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations;
 using MediatR;
-using PlexRequests.ApiRequests.Requests.DTOs.Create;
+using PlexRequests.ApiRequests.Requests.Models.Create;
 
 namespace PlexRequests.ApiRequests.Requests.Commands
 {

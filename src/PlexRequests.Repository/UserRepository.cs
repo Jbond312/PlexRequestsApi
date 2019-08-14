@@ -1,7 +1,9 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Linq.Expressions;
 using System.Threading.Tasks;
 using MongoDB.Driver;
+using MongoDB.Driver.Linq;
 using PlexRequests.Repository.Models;
 
 namespace PlexRequests.Repository
@@ -13,10 +15,21 @@ namespace PlexRequests.Repository
         {
         }
 
-        public async Task<List<User>> GetAllUsers()
+        public async Task<List<User>> GetAllUsers(bool includeDisabled = false, bool includeAdmin = false)
         {
-            var users = await Collection.FindAsync(x => !x.IsDisabled);
-            return await users.ToListAsync();
+            var query = Collection.AsQueryable();
+            
+            if (!includeDisabled)
+            {
+                query = query.Where(x => !x.IsDisabled);
+            }
+
+            if (!includeAdmin)
+            {
+                query = query.Where(x => !x.IsAdmin);
+            }
+            
+            return await query.ToListAsync();
         }
 
         public async Task<User> GetAdmin()

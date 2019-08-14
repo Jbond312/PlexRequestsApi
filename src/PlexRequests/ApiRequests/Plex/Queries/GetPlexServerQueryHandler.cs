@@ -2,7 +2,7 @@
 using System.Threading.Tasks;
 using AutoMapper;
 using MediatR;
-using PlexRequests.ApiRequests.Plex.DTOs.Detail;
+using PlexRequests.ApiRequests.Plex.Models.Detail;
 using PlexRequests.Plex;
 
 namespace PlexRequests.ApiRequests.Plex.Queries

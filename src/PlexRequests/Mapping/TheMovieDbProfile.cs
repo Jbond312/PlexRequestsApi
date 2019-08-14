@@ -2,7 +2,7 @@
 using System.Collections.Generic;
 using System.Linq;
 using AutoMapper;
-using PlexRequests.ApiRequests.TheMovieDb.DTOs;
+using PlexRequests.ApiRequests.TheMovieDb.Models;
 using PlexRequests.TheMovieDb.Models;
 
 namespace PlexRequests.Mapping
