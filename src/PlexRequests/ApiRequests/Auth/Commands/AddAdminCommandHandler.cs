@@ -98,7 +98,7 @@ namespace PlexRequests.ApiRequests.Auth.Commands
                 Email = plexUser.Email,
                 PlexAccountId = plexUser.Id,
                 IsAdmin = true,
-                Roles = new List<string> {PlexRequestRoles.Admin, PlexRequestRoles.User}
+                Roles = new List<string> { PlexRequestRoles.Admin, PlexRequestRoles.User, PlexRequestRoles.Commenter }
             };
 
             _logger.LogInformation("Creating Admin account");

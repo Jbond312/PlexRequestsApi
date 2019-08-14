@@ -36,7 +36,7 @@ namespace PlexRequests.UnitTests.Models.Auth
         private readonly IOptions<PlexSettings> _plexSettings;
 
         private readonly Fixture _fixture;
-        
+
         private AddAdminCommand _command;
         private Func<Task<UserLoginCommandResult>> _commandAction;
         private User _plexUser;
@@ -96,7 +96,7 @@ namespace PlexRequests.UnitTests.Models.Auth
                 .Then(x => x.ThenAnAdminUserWasCreated())
                 .BDDfy();
         }
-        
+
         [Fact]
         private void An_Admin_Server_Is_Created_With_No_Libraries()
         {
@@ -109,7 +109,7 @@ namespace PlexRequests.UnitTests.Models.Auth
                 .Then(x => x.ThenAServerWasCreated(false))
                 .BDDfy();
         }
-        
+
         [Fact]
         private void An_Admin_Server_Is_Created_With_Libraries()
         {
@@ -123,7 +123,7 @@ namespace PlexRequests.UnitTests.Models.Auth
                 .Then(x => x.ThenAServerWasCreated(true))
                 .BDDfy();
         }
-        
+
         [Fact]
         private void Access_Token_Is_Returned_Successfully()
         {
@@ -156,7 +156,7 @@ namespace PlexRequests.UnitTests.Models.Auth
         {
             _plexApi.SignIn(Arg.Any<string>(), Arg.Any<string>()).ReturnsNull();
         }
-        
+
         private void GivenValidPlexCredentials()
         {
             _plexUser = _fixture.Create<User>();
@@ -179,7 +179,7 @@ namespace PlexRequests.UnitTests.Models.Auth
 
             _plexApi.GetServers(Arg.Any<string>()).Returns(_plexServers);
         }
-        
+
         private void GivenAServerIsCreated()
         {
             _plexService.Create(Arg.Do<PlexServer>(x => _createdServer = x));
@@ -195,10 +195,10 @@ namespace PlexRequests.UnitTests.Models.Auth
         private void GivenATokenIsReturned()
         {
             _createdToken = _fixture.Create<string>();
-            
+
             _tokenService.CreateToken(Arg.Any<Repository.Models.User>()).Returns(_createdToken);
         }
-        
+
         private void ThenAnErrorIsThrown(string message, string description, HttpStatusCode httpStatusCode)
         {
             _commandAction.Should().Throw<PlexRequestException>()
@@ -212,13 +212,13 @@ namespace PlexRequests.UnitTests.Models.Auth
             _commandAction.Should().NotThrow();
 
             _createdAdminUser.Should().NotBeNull();
-            
+
             _createdAdminUser.Should().NotBeNull();
             _createdAdminUser.Username.Should().Be(_plexUser.Username);
             _createdAdminUser.Email.Should().Be(_plexUser.Email);
             _createdAdminUser.IsAdmin.Should().BeTrue();
             _createdAdminUser.Roles.Should()
-                             .BeEquivalentTo(new List<string> {PlexRequestRoles.Admin, PlexRequestRoles.User});
+                             .BeEquivalentTo(new List<string> { PlexRequestRoles.Admin, PlexRequestRoles.User, PlexRequestRoles.Commenter });
         }
 
         private void ThenAServerWasCreated(bool createdLibraries)
@@ -251,7 +251,7 @@ namespace PlexRequests.UnitTests.Models.Auth
                 _createdServer.Libraries.Should().BeEmpty();
             }
         }
-        
+
         private async Task ThenCommandReturnsAccessToken()
         {
             var response = await _commandAction();
