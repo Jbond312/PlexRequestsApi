@@ -18,7 +18,7 @@ namespace PlexRequests.Repository
         public async Task<List<User>> GetAllUsers(bool includeDisabled = false, bool includeAdmin = false)
         {
             var query = Collection.AsQueryable();
-            
+
             if (!includeDisabled)
             {
                 query = query.Where(x => !x.IsDisabled);
@@ -28,7 +28,7 @@ namespace PlexRequests.Repository
             {
                 query = query.Where(x => !x.IsAdmin);
             }
-            
+
             return await query.ToListAsync();
         }
 
@@ -40,7 +40,7 @@ namespace PlexRequests.Repository
 
         public async Task<User> GetUser(Guid id)
         {
-            var findCursor = await Collection.FindAsync(x => x.Id == id && !x.IsDisabled);
+            var findCursor = await Collection.FindAsync(x => x.Id == id);
             return await findCursor.FirstOrDefaultAsync();
         }
 
