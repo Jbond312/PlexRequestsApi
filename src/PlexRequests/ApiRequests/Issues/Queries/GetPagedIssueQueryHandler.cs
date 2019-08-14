@@ -3,7 +3,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using AutoMapper;
 using MediatR;
-using PlexRequests.ApiRequests.Issues.DTOs.ListDetail;
+using PlexRequests.ApiRequests.Issues.Models.ListDetail;
 using PlexRequests.Core.Services;
 using PlexRequests.Repository.Enums;
 

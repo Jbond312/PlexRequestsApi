@@ -1,4 +1,4 @@
-using PlexRequests.ApiRequests.Issues.DTOs.Detail;
+using PlexRequests.ApiRequests.Issues.Models.Detail;
 
 namespace PlexRequests.ApiRequests.Issues.Queries
 {

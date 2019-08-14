@@ -7,6 +7,7 @@ using Microsoft.AspNetCore.Mvc;
 using PlexRequests.ApiRequests.Issues.Commands;
 using PlexRequests.ApiRequests.Issues.Queries;
 using PlexRequests.Attributes;
+using PlexRequests.Core.Auth;
 using Swashbuckle.AspNetCore.Annotations;
 
 namespace PlexRequests.Controllers
@@ -48,6 +49,7 @@ namespace PlexRequests.Controllers
         }
 
         [HttpPost("{id:guid}/Comment")]
+        [Authorize(Roles = PlexRequestRoles.Commenter)]
         [SwaggerResponse(204)]
         [SwaggerResponse(400, null, typeof(ApiErrorResponse))]
         [SwaggerResponse(401)]

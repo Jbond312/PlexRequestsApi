@@ -1,5 +1,5 @@
 using System.Collections.Generic;
-using PlexRequests.ApiRequests.Requests.DTOs.Detail;
+using PlexRequests.ApiRequests.Requests.Models.Detail;
 
 namespace PlexRequests.ApiRequests.Requests.Queries
 {

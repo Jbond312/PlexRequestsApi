@@ -2,7 +2,7 @@
 using System.Collections.Generic;
 using System.Linq;
 using AutoMapper;
-using PlexRequests.ApiRequests.TheMovieDb.DTOs;
+using PlexRequests.ApiRequests.TheMovieDb.Models;
 using PlexRequests.TheMovieDb.Models;
 
 namespace PlexRequests.Mapping
@@ -14,25 +14,25 @@ namespace PlexRequests.Mapping
             CreateMap<MovieSearch, MovieSearchModel>()
                 .ForMember(x => x.PosterPath, x => x.MapFrom(y => y.Poster_Path))
                 .ForMember(x => x.BackdropPath, x => x.MapFrom(y => y.Backdrop_Path))
-                .ForMember(x => x.ReleaseDate, x => x.MapFrom(y => DateTime.Parse(y.Release_Date)));
+                .ForMember(x => x.ReleaseDate, x => x.MapFrom(y => string.IsNullOrEmpty(y.Release_Date) ? null : (DateTime?)DateTime.Parse(y.Release_Date)));
 
             CreateMap<MovieDetails, MovieDetailModel>()
                 .ForMember(x => x.ImdbId, x => x.MapFrom(y => y.Imdb_Id))
                 .ForMember(x => x.PosterPath, x => x.MapFrom(y => y.Poster_Path))
                 .ForMember(x => x.BackdropPath, x => x.MapFrom(y => y.Backdrop_Path))
-                .ForMember(x => x.ReleaseDate, x => x.MapFrom(y => DateTime.Parse(y.Release_Date)));
+                .ForMember(x => x.ReleaseDate, x => x.MapFrom(y => string.IsNullOrEmpty(y.Release_Date) ? null : (DateTime?)DateTime.Parse(y.Release_Date)));
 
             CreateMap<TvSearch, TvSearchModel>()
                 .ForMember(x => x.Title, x => x.MapFrom(y => y.Name))
                 .ForMember(x => x.PosterPath, x => x.MapFrom(y => y.Poster_Path))
                 .ForMember(x => x.BackdropPath, x => x.MapFrom(y => y.Backdrop_Path))
-                .ForMember(x => x.ReleaseDate, x => x.MapFrom(y => DateTime.Parse(y.First_Air_Date)));
+                .ForMember(x => x.ReleaseDate, x => x.MapFrom(y => string.IsNullOrEmpty(y.First_Air_Date) ? null : (DateTime?)DateTime.Parse(y.First_Air_Date)));
 
             CreateMap<TvDetails, TvDetailModel>()
                 .ForMember(x => x.Title, x => x.MapFrom(y => y.Name))
                 .ForMember(x => x.PosterPath, x => x.MapFrom(y => y.Poster_Path))
                 .ForMember(x => x.BackdropPath, x => x.MapFrom(y => y.Backdrop_Path))
-                .ForMember(x => x.ReleaseDate, x => x.MapFrom(y => DateTime.Parse(y.First_Air_Date)))
+                .ForMember(x => x.ReleaseDate, x => x.MapFrom(y => string.IsNullOrEmpty(y.First_Air_Date) ? null : (DateTime?)DateTime.Parse(y.First_Air_Date)))
                 .ForMember(x => x.EpisodeCount, x => x.MapFrom(y => y.Number_Of_Episodes))
                 .ForMember(x => x.SeasonCount, x => x.MapFrom(y => y.Number_Of_Seasons))
                 .ForMember(x => x.InProduction, x => x.MapFrom(y => y.In_Production))
@@ -46,10 +46,10 @@ namespace PlexRequests.Mapping
                 .ForMember(x => x.Id, x => x.MapFrom(y => y._id))
                 .ForMember(x => x.Index, x => x.MapFrom(y => y.Season_Number))
                 .ForMember(x => x.PosterPath, x => x.MapFrom(y => y.Poster_Path))
-                .ForMember(x => x.AirDate, x => x.MapFrom(y => DateTime.Parse(y.Air_Date)));
+                .ForMember(x => x.AirDate, x => x.MapFrom(y => string.IsNullOrEmpty(y.Air_Date) ? null : (DateTime?)DateTime.Parse(y.Air_Date)));
 
             CreateMap<EpisodeToAir, EpisodeToAirModel>()
-                .ForMember(x => x.AirDate, x => x.MapFrom(y => DateTime.Parse(y.Air_Date)))
+                .ForMember(x => x.AirDate, x => x.MapFrom(y => string.IsNullOrEmpty(y.Air_Date) ? null : (DateTime?)DateTime.Parse(y.Air_Date)))
                 .ForMember(x => x.Season, x => x.MapFrom(y => y.Season_Number))
                 .ForMember(x => x.Episode, x => x.MapFrom(y => y.Episode_Number))
                 .ForMember(x => x.StillPath, x => x.MapFrom(y => y.Still_Path));
