@@ -88,8 +88,10 @@ namespace PlexRequests.Controllers
         [SwaggerResponse(204)]
         [SwaggerResponse(400, null, typeof(ApiErrorResponse))]
         [SwaggerResponse(401)]
-        public async Task<ActionResult> SyncContent([FromQuery] SyncContentCommand command)
+        public async Task<ActionResult> SyncContent([FromQuery] bool fullRefresh = false)
         {
+            var command = new SyncContentCommand(fullRefresh);
+
             await _mediator.Send(command);
 
             return NoContent();
