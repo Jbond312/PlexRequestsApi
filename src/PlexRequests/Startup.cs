@@ -93,14 +93,6 @@ namespace PlexRequests
             var authSettings = Configuration.GetSection(nameof(AuthenticationSettings)).Get<AuthenticationSettings>();
             var databaseSettings = Configuration.GetSection(nameof(DatabaseSettings)).Get<DatabaseSettings>();
 
-            if (Environment.IsProduction())
-            {
-                var dbUser = System.Environment.GetEnvironmentVariable("MONGO_INITDB_ROOT_USERNAME");
-                var dbUserPass = System.Environment.GetEnvironmentVariable("MONGO_INITDB_ROOT_PASSWORD");
-                databaseSettings.User = dbUser;
-                databaseSettings.Password = dbUserPass;
-            }
-
             services.RegisterDependencies(databaseSettings);
             services.ConfigureJwtAuthentication(authSettings, Environment.IsProduction());
 
@@ -164,13 +156,6 @@ namespace PlexRequests
             var settings = configuration.GetSection(nameof(Settings)).Get<Settings>();
 
             logger.LogDebug($"Persisting settings to database. Overwrite: {settings.OverwriteSettings}");
-
-            settings.ApplicationName = string.IsNullOrEmpty(settings.ApplicationName)
-                ? "PlexRequests"
-                : settings.ApplicationName;
-            settings.PlexClientId = Guid.NewGuid();
-
-            settings.Version = Environment.IsProduction() ? System.Environment.GetEnvironmentVariable("PLEXREQUESTS_VERSION") : "Dev";
 
             settingsService.PrimeSettings(settings).GetAwaiter().GetResult();
         }
