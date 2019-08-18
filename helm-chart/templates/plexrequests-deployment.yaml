@@ -1,0 +1,70 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ .Values.kube.apiAppName }}
+  namespace: {{ .Release.Namespace }}
+spec:
+  replicas: {{ .Values.kube.replicaCount }}
+  selector:
+    matchLabels:
+      app: {{ .Values.kube.apiAppName }}
+  template:
+    metadata:
+      labels:
+        app: {{ .Values.kube.apiAppName }}
+    spec:
+      containers:
+        - name: {{ .Values.kube.apiAppName }}
+          image: {{ .Values.docker.apiImage }}:{{ .Values.docker.apiImageTag }}
+          imagePullPolicy: {{ .Values.kube.imagePullPolicy }}
+          ports:
+            - containerPort: {{ .Values.kube.apiPort }}
+          env:
+            - name: AuthenticationSettings__SecretKey
+              valueFrom:
+                secretKeyRef:
+                  key: jwtKey
+                  name: plexrequestsapi-secrets
+            - name: TheMovieDbSettings__ApiKey
+              valueFrom:
+                secretKeyRef:
+                  key: theMovieDbApiKey
+                  name: plexrequestsapi-secrets
+            - name: TheMovieDbSettings__BaseUri
+              value: {{ .Values.theMovieDbApi.baseUri }}
+            - name: DatabaseSettings__Server
+              value: {{ .Values.kube.dbAppName }}
+            - name: DatabaseSettings__Port
+              value: {{ .Values.db.port | quote }}
+            - name: DatabaseSettings__Database
+              valueFrom:
+                secretKeyRef:
+                  key: mongoDatabase
+                  name: plexdb-secrets
+            - name: DatabaseSettings__User
+              valueFrom:
+                secretKeyRef:
+                  key: mongoUsername
+                  name: plexdb-secrets
+            - name: DatabaseSettings__Password
+              valueFrom:
+                secretKeyRef:
+                  key: mongoPassword
+                  name: plexdb-secrets
+            - name: PlexSettings__ConnectLocally
+              value: {{ .Values.plex.connectLocally | quote }}
+            - name: PlexSettings__DefaultLocalPort
+              value: {{ .Values.plex.defaultLocalPort | quote }}
+            - name: PlexSettings__PlexMediaItemUriFormat
+              value: {{ .Values.plex.plexMediaItemUriFormat }}
+            - name: Settings__ApplicationName
+              value: {{ .Values.apiSettings.appName }}
+            - name: Settings__OverwriteSettings
+              value: {{ .Values.apiSettings.overwriteSettings | quote }}
+            - name: Settings__Version
+              value: {{ .Chart.AppVersion | quote }}
+            - name: Settings__PlexClientId
+              valueFrom:
+                secretKeyRef:
+                  key: plexClientId
+                  name: plexrequestsapi-secrets

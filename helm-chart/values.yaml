@@ -1,0 +1,42 @@
+environment: Production
+
+kube:
+  ingressEnabled: true
+  replicaCount: 1
+  host: 
+  apiPath: 
+  apiSubDomain: 
+  clientSubDomain: 
+  apiAppName: "plexrequests"
+  dbAppName: "plexmongo"
+  imagePullPolicy: "Always"
+  apiPort: 80
+
+docker:
+  apiImage: "plexrequestsapi"
+  apiImageTag: latest
+  dbImage: "mongo"
+  dbImageTag: "latest"
+
+apiSettings:
+  appName: "PlexRequests"
+  overwriteSettings: false
+  plexClientId: 
+
+apiKeys:
+  jwtKey: 
+  theMovieDbApi: 
+
+db:
+  username: 
+  password: 
+  database: PlexRequests
+  port: 27017
+
+plex:
+  connectLocally: false
+  defaultLocalPort: 32400
+  plexMediaItemUriFormat: "https://app.plex.tv/desktop#!/server/{0}/details?key=%2Flibrary%2Fmetadata%2F{1}"
+
+theMovieDbApi:
+  baseUri: "https://api.themoviedb.org/3/"
