@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
+using Microsoft.Extensions.Logging;
 using PlexRequests.Core.Helpers;
 using PlexRequests.Core.Settings;
 using PlexRequests.Plex;
@@ -18,34 +19,42 @@ namespace PlexRequests.Sync.SyncProcessors
         private readonly IMediaItemProcessor _mediaItemProcessor;
         private readonly PlexSettings _plexSettings;
         private readonly IAgentGuidParser _agentGuidParser;
+        private readonly ILogger<TvProcessor> _logger;
 
         public TvProcessor(
             IPlexApi plexApi,
             IPlexService plexService,
             IMediaItemProcessor mediaItemProcessor,
             PlexSettings plexSettings,
-            IAgentGuidParser agentGuidParser
-            )
+            IAgentGuidParser agentGuidParser,
+            ILoggerFactory loggerFactory)
         {
             _plexApi = plexApi;
             _plexService = plexService;
             _mediaItemProcessor = mediaItemProcessor;
             _plexSettings = plexSettings;
             _agentGuidParser = agentGuidParser;
+            _logger = loggerFactory.CreateLogger<TvProcessor>();
         }
 
         public PlexMediaTypes Type => PlexMediaTypes.Show;
 
         public async Task<SyncResult> Synchronise(PlexMediaContainer libraryContainer, bool fullRefresh, string authToken, string plexUri, string machineIdentifier)
         {
+            _logger.LogDebug("Started synchronising Movies");
+
             var syncResult = new SyncResult();
 
             var localMediaItems = await _plexService.GetMediaItems(Type);
+            var localMediaItemsCount = localMediaItems?.Count ?? 0;
+            _logger.LogDebug($"Retrieved '{localMediaItemsCount}' existing media items");
 
             var processedShowKeys = new List<int>();
             foreach (var remoteMediaItem in libraryContainer.MediaContainer.Metadata)
             {
                 var ratingKey = GetRatingKey(remoteMediaItem, fullRefresh);
+
+                _logger.LogDebug($"Processing rating key '{remoteMediaItem.RatingKey}'");
 
                 if (processedShowKeys.Contains(ratingKey))
                 {
@@ -67,6 +76,7 @@ namespace PlexRequests.Sync.SyncProcessors
 
         private async Task GetChildMetadata(PlexMediaItem mediaItem, string authToken, string plexUri, string machineIdentifier)
         {
+            _logger.LogDebug($"Retrieving all seasons for show '{mediaItem.Title}'");
             var seasonShowItems = await GetChildShowItems(mediaItem.Key, authToken, plexUri);
 
             foreach (var seasonShowItem in seasonShowItems)
@@ -81,6 +91,7 @@ namespace PlexRequests.Sync.SyncProcessors
                     PlexMediaUri = PlexHelper.GenerateMediaItemUri(_plexSettings.PlexMediaItemUriFormat, machineIdentifier, seasonShowItem.RatingKey)
                 };
 
+                _logger.LogDebug($"Retrieving all episodes for show '{mediaItem.Title}' season '{plexSeason.Season}'");
                 var episodeShowItems = await GetChildShowItems(seasonShowItem.RatingKey, authToken, plexUri);
 
                 plexSeason.Episodes = episodeShowItems.Select(ep => new PlexEpisode
@@ -111,6 +122,7 @@ namespace PlexRequests.Sync.SyncProcessors
 
             foreach (var child in childContainer.MediaContainer.Metadata)
             {
+                _logger.LogDebug($"Adding child item with rating key '{child.RatingKey}'");
                 var childKey = Convert.ToInt32(child.RatingKey);
                 showItems.Add(await CreateShowItem(childKey, authToken, plexUri));
             }
@@ -124,6 +136,7 @@ namespace PlexRequests.Sync.SyncProcessors
 
             var metadata = itemInfo?.MediaContainer?.Metadata?.FirstOrDefault();
 
+            _logger.LogDebug($"Getting agent details for agent guid '{metadata?.Guid}'");
             var agentDetails = _agentGuidParser.TryGetAgentDetails(metadata?.Guid);
 
             return new ShowMediaItem

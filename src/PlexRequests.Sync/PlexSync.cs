@@ -38,6 +38,10 @@ namespace PlexRequests.Sync
 
         public async Task Synchronise(bool fullRefresh)
         {
+            var refreshType = fullRefresh ? "full" : "partial";
+
+            _logger.LogInformation($"Starting a {refreshType} sync with Plex.");
+
             var plexServer = await _plexService.GetServer();
 
             var plexUrl = plexServer.GetPlexUri(_plexSettings.ConnectLocally);

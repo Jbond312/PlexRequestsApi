@@ -4,6 +4,7 @@ using System.Linq;
 using System.Threading.Tasks;
 using AutoFixture;
 using FluentAssertions;
+using Microsoft.Extensions.Logging;
 using NSubstitute;
 using NSubstitute.ReturnsExtensions;
 using PlexRequests.Core.Helpers;
@@ -45,28 +46,32 @@ namespace PlexRequests.Sync.UnitTests.SyncProcessors
         private int _seasonRatingKey;
 
         public TvProcessorTests()
-        {            _fixture = new Fixture();
-            
+        {
+            _fixture = new Fixture();
+
             _plexApi = Substitute.For<IPlexApi>();
             _plexService = Substitute.For<IPlexService>();
             _mediaItemProcessor = Substitute.For<IMediaItemProcessor>();
             _agentGuidParser = Substitute.For<IAgentGuidParser>();
+            var loggerFactory = Substitute.For<ILoggerFactory>();
+            loggerFactory.CreateLogger<TvProcessor>().Returns(Substitute.For<ILogger>());
+
             var plexSettings = _fixture.Create<PlexSettings>();
 
-            _underTest = new TvProcessor(_plexApi, _plexService, _mediaItemProcessor, plexSettings, _agentGuidParser);
+            _underTest = new TvProcessor(_plexApi, _plexService, _mediaItemProcessor, plexSettings, _agentGuidParser, loggerFactory);
         }
 
         [Fact]
         private void Local_Media_Items_Are_Retrieved()
         {
-           this.Given(x => x.GivenLocalMediaItems())
-                .Given(x => x.GivenALibraryContainer())
-                .Given(x => x.GivenAProcessedMediaItem(_rootPlexMediaItemHasSeason))
-                .Given(x => x.GivenNoChildMediaItems())
-                .When(x => x.WhenAnActionIsCreated(_fullRefresh))
-                .Then(x => x.ThenTheResponseIsSuccessful())
-                .Then(x => x.ThenLocalMediaItemsWereReturned())
-                .BDDfy();
+            this.Given(x => x.GivenLocalMediaItems())
+                 .Given(x => x.GivenALibraryContainer())
+                 .Given(x => x.GivenAProcessedMediaItem(_rootPlexMediaItemHasSeason))
+                 .Given(x => x.GivenNoChildMediaItems())
+                 .When(x => x.WhenAnActionIsCreated(_fullRefresh))
+                 .Then(x => x.ThenTheResponseIsSuccessful())
+                 .Then(x => x.ThenLocalMediaItemsWereReturned())
+                 .BDDfy();
         }
 
         [Theory]
@@ -96,7 +101,7 @@ namespace PlexRequests.Sync.UnitTests.SyncProcessors
                 .Then(x => x.ThenProcessedMediaItemWasReturned())
                 .BDDfy();
         }
-        
+
         [Fact]
         private void When_Partial_Refresh_RatingKey_Is_GrandParent_RatingKey()
         {
@@ -116,7 +121,7 @@ namespace PlexRequests.Sync.UnitTests.SyncProcessors
             _seasonRatingKey = _fixture.Create<int>();
             _rootPlexMediaItemHasSeason = false;
             _seasonAgentDetails = _fixture.Create<(AgentTypes, string)>();
-            
+
             this.Given(x => x.GivenLocalMediaItems())
                 .Given(x => x.GivenASingleLibraryMetadata())
                 .Given(x => x.GivenAContainer(_seasonRatingKey, ref _showContainer))
@@ -130,7 +135,7 @@ namespace PlexRequests.Sync.UnitTests.SyncProcessors
                 .Then(x => x.ThenTheSeasonIsCorrect())
                 .BDDfy();
         }
-        
+
         [Fact]
         private void SyncResult_Is_Updated()
         {
@@ -144,7 +149,7 @@ namespace PlexRequests.Sync.UnitTests.SyncProcessors
                 .Then(x => x.ThenSyncResultWasUpdated())
                 .BDDfy();
         }
-        
+
         private void GivenLocalMediaItems()
         {
             _localMediaItems = _fixture.CreateMany<PlexMediaItem>().ToList();
@@ -161,13 +166,13 @@ namespace PlexRequests.Sync.UnitTests.SyncProcessors
                 metadata.GrandParentRatingKey = _fixture.Create<int>().ToString();
             }
         }
-        
+
         private void GivenALibraryContainerWithOnlyOneUniqueKey()
         {
             _plexLibraryContainer = _fixture.Create<PlexMediaContainer>();
 
             var ratingKey = _fixture.Create<int>().ToString();
-            
+
             foreach (var metadata in _plexLibraryContainer.MediaContainer.Metadata)
             {
                 metadata.RatingKey = ratingKey;
@@ -194,7 +199,7 @@ namespace PlexRequests.Sync.UnitTests.SyncProcessors
             {
                 _rootPlexMediaItem.Seasons = new List<PlexSeason>();
             }
-            
+
             _mediaItemProcessor.GetMediaItem(Arg.Any<int>(), Arg.Any<PlexMediaTypes>(), Arg.Any<List<PlexMediaItem>>(),
                                    Arg.Any<string>(), Arg.Any<string>(), Arg.Any<string>(), Arg.Any<string>())
                                .Returns((isNewMediaItem, _rootPlexMediaItem));
@@ -209,14 +214,14 @@ namespace PlexRequests.Sync.UnitTests.SyncProcessors
         {
             _plexApi.GetChildrenMetadata(Arg.Any<string>(), Arg.Any<string>(), Arg.Any<int>()).ReturnsNull();
         }
-        
+
         private void GivenAContainer(int seasonRatingKey, ref PlexMediaContainer container)
         {
             if (container == null)
             {
                 container = _fixture.Create<PlexMediaContainer>();
             }
-            
+
             container.MediaContainer.Metadata = _fixture.Build<Metadata>()
                                                                     .With(x => x.RatingKey, seasonRatingKey.ToString)
                                                                     .CreateMany(1)
@@ -265,7 +270,7 @@ namespace PlexRequests.Sync.UnitTests.SyncProcessors
         {
             _plexService.Received().GetMediaItems(Arg.Is(PlexMediaTypes.Show));
         }
-        
+
         private void ThenGrandParentRatingKeyWasUsed()
         {
             var grandParentKeys =
@@ -301,7 +306,7 @@ namespace PlexRequests.Sync.UnitTests.SyncProcessors
             _updatedMediaItem.Seasons.Count.Should().Be(1);
 
             var seasonMetadata = _seasonMetadata.MediaContainer.Metadata.First();
-            
+
             var updatedSeason = _updatedMediaItem.Seasons.First();
             updatedSeason.Key.Should().Be(_seasonRatingKey);
             updatedSeason.Title.Should().Be(seasonMetadata.Title);

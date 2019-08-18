@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
+using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using PlexRequests.Core.Helpers;
 using PlexRequests.Core.Settings;
@@ -18,13 +19,14 @@ namespace PlexRequests.Sync
             IPlexService plexService,
             IMediaItemProcessor mediaItemProcessor,
             IAgentGuidParser agentGuidParser,
-            IOptions<PlexSettings> plexSettings
+            IOptions<PlexSettings> plexSettings,
+            ILoggerFactory loggerFactory
             )
         {
             _processors = new List<ISyncProcessor>
             {
-                new MovieProcessor(plexService, mediaItemProcessor, plexSettings.Value),
-                new TvProcessor(plexApi, plexService, mediaItemProcessor, plexSettings.Value, agentGuidParser)
+                new MovieProcessor(plexService, mediaItemProcessor, plexSettings.Value, loggerFactory),
+                new TvProcessor(plexApi, plexService, mediaItemProcessor, plexSettings.Value, agentGuidParser, loggerFactory)
             };
         }
 

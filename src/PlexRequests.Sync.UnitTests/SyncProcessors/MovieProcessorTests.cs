@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Threading.Tasks;
 using AutoFixture;
 using FluentAssertions;
+using Microsoft.Extensions.Logging;
 using NSubstitute;
 using PlexRequests.Core.Settings;
 using PlexRequests.Plex;
@@ -32,15 +33,17 @@ namespace PlexRequests.Sync.UnitTests.SyncProcessors
         public MovieProcessorTests()
         {
             _fixture = new Fixture();
-            
+
             _plexService = Substitute.For<IPlexService>();
             _mediaItemProcessor = Substitute.For<IMediaItemProcessor>();
-            
+            var loggerFactory = Substitute.For<ILoggerFactory>();
+            loggerFactory.CreateLogger<MovieProcessor>().Returns(Substitute.For<ILogger>());
+
             var plexSettings = _fixture.Create<PlexSettings>();
 
-            _underTest = new MovieProcessor(_plexService, _mediaItemProcessor, plexSettings);
+            _underTest = new MovieProcessor(_plexService, _mediaItemProcessor, plexSettings, loggerFactory);
         }
-        
+
         [Fact]
         private void Gets_Local_Movie_MediaItems()
         {
@@ -51,7 +54,7 @@ namespace PlexRequests.Sync.UnitTests.SyncProcessors
                 .Then(x => x.ThenLocalMediaItemsWereRetrieved())
                 .BDDfy();
         }
-        
+
         [Fact]
         private void A_Media_Item_Is_Processed()
         {
@@ -62,7 +65,7 @@ namespace PlexRequests.Sync.UnitTests.SyncProcessors
                 .Then(x => x.ThenAMediaItemWasProcessed())
                 .BDDfy();
         }
-        
+
         [Fact]
         private void A_Result_Is_Updated()
         {
@@ -73,7 +76,7 @@ namespace PlexRequests.Sync.UnitTests.SyncProcessors
                 .Then(x => x.ThenAResultWasUpdated())
                 .BDDfy();
         }
-        
+
         [Fact]
         private void Returns_Correct_SyncResult()
         {
