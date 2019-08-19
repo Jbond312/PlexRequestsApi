@@ -1,24 +1,24 @@
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: {{ .Values.kube.apiAppName }}
+  name: {{ template "plexrequests.name" . }}
   namespace: {{ .Release.Namespace }}
 spec:
-  replicas: {{ .Values.kube.replicaCount }}
+  replicas: {{ .Values.replicaCount }}
   selector:
     matchLabels:
-      app: {{ .Values.kube.apiAppName }}
+      app: {{ template "plexrequests.name" . }}
   template:
     metadata:
       labels:
-        app: {{ .Values.kube.apiAppName }}
+        app: {{ template "plexrequests.name" . }}
     spec:
       containers:
-        - name: {{ .Values.kube.apiAppName }}
+        - name: {{ template "plexrequests.name" . }}
           image: {{ .Values.docker.apiImage }}:{{ .Values.docker.apiImageTag }}
-          imagePullPolicy: {{ .Values.kube.imagePullPolicy }}
+          imagePullPolicy: Always
           ports:
-            - containerPort: {{ .Values.kube.apiPort }}
+            - containerPort: 80
           env:
             - name: AuthenticationSettings__SecretKey
               valueFrom:
@@ -33,23 +33,17 @@ spec:
             - name: TheMovieDbSettings__BaseUri
               value: {{ .Values.theMovieDbApi.baseUri }}
             - name: DatabaseSettings__Server
-              value: {{ .Values.kube.dbAppName }}
+              value: {{ .Release.Name }}-mongodb
             - name: DatabaseSettings__Port
-              value: {{ .Values.db.port | quote }}
+              value: {{ .Values.mongodb.service.port | quote }}
             - name: DatabaseSettings__Database
-              valueFrom:
-                secretKeyRef:
-                  key: mongoDatabase
-                  name: plexdb-secrets
+              value: {{ .Values.mongodb.mongodbDatabase }}
             - name: DatabaseSettings__User
-              valueFrom:
-                secretKeyRef:
-                  key: mongoUsername
-                  name: plexdb-secrets
+              value: {{ .Values.mongodb.mongodbUsername }}
             - name: DatabaseSettings__Password
               valueFrom:
                 secretKeyRef:
-                  key: mongoPassword
+                  key: mongodb-password
                   name: plexdb-secrets
             - name: PlexSettings__ConnectLocally
               value: {{ .Values.plex.connectLocally | quote }}

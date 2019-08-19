@@ -1,4 +1,4 @@
-{{- if .Values.kube.ingressEnabled -}}
+{{- if .Values.ingress.enabled -}}
 apiVersion: extensions/v1beta1
 kind: Ingress
 metadata:
@@ -10,15 +10,14 @@ metadata:
 spec:
   tls:
   - hosts:
-    - {{ .Values.kube.apiSubDomain }}{{ .Values.kube.host }}
-    - {{ .Values.kube.clientSubDomain }}{{ .Values.kube.host }}
+    - {{ .Values.ingress.apiSubDomain }}{{ .Values.ingress.host }}
+    - {{ .Values.ingress.clientSubDomain }}{{ .Values.ingress.host }}
     secretName: letsencrypt-prod
   rules:
-  - host: {{ .Values.kube.apiSubDomain }}{{ .Values.kube.host }}
+  - host: {{ .Values.ingress.apiSubDomain }}{{ .Values.ingress.host }}
     http:
       paths:
-      - path: {{ .Values.kube.apiPath }}
-        backend:
-          serviceName: {{ .Values.kube.apiAppName }}
-          servicePort: {{ .Values.kube.apiPort }}
+      - backend:
+          serviceName: {{ .Values.serviceName }}
+          servicePort: 80
 {{- end -}}

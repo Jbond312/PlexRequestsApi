@@ -82,7 +82,7 @@ namespace PlexRequests
 
         private static void RegisterRepositories(IServiceCollection services, DatabaseSettings databaseSettings)
         {
-            var connectionString = $"mongodb://{databaseSettings.User}:{databaseSettings.Password}@{databaseSettings.Server}:{databaseSettings.Port}?connectTimeoutMS=30000";
+            var connectionString = $"mongodb://{databaseSettings.User}:{databaseSettings.Password}@{databaseSettings.Server}:{databaseSettings.Port}/{databaseSettings.Database}?connectTimeoutMS=30000";
 
             services.AddTransient<ISettingsRepository>(repo =>
                 new SettingsRepository(connectionString, databaseSettings.Database));

@@ -5,6 +5,7 @@
 
 # Plex Requests
 logs/
+charts/
 
 # User-specific files
 *.suo

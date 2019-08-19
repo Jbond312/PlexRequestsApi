@@ -1,25 +1,38 @@
 environment: Production
 
-kube:
-  ingressEnabled: true
-  replicaCount: 1
+## String to partially override mongodb.fullname template (will maintain the release name)
+##
+# nameOverride:
+
+## String to fully override mongodb.fullname template
+##
+# fullnameOverride:
+
+#From stable/mongodb chart dependency
+mongodb:
+  existingSecret: 
+  mongodbUsername: 
+  mongodbDatabase: 
+  persistence:
+    enabled: false
+    storageClass: 
+    size: 
+
+ingress:
+  enabled: false
   host: 
-  apiPath: 
   apiSubDomain: 
   clientSubDomain: 
-  apiAppName: "plexrequests"
-  dbAppName: "plexmongo"
-  imagePullPolicy: "Always"
-  apiPort: 80
+
+replicaCount: 1
+serviceName: "plexrequests"
 
 docker:
   apiImage: "plexrequestsapi"
   apiImageTag: latest
-  dbImage: "mongo"
-  dbImageTag: "latest"
 
 apiSettings:
-  appName: "PlexRequests"
+  appName: "plexrequests"
   overwriteSettings: false
   plexClientId: 
 
@@ -28,10 +41,8 @@ apiKeys:
   theMovieDbApi: 
 
 db:
-  username: 
   password: 
-  database: PlexRequests
-  port: 27017
+  rootPassword: 
 
 plex:
   connectLocally: false
