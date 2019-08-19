@@ -1,4 +1,5 @@
-﻿using System.Threading.Tasks;
+﻿using System.Collections.Generic;
+using System.Threading.Tasks;
 using MediatR;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
@@ -39,16 +40,16 @@ namespace PlexRequests.Controllers
         [HttpGet]
         [Route("Libraries")]
         [Admin]
-        [SwaggerResponse(200, null, typeof(GetManyPlexServerLibraryQueryResult))]
+        [SwaggerResponse(200, null, typeof(List<PlexServerLibraryDetailModel>))]
         [SwaggerResponse(400, null, typeof(ApiErrorResponse))]
         [SwaggerResponse(401)]
         public async Task<ActionResult<GetManyPlexServerLibraryQueryResult>> GetLibraries()
         {
             var query = new GetManyPlexServerLibraryQuery();
 
-            var libraries = await _mediator.Send(query);
+            var queryResult = await _mediator.Send(query);
 
-            return Ok(libraries);
+            return Ok(queryResult.Libraries);
         }
 
         [HttpPut]

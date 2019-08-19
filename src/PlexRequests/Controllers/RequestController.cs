@@ -121,6 +121,7 @@ namespace PlexRequests.Controllers
 
         [HttpGet("Movie")]
         [SwaggerResponse(200, null, typeof(GetMoviePagedRequestQueryResult))]
+        [SwaggerResponse(400, null, typeof(ApiErrorResponse))]
         [SwaggerResponse(401)]
         public async Task<ActionResult<GetMoviePagedRequestQueryResult>> GetMovieRequests([FromQuery] GetMoviePagedRequestQuery query)
         {
@@ -131,6 +132,7 @@ namespace PlexRequests.Controllers
 
         [HttpGet("Tv")]
         [SwaggerResponse(200, null, typeof(GetTvPagedRequestQueryResult))]
+        [SwaggerResponse(400, null, typeof(ApiErrorResponse))]
         [SwaggerResponse(401)]
         public async Task<ActionResult<GetTvPagedRequestQueryResult>> GetTvRequests([FromQuery] GetTvPagedRequestQuery query)
         {

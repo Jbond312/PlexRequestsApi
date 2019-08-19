@@ -5,6 +5,7 @@ using MediatR;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using PlexRequests.ApiRequests.Issues.Commands;
+using PlexRequests.ApiRequests.Issues.Models.Detail;
 using PlexRequests.ApiRequests.Issues.Queries;
 using PlexRequests.Attributes;
 using PlexRequests.Core.Auth;
@@ -63,11 +64,11 @@ namespace PlexRequests.Controllers
         }
 
         [HttpGet("{id:guid}")]
-        [SwaggerResponse(204)]
+        [SwaggerResponse(200, null, typeof(IssueDetailModel))]
         [SwaggerResponse(400, null, typeof(ApiErrorResponse))]
         [SwaggerResponse(401)]
         [SwaggerResponse(424)]
-        public async Task<ActionResult> GetIssue([FromRoute][Required] Guid id)
+        public async Task<ActionResult<IssueDetailModel>> GetIssue([FromRoute][Required] Guid id)
         {
             var query = new GetOneIssueQuery(id);
             var result = await _mediator.Send(query);

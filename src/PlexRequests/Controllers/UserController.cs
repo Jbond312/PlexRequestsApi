@@ -1,9 +1,11 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.Threading.Tasks;
 using MediatR;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using PlexRequests.ApiRequests.Users.Commands;
+using PlexRequests.ApiRequests.Users.Models.Detail;
 using PlexRequests.ApiRequests.Users.Queries;
 using PlexRequests.Attributes;
 using Swashbuckle.AspNetCore.Annotations;
@@ -24,14 +26,14 @@ namespace PlexRequests.Controllers
         [HttpGet]
         [Route("")]
         [Admin]
-        [SwaggerResponse(200, null, typeof(GetManyUserQueryResult))]
+        [SwaggerResponse(200, null, typeof(List<UserDetailModel>))]
         [SwaggerResponse(400, null, typeof(ApiErrorResponse))]
         [SwaggerResponse(401)]
-        public async Task<ActionResult<GetManyUserQueryResult>> GetUsers([FromQuery] GetManyUserQuery query)
+        public async Task<ActionResult<List<UserDetailModel>>> GetUsers([FromQuery] GetManyUserQuery query)
         {
-            var users = await _mediator.Send(query);
+            var queryResult = await _mediator.Send(query);
 
-            return Ok(users);
+            return Ok(queryResult.Users);
         }
 
         [HttpPut]
@@ -40,7 +42,7 @@ namespace PlexRequests.Controllers
         [SwaggerResponse(204)]
         [SwaggerResponse(400, null, typeof(ApiErrorResponse))]
         [SwaggerResponse(401)]
-        public async Task<ActionResult<GetManyUserQueryResult>> UpdateUser([FromRoute] Guid id, [FromBody] UpdateUserCommand command)
+        public async Task<ActionResult> UpdateUser([FromRoute] Guid id, [FromBody] UpdateUserCommand command)
         {
             command.Id = id;
             await _mediator.Send(command);
