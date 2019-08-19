@@ -4,6 +4,6 @@ namespace PlexRequests.Core.Helpers
 {
     public interface IAgentGuidParser
     {
-        (AgentTypes agentType, string agentSourceId) TryGetAgentDetails(string agentGuid);
+        AgentGuidParserResult TryGetAgentDetails(string agentGuid);
     }
 }

@@ -1,28 +1,41 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Net;
 using System.Text.RegularExpressions;
-using PlexRequests.Core.Exceptions;
+using Microsoft.Extensions.Logging;
 using PlexRequests.Repository.Enums;
 
 namespace PlexRequests.Core.Helpers
 {
     public class AgentGuidParser : IAgentGuidParser
     {
+        private readonly ILogger<AgentGuidParser> _logger;
         private readonly List<AgentTypes?> _agentTypes;
         private static readonly Regex PlexAgentGuidRegex = new Regex("com\\.plexapp\\.agents\\.(?'agent'.*)://(?'agentId'.*)\\?");
 
-        public AgentGuidParser()
+        public AgentGuidParser(
+            ILogger<AgentGuidParser> logger
+        )
         {
+            _logger = logger;
             _agentTypes = Enum.GetValues(typeof(AgentTypes)).Cast<AgentTypes?>().ToList();
         }
-        
-        public (AgentTypes agentType, string agentSourceId) TryGetAgentDetails(string agentGuid)
+
+        public AgentGuidParserResult TryGetAgentDetails(string agentGuid)
         {
-            CheckForEmptyGuid(agentGuid);
+            if (string.IsNullOrWhiteSpace(agentGuid))
+            {
+                _logger.LogError($"The PlexMetadataGuid is expected but no value was specified");
+                return null;
+            }
 
             var match = GetRegexMatch(agentGuid);
+
+            if (!match.Success)
+            {
+                _logger.LogError($"The PlexMetadataGuid was not in the expected format: {agentGuid}");
+                return null;
+            }
 
             var agent = match.Groups["agent"].Value;
             var agentId = match.Groups["agentId"].Value;
@@ -32,7 +45,8 @@ namespace PlexRequests.Core.Helpers
 
             if (matchingSource == null)
             {
-                throw CreateException("No AgentType could be extracted from the agent guid",   agentGuid);
+                _logger.LogError($"No AgentType could be extracted from the agent guid: {agentGuid}");
+                return null;
             }
 
             if (matchingSource.Value == AgentTypes.TheTvDb && agentId.Contains("/"))
@@ -40,34 +54,12 @@ namespace PlexRequests.Core.Helpers
                 agentId = agentId.Split("/")[0];
             }
 
-            return (matchingSource.Value, agentId);
+            return new AgentGuidParserResult(matchingSource.Value, agentId);
         }
 
         private static Match GetRegexMatch(string agentGuid)
         {
-            var match = PlexAgentGuidRegex.Match(agentGuid);
-
-            if (!match.Success)
-            {
-                throw CreateException("The PlexMetadataGuid was not in the expected format", agentGuid);
-            }
-
-            return match;
-        }
-
-        private static void CheckForEmptyGuid(string agentGuid)
-        {
-            if (!string.IsNullOrEmpty(agentGuid))
-            {
-                return;
-            }
-
-            throw CreateException("The PlexMetadataGuid should not be null or empty");
-        }
-
-        private static PlexRequestException CreateException(string description, object logObject = null)
-        {
-            throw new PlexRequestException("Invalid Plex Metadata Agent Guid", description, HttpStatusCode.InternalServerError, logObject);
+            return PlexAgentGuidRegex.Match(agentGuid);
         }
     }
 }

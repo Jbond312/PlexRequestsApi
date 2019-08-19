@@ -1,7 +1,7 @@
 ﻿using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
-using PlexRequests.Core.Exceptions;
+using Microsoft.Extensions.Logging;
 using PlexRequests.Core.Helpers;
 using PlexRequests.Plex;
 using PlexRequests.Plex.Models;
@@ -14,19 +14,27 @@ namespace PlexRequests.Sync.SyncProcessors
     {
         private readonly IPlexApi _plexApi;
         private readonly IAgentGuidParser _agentGuidParser;
+        private readonly ILogger<MediaItemProcessor> _logger;
 
         public MediaItemProcessor(
             IPlexApi plexApi,
-            IAgentGuidParser agentGuidParser
+            IAgentGuidParser agentGuidParser,
+            ILogger<MediaItemProcessor> logger
             )
         {
             _plexApi = plexApi;
             _agentGuidParser = agentGuidParser;
+            _logger = logger;
         }
 
-        public async Task<(bool, PlexMediaItem)> GetMediaItem(int ratingKey, PlexMediaTypes mediaType, List<PlexMediaItem> localMedia, string authToken, string plexUri, string machineIdentifier, string plexUriFormat)
+        public async Task<MediaItemResult> GetMediaItem(int ratingKey, PlexMediaTypes mediaType, List<PlexMediaItem> localMedia, string authToken, string plexUri, string machineIdentifier, string plexUriFormat)
         {
             var metadata = await TryGetPlexMetadata(ratingKey, authToken, plexUri);
+
+            if (metadata == null)
+            {
+                return null;
+            }
 
             var mediaItem = localMedia.FirstOrDefault(x => x.Key == ratingKey);
             var isNewItem = false;
@@ -44,13 +52,19 @@ namespace PlexRequests.Sync.SyncProcessors
 
             mediaItem.Resolution = metadata.Media?.FirstOrDefault()?.VideoResolution;
 
-            var (agentType, agentSourceId) = _agentGuidParser.TryGetAgentDetails(metadata.Guid);
-            mediaItem.AgentType = agentType;
-            mediaItem.AgentSourceId = agentSourceId;
+            var agentResult = _agentGuidParser.TryGetAgentDetails(metadata.Guid);
+
+            if (agentResult == null)
+            {
+                return null;
+            }
+
+            mediaItem.AgentType = agentResult.AgentType;
+            mediaItem.AgentSourceId = agentResult.AgentSourceId;
 
             mediaItem.PlexMediaUri = PlexHelper.GenerateMediaItemUri(plexUriFormat, machineIdentifier, ratingKey);
-            
-            return (isNewItem, mediaItem);
+
+            return new MediaItemResult(isNewItem, mediaItem);
         }
 
         public void UpdateResult(SyncResult syncResult, bool isNew, PlexMediaItem mediaItem)
@@ -72,8 +86,8 @@ namespace PlexRequests.Sync.SyncProcessors
 
             if (metadata == null)
             {
-                throw new PlexRequestException("Plex Metadata Error",
-                    $"No metadata was found for container with key: {ratingKey}");
+                _logger.LogError($"No metadata was found for the container with key: {ratingKey}");
+                return metadata;
             }
 
             return metadata;

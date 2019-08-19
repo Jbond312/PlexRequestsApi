@@ -63,12 +63,20 @@ namespace PlexRequests.Sync.SyncProcessors
 
                 processedShowKeys.Add(ratingKey);
 
-                var (isNewItem, mediaItem) =
-                    await _mediaItemProcessor.GetMediaItem(ratingKey, Type, localMediaItems, authToken, plexUri, machineIdentifier, _plexSettings.PlexMediaItemUriFormat);
+                var retrievedItem = await _mediaItemProcessor.GetMediaItem(ratingKey, Type, localMediaItems, authToken, plexUri, machineIdentifier, _plexSettings.PlexMediaItemUriFormat);
 
-                await GetChildMetadata(mediaItem, authToken, plexUri, machineIdentifier);
+                if (retrievedItem == null)
+                {
+                    _logger.LogError($"Skipping rating key '{ratingKey}' as no metadata could be retrieved.");
+                    _logger.LogDebug($"Finished processing rating key '{remoteMediaItem.RatingKey}'");
+                    continue;
+                }
 
-                _mediaItemProcessor.UpdateResult(syncResult, isNewItem, mediaItem);
+                await GetChildMetadata(retrievedItem.MediaItem, authToken, plexUri, machineIdentifier);
+
+                _mediaItemProcessor.UpdateResult(syncResult, retrievedItem.IsNew, retrievedItem.MediaItem);
+
+                _logger.LogDebug($"Finished processing rating key '{remoteMediaItem.RatingKey}'");
             }
 
             return syncResult;
@@ -124,7 +132,12 @@ namespace PlexRequests.Sync.SyncProcessors
             {
                 _logger.LogDebug($"Adding child item with rating key '{child.RatingKey}'");
                 var childKey = Convert.ToInt32(child.RatingKey);
-                showItems.Add(await CreateShowItem(childKey, authToken, plexUri));
+
+                var createdShowItem = await CreateShowItem(childKey, authToken, plexUri);
+                if (createdShowItem != null)
+                {
+                    showItems.Add(createdShowItem);
+                }
             }
 
             return showItems;
@@ -139,6 +152,11 @@ namespace PlexRequests.Sync.SyncProcessors
             _logger.LogDebug($"Getting agent details for agent guid '{metadata?.Guid}'");
             var agentDetails = _agentGuidParser.TryGetAgentDetails(metadata?.Guid);
 
+            if (agentDetails == null)
+            {
+                return null;
+            }
+
             return new ShowMediaItem
             {
                 RatingKey = key,
@@ -146,8 +164,8 @@ namespace PlexRequests.Sync.SyncProcessors
                 Index = metadata?.Index ?? 0,
                 Year = metadata?.Year,
                 Resolution = metadata?.Media?.FirstOrDefault()?.VideoResolution,
-                AgentType = agentDetails.agentType,
-                AgentSourceId = agentDetails.agentSourceId
+                AgentType = agentDetails.AgentType,
+                AgentSourceId = agentDetails.AgentSourceId
             };
         }
 

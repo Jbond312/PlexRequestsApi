@@ -45,12 +45,16 @@ namespace PlexRequests.Sync.SyncProcessors
 
                 var ratingKey = Convert.ToInt32(remoteMediaItem.RatingKey);
 
-                var (isNewItem, mediaItem) =
-                    await _mediaItemProcessor.GetMediaItem(ratingKey, Type, localMediaItems, authToken, plexUri, machineIdentifier, _plexSettings.PlexMediaItemUriFormat);
+                var retrievedItem = await _mediaItemProcessor.GetMediaItem(ratingKey, Type, localMediaItems, authToken, plexUri, machineIdentifier, _plexSettings.PlexMediaItemUriFormat);
 
                 _logger.LogDebug($"Finished processing rating key '{remoteMediaItem.RatingKey}'");
 
-                _mediaItemProcessor.UpdateResult(syncResult, isNewItem, mediaItem);
+                if (retrievedItem == null)
+                {
+                    continue;
+                }
+
+                _mediaItemProcessor.UpdateResult(syncResult, retrievedItem.IsNew, retrievedItem.MediaItem);
             }
 
             _logger.LogDebug("Finished synchronising Movies");

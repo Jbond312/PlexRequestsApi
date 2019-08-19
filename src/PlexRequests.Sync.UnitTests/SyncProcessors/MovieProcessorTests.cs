@@ -26,9 +26,8 @@ namespace PlexRequests.Sync.UnitTests.SyncProcessors
         private readonly Fixture _fixture;
 
         private PlexMediaContainer _plexMediaContainer;
-        private PlexMediaItem _plexMediaItem;
         private Func<Task> _commandAction;
-        private bool _isNewMediaItem;
+        private MediaItemResult _mediaItemResult;
 
         public MovieProcessorTests()
         {
@@ -99,11 +98,10 @@ namespace PlexRequests.Sync.UnitTests.SyncProcessors
 
         private void GivenAProcessedMediaItem()
         {
-            _isNewMediaItem = _fixture.Create<bool>();
-            _plexMediaItem = _fixture.Create<PlexMediaItem>();
+            _mediaItemResult = _fixture.Create<MediaItemResult>();
 
             _mediaItemProcessor.GetMediaItem(Arg.Any<int>(), Arg.Any<PlexMediaTypes>(), Arg.Any<List<PlexMediaItem>>(),
-                Arg.Any<string>(), Arg.Any<string>(), Arg.Any<string>(), Arg.Any<string>()).Returns((_isNewMediaItem, _plexMediaItem));
+                Arg.Any<string>(), Arg.Any<string>(), Arg.Any<string>(), Arg.Any<string>()).Returns(_mediaItemResult);
         }
 
         private void WhenAnActionIsCreated()

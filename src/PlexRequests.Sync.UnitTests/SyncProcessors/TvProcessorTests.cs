@@ -37,7 +37,7 @@ namespace PlexRequests.Sync.UnitTests.SyncProcessors
 
         private PlexMediaContainer _showContainer;
         private PlexMediaContainer _seasonMetadata;
-        private (AgentTypes agentType, string agentId) _seasonAgentDetails;
+        private AgentGuidParserResult _seasonAgentDetails;
 
         private Func<Task> _commandAction;
 
@@ -120,7 +120,7 @@ namespace PlexRequests.Sync.UnitTests.SyncProcessors
         {
             _seasonRatingKey = _fixture.Create<int>();
             _rootPlexMediaItemHasSeason = false;
-            _seasonAgentDetails = _fixture.Create<(AgentTypes, string)>();
+            _seasonAgentDetails = _fixture.Create<AgentGuidParserResult>();
 
             this.Given(x => x.GivenLocalMediaItems())
                 .Given(x => x.GivenASingleLibraryMetadata())
@@ -192,8 +192,8 @@ namespace PlexRequests.Sync.UnitTests.SyncProcessors
 
         private void GivenAProcessedMediaItem(bool hasSeasons = true)
         {
-            var isNewMediaItem = _fixture.Create<bool>();
-            _rootPlexMediaItem = _fixture.Create<PlexMediaItem>();
+            var mediaItemResult = _fixture.Create<MediaItemResult>();
+            _rootPlexMediaItem = mediaItemResult.MediaItem;
 
             if (!hasSeasons)
             {
@@ -202,7 +202,7 @@ namespace PlexRequests.Sync.UnitTests.SyncProcessors
 
             _mediaItemProcessor.GetMediaItem(Arg.Any<int>(), Arg.Any<PlexMediaTypes>(), Arg.Any<List<PlexMediaItem>>(),
                                    Arg.Any<string>(), Arg.Any<string>(), Arg.Any<string>(), Arg.Any<string>())
-                               .Returns((isNewMediaItem, _rootPlexMediaItem));
+                               .Returns(mediaItemResult);
         }
 
         private void GivenAMediaItemIsUpdated()
@@ -245,7 +245,7 @@ namespace PlexRequests.Sync.UnitTests.SyncProcessors
             _plexApi.GetChildrenMetadata(Arg.Any<string>(), Arg.Any<string>(), Arg.Is(seasonRatingKey)).ReturnsNull();
         }
 
-        private void GivenAgentDetailsForGuid(PlexMediaContainer mediaContainer, (AgentTypes, string) agentDetails)
+        private void GivenAgentDetailsForGuid(PlexMediaContainer mediaContainer, AgentGuidParserResult agentDetails)
         {
             var guid = mediaContainer.MediaContainer.Metadata.First().Guid;
             _agentGuidParser.TryGetAgentDetails(Arg.Is(guid)).Returns(agentDetails);
@@ -311,8 +311,8 @@ namespace PlexRequests.Sync.UnitTests.SyncProcessors
             updatedSeason.Key.Should().Be(_seasonRatingKey);
             updatedSeason.Title.Should().Be(seasonMetadata.Title);
             updatedSeason.Season.Should().Be(seasonMetadata.Index);
-            updatedSeason.AgentType.Should().Be(_seasonAgentDetails.agentType);
-            updatedSeason.AgentSourceId.Should().Be(_seasonAgentDetails.agentId);
+            updatedSeason.AgentType.Should().Be(_seasonAgentDetails.AgentType);
+            updatedSeason.AgentSourceId.Should().Be(_seasonAgentDetails.AgentSourceId);
             updatedSeason.Episodes.Should().BeEmpty();
         }
     }
