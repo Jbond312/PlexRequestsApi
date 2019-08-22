@@ -2,7 +2,7 @@ using System.Collections;
 using System.Collections.Generic;
 using PlexRequests.Core.Auth;
 
-namespace PlexRequests.UnitTests
+namespace PlexRequests.UnitTests.Attributes
 {
     public class SuccessRoleTestData : IEnumerable<object[]>
     {
@@ -12,7 +12,7 @@ namespace PlexRequests.UnitTests
             yield return new object[] { new List<string> { PlexRequestRoles.User } };
             yield return new object[] { new List<string> { PlexRequestRoles.Commenter } };
             yield return new object[] { new List<string> { PlexRequestRoles.Admin, PlexRequestRoles.User, PlexRequestRoles.Commenter } };
-            yield return new object[] { new List<string> { } };
+            yield return new object[] { new List<string>() };
         }
 
         IEnumerator IEnumerable.GetEnumerator() => GetEnumerator();

@@ -3,7 +3,7 @@ using FluentAssertions;
 using PlexRequests.Attributes;
 using Xunit;
 
-namespace PlexRequests.UnitTests
+namespace PlexRequests.UnitTests.Attributes
 {
     public class ValidRoleAttributeTests
     {

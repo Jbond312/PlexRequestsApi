@@ -87,7 +87,7 @@ namespace PlexRequests.Sync.SyncProcessors
             if (metadata == null)
             {
                 _logger.LogError($"No metadata was found for the container with key: {ratingKey}");
-                return metadata;
+                return null;
             }
 
             return metadata;

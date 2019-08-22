@@ -1,13 +1,11 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Net;
 using System.Threading.Tasks;
 using AutoFixture;
 using FluentAssertions;
 using Microsoft.Extensions.Logging;
 using NSubstitute;
-using PlexRequests.Core.Exceptions;
 using PlexRequests.Core.Helpers;
 using PlexRequests.Plex;
 using PlexRequests.Plex.Models;
@@ -43,7 +41,7 @@ namespace PlexRequests.Sync.UnitTests.SyncProcessors
             _plexApi = Substitute.For<IPlexApi>();
             _agentGuidParser = Substitute.For<IAgentGuidParser>();
 
-            var logger = NSubstitute.Substitute.For<ILogger<MediaItemProcessor>>();
+            var logger = Substitute.For<ILogger<MediaItemProcessor>>();
             _underTest = new MediaItemProcessor(_plexApi, _agentGuidParser, logger);
 
             _fixture = new Fixture();
@@ -168,14 +166,6 @@ namespace PlexRequests.Sync.UnitTests.SyncProcessors
 
             _updateResultAction = () => _underTest.UpdateResult(_syncResult, isNew, _plexMediaItem);
 
-        }
-
-        private void ThenErrorIsThrown(string message, string description, HttpStatusCode statusCode)
-        {
-            _getMediaItemAction.Should().Throw<PlexRequestException>()
-                          .WithMessage(message)
-                          .Where(x => x.Description == description)
-                          .Where(x => x.StatusCode == statusCode);
         }
 
         private async Task ThenMediaItemIsCorrect(bool isNewMediaItem)
