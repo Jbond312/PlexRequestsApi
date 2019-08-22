@@ -93,6 +93,7 @@ namespace PlexRequests.UnitTests.Models.Auth
                 .Given(x => x.GivenAnAdminAccount(false))
                 .Given(x => x.GivenValidPlexCredentials())
                 .Given(x => x.GivenAnAdminIsCreated())
+                .Given(x => x.GivenARefreshTokenIsReturned())
                 .When(x => x.WhenACommandActionIsCreated())
                 .Then(x => x.ThenAnAdminUserWasCreated())
                 .BDDfy();
@@ -106,6 +107,7 @@ namespace PlexRequests.UnitTests.Models.Auth
                 .Given(x => x.GivenValidPlexCredentials())
                 .Given(x => x.GivenAPlexServerWasFound())
                 .Given(x => x.GivenAServerIsCreated())
+                .Given(x => x.GivenARefreshTokenIsReturned())
                 .When(x => x.WhenACommandActionIsCreated())
                 .Then(x => x.ThenAServerWasCreated(false))
                 .BDDfy();
@@ -120,6 +122,7 @@ namespace PlexRequests.UnitTests.Models.Auth
                 .Given(x => x.GivenAPlexServerWasFound())
                 .Given(x => x.GivenAServerIsCreated())
                 .Given(x => x.GivenServerLibraries())
+                .Given(x => x.GivenARefreshTokenIsReturned())
                 .When(x => x.WhenACommandActionIsCreated())
                 .Then(x => x.ThenAServerWasCreated(true))
                 .BDDfy();
@@ -133,6 +136,7 @@ namespace PlexRequests.UnitTests.Models.Auth
                 .Given(x => x.GivenValidPlexCredentials())
                 .Given(x => x.GivenAPlexServerWasFound())
                 .Given(x => x.GivenATokenIsReturned())
+                .Given(x => x.GivenARefreshTokenIsReturned())
                 .When(x => x.WhenACommandActionIsCreated())
                 .Then(x => x.ThenCommandReturnsAccessToken())
                 .BDDfy();

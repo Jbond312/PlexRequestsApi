@@ -84,6 +84,7 @@ namespace PlexRequests.UnitTests.Models.Auth
                 .Given(x => x.GivenValidPlexCredentials())
                 .Given(x => x.GivenAMatchingUser(false))
                 .Given(x => x.GivenAUserIsUpdated())
+                .Given(x => x.GivenARefreshTokenIsCreated())
                 .When(x => x.WhenACommandActionIsCreated())
                 .Then(x => x.ThenUserIsUpdatedCorrectly())
                 .BDDfy();
@@ -96,6 +97,7 @@ namespace PlexRequests.UnitTests.Models.Auth
                 .Given(x => x.GivenValidPlexCredentials())
                 .Given(x => x.GivenAMatchingUser(false))
                 .Given(x => x.GivenATokenIsCreated())
+                .Given(x => x.GivenARefreshTokenIsCreated())
                 .When(x => x.WhenACommandActionIsCreated())
                 .Then(x => x.ThenATokenIsReturnedCorrectly())
                 .BDDfy();
