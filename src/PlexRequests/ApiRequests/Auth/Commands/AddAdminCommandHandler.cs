@@ -61,13 +61,16 @@ namespace PlexRequests.ApiRequests.Auth.Commands
 
             _logger.LogDebug("Plex SignIn Successful");
 
-            var adminUser = await CreateAdminUser(plexUser);
+            var refreshToken = _tokenService.CreateRefreshToken();
+            
+            var adminUser = await CreateAdminUser(plexUser, refreshToken);
 
             await CreateAdminServer(plexUser);
 
             var result = new UserLoginCommandResult
             {
-                AccessToken = _tokenService.CreateToken(adminUser)
+                AccessToken = _tokenService.CreateToken(adminUser),
+                RefreshToken = refreshToken.Token
             };
 
             return result;
@@ -90,7 +93,7 @@ namespace PlexRequests.ApiRequests.Auth.Commands
             }
         }
 
-        private async Task<User> CreateAdminUser(PlexRequests.Plex.Models.User plexUser)
+        private async Task<User> CreateAdminUser(PlexRequests.Plex.Models.User plexUser, RefreshToken refreshToken)
         {
             var adminUser = new User
             {
@@ -98,7 +101,8 @@ namespace PlexRequests.ApiRequests.Auth.Commands
                 Email = plexUser.Email,
                 PlexAccountId = plexUser.Id,
                 IsAdmin = true,
-                Roles = new List<string> { PlexRequestRoles.Admin, PlexRequestRoles.User, PlexRequestRoles.Commenter }
+                Roles = new List<string> { PlexRequestRoles.Admin, PlexRequestRoles.User, PlexRequestRoles.Commenter },
+                RefreshToken = refreshToken
             };
 
             _logger.LogInformation("Creating Admin account");

@@ -53,13 +53,18 @@ namespace PlexRequests.ApiRequests.Auth.Commands
 
             _logger.LogDebug("Found matching PlexRequests User");
 
+            var refreshToken = _tokenService.CreateRefreshToken();
+            var accessToken = _tokenService.CreateToken(plexRequestsUser);
+
             plexRequestsUser.LastLogin = DateTime.UtcNow;
+            plexRequestsUser.RefreshToken = refreshToken;
 
             await _userService.UpdateUser(plexRequestsUser);
 
             var result = new UserLoginCommandResult
             {
-                AccessToken = _tokenService.CreateToken(plexRequestsUser)
+                AccessToken = accessToken,
+                RefreshToken = refreshToken.Token
             };
 
             return result;

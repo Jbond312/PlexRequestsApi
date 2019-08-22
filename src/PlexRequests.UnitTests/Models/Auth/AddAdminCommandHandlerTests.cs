@@ -45,6 +45,7 @@ namespace PlexRequests.UnitTests.Models.Auth
         private PlexServer _createdServer;
         private PlexMediaContainer _plexLibraryContainer;
         private string _createdToken;
+        private RefreshToken _createdRefreshToken;
 
         public AddAdminCommandHandlerTests()
         {
@@ -137,6 +138,19 @@ namespace PlexRequests.UnitTests.Models.Auth
                 .BDDfy();
         }
 
+        [Fact]
+        private void Refresh_Token_Is_Returned_Successfully()
+        {
+            this.Given(x => x.GivenACommand())
+                .Given(x => x.GivenAnAdminAccount(false))
+                .Given(x => x.GivenValidPlexCredentials())
+                .Given(x => x.GivenAPlexServerWasFound())
+                .Given(x => x.GivenARefreshTokenIsReturned())
+                .When(x => x.WhenACommandActionIsCreated())
+                .Then(x => x.ThenCommandReturnsRefreshToken())
+                .BDDfy();
+        }
+
         private void GivenACommand()
         {
             _command = _fixture.Create<AddAdminCommand>();
@@ -199,6 +213,13 @@ namespace PlexRequests.UnitTests.Models.Auth
             _tokenService.CreateToken(Arg.Any<Repository.Models.User>()).Returns(_createdToken);
         }
 
+        private void GivenARefreshTokenIsReturned()
+        {
+            _createdRefreshToken = _fixture.Create<RefreshToken>();
+
+            _tokenService.CreateRefreshToken().Returns(_createdRefreshToken);
+        }
+
         private void ThenAnErrorIsThrown(string message, string description, HttpStatusCode httpStatusCode)
         {
             _commandAction.Should().Throw<PlexRequestException>()
@@ -258,6 +279,14 @@ namespace PlexRequests.UnitTests.Models.Auth
 
             response.Should().NotBeNull();
             response.AccessToken.Should().Be(_createdToken);
+        }
+
+        private async Task ThenCommandReturnsRefreshToken()
+        {
+            var response = await _commandAction();
+
+            response.Should().NotBeNull();
+            response.RefreshToken.Should().Be(_createdRefreshToken.Token);
         }
     }
 }

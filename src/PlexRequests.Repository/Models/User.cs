@@ -15,5 +15,7 @@ namespace PlexRequests.Repository.Models
         public bool IsDisabled { get; set; }
         public DateTime LastLogin { get; set; }
         public List<string> Roles { get; set; }
+        public RefreshToken RefreshToken { get; set; }
+        public DateTime InvalidateTokensBefore { get; set; }
     }
 }

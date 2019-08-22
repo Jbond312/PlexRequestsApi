@@ -11,9 +11,10 @@ using PlexRequests.ApiRequests.Auth.Commands;
 using PlexRequests.Core.Exceptions;
 using PlexRequests.Core.Services;
 using PlexRequests.Plex;
-using PlexRequests.Plex.Models;
+using PlexRequests.Repository.Models;
 using TestStack.BDDfy;
 using Xunit;
+using User = PlexRequests.Plex.Models.User;
 
 namespace PlexRequests.UnitTests.Models.Auth
 {
@@ -29,6 +30,7 @@ namespace PlexRequests.UnitTests.Models.Auth
         private Repository.Models.User _matchingDbUser;
         private Repository.Models.User _updatedUser;
         private string _createdToken;
+        private RefreshToken _createdRefreshToken;
         private Func<Task<UserLoginCommandResult>> _commandAction;
 
         public UserLoginCommandHandlerTests()
@@ -99,6 +101,18 @@ namespace PlexRequests.UnitTests.Models.Auth
                 .BDDfy();
         }
 
+        [Fact]
+        private void RefreshToken_Is_Created_Successfully()
+        {
+            this.Given(x => x.GivenACommand())
+                .Given(x => x.GivenValidPlexCredentials())
+                .Given(x => x.GivenAMatchingUser(false))
+                .Given(x => x.GivenARefreshTokenIsCreated())
+                .When(x => x.WhenACommandActionIsCreated())
+                .Then(x => x.ThenARefreshTokenIsReturnedCorrectly())
+                .BDDfy();
+        }
+
         private void GivenACommand()
         {
             _command = _fixture.Create<UserLoginCommand>();
@@ -140,6 +154,13 @@ namespace PlexRequests.UnitTests.Models.Auth
             _tokenService.CreateToken(Arg.Any<Repository.Models.User>()).Returns(_createdToken);
         }
 
+        private void GivenARefreshTokenIsCreated()
+        {
+            _createdRefreshToken = _fixture.Create<RefreshToken>();
+
+            _tokenService.CreateRefreshToken().Returns(_createdRefreshToken);
+        }
+
         private void WhenACommandActionIsCreated()
         {
             _commandAction = async () => await _underTest.Handle(_command, CancellationToken.None);
@@ -174,6 +195,14 @@ namespace PlexRequests.UnitTests.Models.Auth
 
             response.Should().NotBeNull();
             response.AccessToken.Should().Be(_createdToken);
+        }
+
+        private async Task ThenARefreshTokenIsReturnedCorrectly()
+        {
+            var response = await _commandAction();
+
+            response.Should().NotBeNull();
+            response.RefreshToken.Should().Be(_createdRefreshToken.Token);
         }
     }
 }

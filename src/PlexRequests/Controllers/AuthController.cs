@@ -35,6 +35,17 @@ namespace PlexRequests.Controllers
             return Ok(result);
         }
 
+        [HttpPost("Refresh")]
+        [AllowAnonymous]
+        [SwaggerResponse(200, "Refresh was successful")]
+        [SwaggerResponse(400, "Refresh unsuccessful due to invalid credentials or bad refresh token", typeof(ApiErrorResponse))]
+        public async Task<ActionResult<UserLoginCommandResult>> Refresh([FromBody] RefreshTokenCommand command)
+        {
+            var result = await _mediator.Send(command);
+
+            return Ok(result);
+        }
+
         [HttpPost("CreateAdmin")]
         [AllowAnonymous]
         [SwaggerOperation(
