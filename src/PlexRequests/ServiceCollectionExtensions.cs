@@ -65,7 +65,8 @@ namespace PlexRequests
             services.AddTransient<ISettingsService, SettingsService>();
             services.AddTransient<IUserService, UserService>();
             services.AddTransient<IPlexService, PlexService>();
-            services.AddTransient<IRequestService, RequestService>();
+            services.AddTransient<IMovieRequestService, MovieRequestService>();
+            services.AddTransient<ITvRequestService, TvRequestService>();
             services.AddTransient<ICompletionService, CompletionService>();
             services.AddTransient<IIssueService, IssueService>();
             services.AddTransient<IPlexSync, PlexSync>();
@@ -92,8 +93,10 @@ namespace PlexRequests
                 new PlexServerRepository(connectionString, databaseSettings.Database));
             services.AddTransient<IPlexMediaRepository>(repo =>
                 new PlexMediaRepository(connectionString, databaseSettings.Database));
-            services.AddTransient<IRequestRepository>(repo =>
-                new RequestRepository(connectionString, databaseSettings.Database));
+            services.AddTransient<IMovieRequestRepository>(repo =>
+                new MovieRequestRepository(connectionString, databaseSettings.Database));
+            services.AddTransient<ITvRequestRepository>(repo =>
+                new TvRequestRepository(connectionString, databaseSettings.Database));
             services.AddTransient<IIssuesRepository>(repo =>
                 new IssuesRepository(connectionString, databaseSettings.Database));
         }

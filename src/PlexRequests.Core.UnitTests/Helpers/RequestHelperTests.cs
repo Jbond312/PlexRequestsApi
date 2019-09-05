@@ -15,7 +15,7 @@ namespace PlexRequests.Core.UnitTests.Helpers
 
         private readonly Fixture _fixture;
 
-        private Request _request;
+        private TvRequest _request;
         private Func<RequestStatuses> _commandAction;
 
         public RequestHelperTests()
@@ -78,7 +78,7 @@ namespace PlexRequests.Core.UnitTests.Helpers
 
         private void GivenAllRequestEpisodesOfStatus(RequestStatuses status)
         {
-            _request = _fixture.Build<Request>()
+            _request = _fixture.Build<TvRequest>()
             .With(x => x.Track, false)
             .Create();
 
@@ -87,7 +87,7 @@ namespace PlexRequests.Core.UnitTests.Helpers
 
         private void GivenOneEpisodeOfStatus(RequestStatuses status, RequestStatuses allOtherEpisodeStatus)
         {
-            _request = _fixture.Build<Request>()
+            _request = _fixture.Build<TvRequest>()
             .With(x => x.Track, false)
             .Create();
 
@@ -98,7 +98,7 @@ namespace PlexRequests.Core.UnitTests.Helpers
 
         private void GivenTrackedRequest(RequestStatuses status)
         {
-            _request = _fixture.Build<Request>()
+            _request = _fixture.Build<TvRequest>()
             .With(x => x.Track, true)
             .With(x => x.Status, status)
             .Create();

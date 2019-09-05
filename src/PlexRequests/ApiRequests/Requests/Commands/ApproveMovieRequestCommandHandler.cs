@@ -10,10 +10,10 @@ namespace PlexRequests.ApiRequests.Requests.Commands
 {
     public class ApproveMovieRequestCommandHandler : AsyncRequestHandler<ApproveMovieRequestCommand>
     {
-        private readonly IRequestService _requestService;
+        private readonly IMovieRequestService _requestService;
 
         public ApproveMovieRequestCommandHandler(
-            IRequestService requestService
+            IMovieRequestService requestService
             )
         {
             _requestService = requestService;

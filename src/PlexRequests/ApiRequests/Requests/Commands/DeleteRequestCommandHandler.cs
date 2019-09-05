@@ -12,11 +12,11 @@ namespace PlexRequests.ApiRequests.Requests.Commands
 {
     public class DeleteRequestCommandHandler : AsyncRequestHandler<DeleteRequestCommand>
     {
-        private readonly IRequestService _requestService;
+        private readonly IMovieRequestService _requestService;
         private readonly IClaimsPrincipalAccessor _claimsUserAccessor;
 
         public DeleteRequestCommandHandler(
-            IRequestService requestService,
+            IMovieRequestService requestService,
             IClaimsPrincipalAccessor claimsUserAccessor
             )
         {
@@ -33,7 +33,7 @@ namespace PlexRequests.ApiRequests.Requests.Commands
             await _requestService.DeleteRequest(command.Id);
         }
 
-        private void ValidateUserCanDeleteRequest(Request request)
+        private void ValidateUserCanDeleteRequest(MovieRequest request)
         {
             if (!request.RequestedByUserId.Equals(_claimsUserAccessor.UserId))
             {
@@ -42,7 +42,7 @@ namespace PlexRequests.ApiRequests.Requests.Commands
             }
         }
 
-        private async Task<Request> ValidateRequestExists(DeleteRequestCommand command)
+        private async Task<MovieRequest> ValidateRequestExists(DeleteRequestCommand command)
         {
             var request = await _requestService.GetRequestById(command.Id);
 

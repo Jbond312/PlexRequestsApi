@@ -19,13 +19,13 @@ namespace PlexRequests.UnitTests.Models.Requests
     public class GetTvPagedRequestQueryHandlerTests
     {
         private readonly GetTvPagedRequestQueryHandler _underTest;
-        private readonly IRequestService _requestService;
+        private readonly ITvRequestService _requestService;
         private readonly IClaimsPrincipalAccessor _claimsAccessor;
 
         private readonly Fixture _fixture;
 
         private GetTvPagedRequestQuery _query;
-        private Paged<Request> _pagedRequest;
+        private Paged<TvRequest> _pagedRequest;
         private Func<Task<GetTvPagedRequestQueryResult>> _queryAction;
         private Guid _currentUserId;
 
@@ -34,7 +34,7 @@ namespace PlexRequests.UnitTests.Models.Requests
             var mapperConfig = new MapperConfiguration(opts => { opts.AddProfile(new RequestProfile()); });
             var mapper = mapperConfig.CreateMapper();
             
-            _requestService = Substitute.For<IRequestService>();
+            _requestService = Substitute.For<ITvRequestService>();
             _claimsAccessor = Substitute.For<IClaimsPrincipalAccessor>();
             
             _underTest = new GetTvPagedRequestQueryHandler(mapper, _requestService, _claimsAccessor);
@@ -83,9 +83,9 @@ namespace PlexRequests.UnitTests.Models.Requests
         
         private void GivenManyRequests()
         {
-            _pagedRequest = _fixture.Create<Paged<Request>>();
+            _pagedRequest = _fixture.Create<Paged<TvRequest>>();
             
-            _requestService.GetPaged(Arg.Any<string>(), Arg.Any<PlexMediaTypes?>(), Arg.Any<RequestStatuses?>(), Arg.Any<Guid?>(),
+            _requestService.GetPaged(Arg.Any<string>(), Arg.Any<RequestStatuses?>(), Arg.Any<Guid?>(),
                 Arg.Any<int?>(), Arg.Any<int?>()).Returns(_pagedRequest);
         }
 
@@ -105,8 +105,7 @@ namespace PlexRequests.UnitTests.Models.Requests
 
         private void ThenCurrentUsersUserIdWasUsed()
         {
-            _requestService.Received().GetPaged(Arg.Any<string>(), Arg.Any<PlexMediaTypes?>(), Arg.Any<RequestStatuses?>(), Arg.Is<Guid?>(_currentUserId),
-                Arg.Any<int?>(), Arg.Any<int?>());
+            _requestService.Received().GetPaged(Arg.Any<string>(), Arg.Any<RequestStatuses?>(), Arg.Is<Guid?>(_currentUserId), Arg.Any<int?>(), Arg.Any<int?>());
         }
     }
 }

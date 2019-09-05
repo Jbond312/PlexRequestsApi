@@ -7,7 +7,7 @@ namespace PlexRequests.Core.Helpers
 {
     public class RequestHelper : IRequestHelper
     {
-        public RequestStatuses CalculateAggregatedStatus(Request request)
+        public RequestStatuses CalculateAggregatedStatus(TvRequest request)
         {
             if (request.Track)
             {

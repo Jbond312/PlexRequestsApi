@@ -9,40 +9,35 @@ using PlexRequests.Repository.Models;
 
 namespace PlexRequests.Repository
 {
-    public class RequestRepository : BaseRepository<Request>, IRequestRepository
+    public class MovieRequestRepository : BaseRepository<MovieRequest>, IMovieRequestRepository
     {
-        public RequestRepository(string connectionString, string databaseName) : base(connectionString, databaseName, "Requests")
+        public MovieRequestRepository(string connectionString, string databaseName) : base(connectionString, databaseName, "MovieRequests")
         {
         }
 
-        public async Task Create(Request request)
+        public async Task Create(MovieRequest request)
         {
             await Collection.InsertOneAsync(request);
         }
 
-        public async Task Update(Request request)
+        public async Task Update(MovieRequest request)
         {
             await Collection.FindOneAndReplaceAsync(x => x.Id == request.Id, request);
         }
 
-        public async Task<List<Request>> GetMany(Expression<Func<Request, bool>> filter = null)
+        public async Task<List<MovieRequest>> GetMany(Expression<Func<MovieRequest, bool>> filter = null)
         {
             var cursor = await GetRequestsCursor(filter);
             return await cursor.ToListAsync();
         }
 
-        public async Task<Paged<Request>> GetPaged(string title, PlexMediaTypes? mediaType, RequestStatuses? status, Guid? userId, int? page, int? pageSize)
+        public async Task<Paged<MovieRequest>> GetPaged(string title, RequestStatuses? status, Guid? userId, int? page, int? pageSize)
         {
             var query = Collection.AsQueryable();
 
             if (!string.IsNullOrEmpty(title))
             {
                 query = query.Where(x => x.Title.ToLower().Contains(title.ToLower()));
-            }
-            
-            if (mediaType != null)
-            {
-                query = query.Where(x => x.MediaType == mediaType);
             }
 
             if (status != null)
@@ -77,7 +72,7 @@ namespace PlexRequests.Repository
 
             var items = await query.ToListAsync();
 
-            return new Paged<Request>
+            return new Paged<MovieRequest>
             {
                 Page = page.Value + 1,
                 PageSize = pageSize.Value,
@@ -86,7 +81,7 @@ namespace PlexRequests.Repository
             };
         }
 
-        public async Task<Request> GetOne(Expression<Func<Request, bool>> filter = null)
+        public async Task<MovieRequest> GetOne(Expression<Func<MovieRequest, bool>> filter = null)
         {
             var cursor = await GetRequestsCursor(filter);
             return await cursor.FirstOrDefaultAsync();
@@ -97,12 +92,12 @@ namespace PlexRequests.Repository
             await Collection.DeleteOneAsync(x => x.Id == id);
         }
 
-        private async Task<IAsyncCursor<Request>> GetRequestsCursor(Expression<Func<Request, bool>> filter = null)
+        private async Task<IAsyncCursor<MovieRequest>> GetRequestsCursor(Expression<Func<MovieRequest, bool>> filter = null)
         {
-            IAsyncCursor<Request> cursor;
+            IAsyncCursor<MovieRequest> cursor;
             if (filter == null)
             {
-                cursor = await Collection.FindAsync(FilterDefinition<Request>.Empty);
+                cursor = await Collection.FindAsync(FilterDefinition<MovieRequest>.Empty);
             }
             else
             {

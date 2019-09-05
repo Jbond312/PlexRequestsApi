@@ -22,16 +22,16 @@ namespace PlexRequests.UnitTests.Models.Requests
         private readonly IRequestHandler<DeleteRequestCommand> _underTest;
         
         private DeleteRequestCommand _command;
-        private readonly IRequestService _requestService;
+        private readonly IMovieRequestService _requestService;
         private readonly IClaimsPrincipalAccessor _claimsUserAccessor;
 
         private readonly Fixture _fixture;
         private Func<Task> _commandAction;
-        private Request _request;
+        private MovieRequest _request;
 
         public DeleteRequestCommandHandlerTests()
         {
-            _requestService = Substitute.For<IRequestService>();
+            _requestService = Substitute.For<IMovieRequestService>();
             _claimsUserAccessor = Substitute.For<IClaimsPrincipalAccessor>();
             
             _underTest = new DeleteRequestCommandHandler(_requestService, _claimsUserAccessor);
@@ -83,7 +83,7 @@ namespace PlexRequests.UnitTests.Models.Requests
 
         private void GivenARequestIsFound()
         {
-            _request = _fixture.Create<Request>();
+            _request = _fixture.Create<MovieRequest>();
             
             _requestService.GetRequestById(Arg.Any<Guid>()).Returns(_request);
         }

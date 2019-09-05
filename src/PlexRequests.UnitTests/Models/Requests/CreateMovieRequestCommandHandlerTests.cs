@@ -28,17 +28,17 @@ namespace PlexRequests.UnitTests.Models.Requests
         private readonly IRequestHandler<CreateMovieRequestCommand> _underTest;
 
         private readonly ITheMovieDbApi _theMovieDbApi;
-        private readonly IRequestService _requestService;
+        private readonly IMovieRequestService _requestService;
         private readonly IPlexService _plexService;
         private readonly IClaimsPrincipalAccessor _claimsPrincipalAccessor;
 
         private readonly Fixture _fixture;
 
         private CreateMovieRequestCommand _command;
-        private Request _request;
+        private MovieRequest _request;
         private Func<Task> _commandAction;
         private PlexMediaItem _plexMediaItem;
-        private Request _createdRequest;
+        private MovieRequest _createdRequest;
         private string _claimsUsername;
         private Guid _claimsUserId;
         private MovieDetails _movieDetails;
@@ -47,7 +47,7 @@ namespace PlexRequests.UnitTests.Models.Requests
         public CreateMovieRequestCommandHandlerTests()
         {
             _theMovieDbApi = Substitute.For<ITheMovieDbApi>();
-            _requestService = Substitute.For<IRequestService>();
+            _requestService = Substitute.For<IMovieRequestService>();
             _plexService = Substitute.For<IPlexService>();
             _claimsPrincipalAccessor = Substitute.For<IClaimsPrincipalAccessor>();
             var logger = Substitute.For<ILogger<CreateRequestCommandHandler>>();
@@ -119,14 +119,14 @@ namespace PlexRequests.UnitTests.Models.Requests
 
         private void GivenRequestAlreadyExists()
         {
-            _request = _fixture.Create<Request>();
+            _request = _fixture.Create<MovieRequest>();
 
-            _requestService.GetExistingMovieRequest(Arg.Any<AgentTypes>(), Arg.Any<string>()).Returns(_request);
+            _requestService.GetExistingRequest(Arg.Any<AgentTypes>(), Arg.Any<string>()).Returns(_request);
         }
 
         private void GivenNoRequestExists()
         {
-            _requestService.GetExistingMovieRequest(Arg.Any<AgentTypes>(), Arg.Any<string>()).ReturnsNull();
+            _requestService.GetExistingRequest(Arg.Any<AgentTypes>(), Arg.Any<string>()).ReturnsNull();
         }
 
         private void GivenMovieAlreadyInPlex()
@@ -165,7 +165,7 @@ namespace PlexRequests.UnitTests.Models.Requests
 
         private void GivenARequestIsCreated()
         {
-            _requestService.Create(Arg.Do<Request>(x => _createdRequest = x));
+            _requestService.Create(Arg.Do<MovieRequest>(x => _createdRequest = x));
         }
 
         private void GivenExternalIdsFromTheMovieDb()
@@ -189,12 +189,10 @@ namespace PlexRequests.UnitTests.Models.Requests
 
             _createdRequest.Should().NotBeNull();
             _createdRequest.Id.Should().Be(Guid.Empty);
-            _createdRequest.MediaType.Should().Be(PlexMediaTypes.Movie);
             _createdRequest.Status.Should().Be(RequestStatuses.PendingApproval);
             _createdRequest.PrimaryAgent.AgentType.Should().Be(AgentTypes.TheMovieDb);
             _createdRequest.PrimaryAgent.AgentSourceId.Should().Be(_command.TheMovieDbId.ToString());
             _createdRequest.PlexMediaUri.Should().BeNull();
-            _createdRequest.Seasons.Should().BeNull();
             _createdRequest.RequestedByUserName.Should().Be(_claimsUsername);
             _createdRequest.RequestedByUserId.Should().Be(_claimsUserId);
             _createdRequest.Title.Should().Be(_movieDetails.Title);

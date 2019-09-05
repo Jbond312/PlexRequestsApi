@@ -12,9 +12,9 @@ namespace PlexRequests.ApiRequests.Requests.Commands
 {
     public class RejectTvRequestCommandHandler : AsyncRequestHandler<RejectTvRequestCommand>
     {
-        private readonly IRequestService _requestService;
+        private readonly ITvRequestService _requestService;
 
-        public RejectTvRequestCommandHandler(IRequestService requestService)
+        public RejectTvRequestCommandHandler(ITvRequestService requestService)
         {
             _requestService = requestService;
         }
@@ -61,7 +61,7 @@ namespace PlexRequests.ApiRequests.Requests.Commands
             await _requestService.Update(request);
         }
 
-        private void PartialReject(Request request, Dictionary<int, List<int>> episodesBySeason)
+        private void PartialReject(TvRequest request, Dictionary<int, List<int>> episodesBySeason)
         {
             if (episodesBySeason == null)
             {
@@ -88,7 +88,7 @@ namespace PlexRequests.ApiRequests.Requests.Commands
             }
         }
 
-        private void RejectAll(Request request)
+        private void RejectAll(TvRequest request)
         {
             foreach (var season in request.Seasons)
             {
