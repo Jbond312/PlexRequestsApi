@@ -20,14 +20,14 @@ namespace PlexRequests.ApiRequests.Requests.Commands
     public class CreateTvRequestCommandHandler : AsyncRequestHandler<CreateTvRequestCommand>
     {
         private readonly IMapper _mapper;
-        private readonly IRequestService _requestService;
+        private readonly ITvRequestService _requestService;
         private readonly ITheMovieDbApi _theMovieDbApi;
         private readonly IPlexService _plexService;
         private readonly IClaimsPrincipalAccessor _claimsPrincipalAccessor;
 
         public CreateTvRequestCommandHandler(
             IMapper mapper,
-            IRequestService requestService,
+            ITvRequestService requestService,
             ITheMovieDbApi theMovieDbApi,
             IPlexService plexService,
             IClaimsPrincipalAccessor claimsPrincipalAccessor)
@@ -70,7 +70,7 @@ namespace PlexRequests.ApiRequests.Requests.Commands
 
         private async Task ValidateShowIsntAlreadyTracked(int theMovieDbId)
         {
-            var existingRequests = await _requestService.GetExistingTvRequests(AgentTypes.TheMovieDb, theMovieDbId.ToString());
+            var existingRequests = await _requestService.GetExistingRequests(AgentTypes.TheMovieDb, theMovieDbId.ToString());
 
             if (existingRequests.Any(x => x.Track))
             {
@@ -86,9 +86,8 @@ namespace PlexRequests.ApiRequests.Requests.Commands
         private async Task CreateRequest(CreateTvRequestCommand request, List<RequestSeason> seasons,
             TvDetails tvDetails, ExternalIds externalIds)
         {
-            var tvRequest = new Request
+            var tvRequest = new TvRequest
             {
-                MediaType = PlexMediaTypes.Show,
                 PrimaryAgent = new MediaAgent(AgentTypes.TheMovieDb, request.TheMovieDbId.ToString()),
                 Status = RequestStatuses.PendingApproval,
                 Seasons = await SetSeasonData(request.TheMovieDbId, seasons, tvDetails),
@@ -196,7 +195,7 @@ namespace PlexRequests.ApiRequests.Requests.Commands
         private async Task ValidateAndRemoveExistingEpisodeRequests(int theMovieDbId, List<RequestSeason> seasons)
         {
             var requests =
-                await _requestService.GetExistingTvRequests(AgentTypes.TheMovieDb, theMovieDbId.ToString());
+                await _requestService.GetExistingRequests(AgentTypes.TheMovieDb, theMovieDbId.ToString());
 
             var existingSeasonEpisodeRequests = requests
                                                 .SelectMany(x => x.Seasons)

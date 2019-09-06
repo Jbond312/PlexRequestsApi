@@ -18,13 +18,13 @@ namespace PlexRequests.ApiRequests.Requests.Commands
     public class CreateRequestCommandHandler : AsyncRequestHandler<CreateMovieRequestCommand>
     {
         private readonly ITheMovieDbApi _theMovieDbApi;
-        private readonly IRequestService _requestService;
+        private readonly IMovieRequestService _requestService;
         private readonly IPlexService _plexService;
         private readonly IClaimsPrincipalAccessor _claimsPrincipalAccessor;
         private readonly ILogger<CreateRequestCommandHandler> _logger;
 
         public CreateRequestCommandHandler(ITheMovieDbApi theMovieDbApi,
-            IRequestService requestService,
+            IMovieRequestService requestService,
             IPlexService plexService,
             IClaimsPrincipalAccessor claimsPrincipalAccessor,
             ILogger<CreateRequestCommandHandler> logger)
@@ -56,10 +56,9 @@ namespace PlexRequests.ApiRequests.Requests.Commands
 
         private async Task CreateRequest(CreateMovieRequestCommand request, MovieDetails movieDetail, ExternalIds externalIds)
         {
-            var newRequest = new Request
+            var newRequest = new MovieRequest
             {
                 PrimaryAgent = new MediaAgent(AgentTypes.TheMovieDb, request.TheMovieDbId.ToString()),
-                MediaType = PlexMediaTypes.Movie,
                 RequestedByUserId = _claimsPrincipalAccessor.UserId,
                 RequestedByUserName = _claimsPrincipalAccessor.Username,
                 Title = movieDetail.Title,
@@ -82,7 +81,7 @@ namespace PlexRequests.ApiRequests.Requests.Commands
         private async Task ValidateRequestNotDuplicate(CreateMovieRequestCommand request)
         {
             var existingRequest =
-                await _requestService.GetExistingMovieRequest(AgentTypes.TheMovieDb, request.TheMovieDbId.ToString());
+                await _requestService.GetExistingRequest(AgentTypes.TheMovieDb, request.TheMovieDbId.ToString());
 
             if (existingRequest != null)
             {

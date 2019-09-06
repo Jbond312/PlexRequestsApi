@@ -5,6 +5,6 @@ namespace PlexRequests.Core.Helpers
 {
     public interface IRequestHelper
     {
-        RequestStatuses CalculateAggregatedStatus(Request request);
+        RequestStatuses CalculateAggregatedStatus(TvRequest request);
     }
 }

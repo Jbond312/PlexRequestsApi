@@ -14,11 +14,11 @@ namespace PlexRequests.ApiRequests.Requests.Queries
     public class GetTvPagedRequestQueryHandler : IRequestHandler<GetTvPagedRequestQuery, GetTvPagedRequestQueryResult>
     {
         private readonly IMapper _mapper;
-        private readonly IRequestService _requestService;
+        private readonly ITvRequestService _requestService;
         private readonly IClaimsPrincipalAccessor _claimsAccessor;
 
         public GetTvPagedRequestQueryHandler(IMapper mapper,
-            IRequestService requestService, 
+            ITvRequestService requestService, 
             IClaimsPrincipalAccessor claimsAccessor)
         {
             _mapper = mapper;
@@ -35,8 +35,7 @@ namespace PlexRequests.ApiRequests.Requests.Queries
                 userGuid = _claimsAccessor.UserId;
             }
             
-            var pagedResponse = await _requestService.GetPaged(request.Title, PlexMediaTypes.Show, request.Status,
-                userGuid, request.Page, request.PageSize);
+            var pagedResponse = await _requestService.GetPaged(request.Title, request.Status, userGuid, request.Page, request.PageSize);
 
             var requestViewModels = _mapper.Map<List<TvRequestDetailModel>>(pagedResponse.Items);
 

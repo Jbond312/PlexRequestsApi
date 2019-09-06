@@ -22,21 +22,21 @@ namespace PlexRequests.UnitTests.Models.Requests
     public class RejectTvRequestCommandHandlerTests
     {
         private readonly IRequestHandler<RejectTvRequestCommand> _underTest;
-        private readonly IRequestService _requestService;
+        private readonly ITvRequestService _requestService;
 
         private readonly Fixture _fixture;
 
         private RejectTvRequestCommand _command;
         private Func<Task> _commandAction;
-        private Request _updatedRequest;
+        private TvRequest _updatedRequest;
         private RequestStatuses _overallStatus;
-        private Request _request;
+        private TvRequest _request;
 
         public RejectTvRequestCommandHandlerTests()
         {
             _fixture = new Fixture();
 
-            _requestService = Substitute.For<IRequestService>();
+            _requestService = Substitute.For<ITvRequestService>();
 
             _underTest = new RejectTvRequestCommandHandler(_requestService);
         }
@@ -208,7 +208,7 @@ namespace PlexRequests.UnitTests.Models.Requests
 
         private void GivenARequestIsFound()
         {
-            _request = _fixture.Build<Request>()
+            _request = _fixture.Build<TvRequest>()
                                   .With(x => x.Status, RequestStatuses.PendingApproval)
                                   .With(x => x.Track, false)
                                   .Create();
@@ -225,7 +225,7 @@ namespace PlexRequests.UnitTests.Models.Requests
 
         private void GivenARequestIsFoundWithACompletedEpisode()
         {
-            _request = _fixture.Build<Request>()
+            _request = _fixture.Build<TvRequest>()
                                   .With(x => x.Status, RequestStatuses.PendingApproval)
                                   .Create();
 
@@ -238,13 +238,13 @@ namespace PlexRequests.UnitTests.Models.Requests
 
         private void GivenARequestIsUpdated()
         {
-            _requestService.Update(Arg.Do<Request>(x => _updatedRequest = x));
+            _requestService.Update(Arg.Do<TvRequest>(x => _updatedRequest = x));
         }
 
         private void GivenAggregateIsCalculated()
         {
             _overallStatus = RequestStatuses.Completed;
-            _requestService.CalculateAggregatedStatus(Arg.Any<Request>()).Returns(_overallStatus);
+            _requestService.CalculateAggregatedStatus(Arg.Any<TvRequest>()).Returns(_overallStatus);
         }
 
         private void GivenOneMatchingEpisodeInCommand()
@@ -305,7 +305,7 @@ namespace PlexRequests.UnitTests.Models.Requests
         private void ThenAggregateIsCorrect()
         {
             _updatedRequest.Status.Should().Be(_overallStatus);
-            _requestService.Received().CalculateAggregatedStatus(Arg.Any<Request>());
+            _requestService.Received().CalculateAggregatedStatus(Arg.Any<TvRequest>());
         }
 
         private void ThenOnlyMatchingEpisodeRejected()
@@ -325,7 +325,7 @@ namespace PlexRequests.UnitTests.Models.Requests
             episode.Should().NotBeNull();
         }
 
-        private static void SetEpisodeStatus(Request request, RequestStatuses status)
+        private static void SetEpisodeStatus(TvRequest request, RequestStatuses status)
         {
             foreach (var season in request.Seasons)
             {

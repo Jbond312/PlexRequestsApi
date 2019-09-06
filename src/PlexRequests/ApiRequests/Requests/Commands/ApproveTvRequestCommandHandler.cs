@@ -12,10 +12,10 @@ namespace PlexRequests.ApiRequests.Requests.Commands
 {
     public class ApproveTvRequestCommandHandler : AsyncRequestHandler<ApproveTvRequestCommand>
     {
-        private readonly IRequestService _requestService;
+        private readonly ITvRequestService _requestService;
 
         public ApproveTvRequestCommandHandler(
-            IRequestService requestService
+            ITvRequestService requestService
             )
         {
             _requestService = requestService;
@@ -56,7 +56,7 @@ namespace PlexRequests.ApiRequests.Requests.Commands
             await _requestService.Update(request);
         }
 
-        private static void ApproveEpisodes(Request request, IReadOnlyDictionary<int, List<int>> commandEpisodesBySeason)
+        private static void ApproveEpisodes(TvRequest request, IReadOnlyDictionary<int, List<int>> commandEpisodesBySeason)
         {
             foreach (var season in request.Seasons)
             {
@@ -77,7 +77,7 @@ namespace PlexRequests.ApiRequests.Requests.Commands
             }
         }
 
-        private static void ApproveAllEpisodes(Request request)
+        private static void ApproveAllEpisodes(TvRequest request)
         {
             foreach (var season in request.Seasons)
             {

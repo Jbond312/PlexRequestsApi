@@ -1,6 +1,8 @@
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
+using Microsoft.Extensions.Logging;
+using PlexRequests.Core.Services.AutoCompletion;
 using PlexRequests.Repository.Enums;
 using PlexRequests.Repository.Models;
 
@@ -8,84 +10,36 @@ namespace PlexRequests.Core.Services
 {
     public class CompletionService : ICompletionService
     {
-        private readonly IRequestService _requestService;
+        private readonly ILogger<CompletionService> _logger;
+
+        private readonly List<IAutoComplete> _autoCompleters;
 
         public CompletionService(
-            IRequestService requestService
-            )
+            IMovieRequestService movieRequestService,
+            ITvRequestService tvRequestService,
+            ILogger<CompletionService> logger
+        )
         {
-            _requestService = requestService;
+            _logger = logger;
+            _autoCompleters = new List<IAutoComplete>
+            {
+                new MovieAutoCompletion(movieRequestService),
+                new TvAutoCompletion(tvRequestService)
+            };
         }
 
-        public async Task AutoCompleteRequests(Dictionary<MediaAgent, PlexMediaItem> agentsByPlexId, PlexMediaTypes mediaType)
+        public async Task AutoCompleteRequests(Dictionary<MediaAgent, PlexMediaItem> agentsByPlexId,
+            PlexMediaTypes mediaType)
         {
-            var incompleteRequests = await _requestService.GetIncompleteRequests(mediaType);
+            var completer = _autoCompleters.FirstOrDefault(x => x.MediaType == mediaType);
 
-            foreach (var incompleteRequest in incompleteRequests)
+            if (completer == null)
             {
-                var allAgents =
-                    new List<MediaAgent> { incompleteRequest.PrimaryAgent }.Concat(incompleteRequest.AdditionalAgents);
-
-                foreach (var requestAgent in allAgents)
-                {
-                    if (!agentsByPlexId.TryGetValue(requestAgent, out var plexMediaItem))
-                    {
-                        continue;
-                    }
-
-                    incompleteRequest.PlexMediaUri = plexMediaItem.PlexMediaUri;
-                    incompleteRequest.Status = RequestStatuses.Completed;
-
-                    if (mediaType == PlexMediaTypes.Show)
-                    {
-                        if (incompleteRequest.Track)
-                        {
-                            continue;
-                        }
-
-                        AutoCompleteTvSeasonEpisodes(incompleteRequest, plexMediaItem);
-                    }
-
-                    await _requestService.Update(incompleteRequest);
-
-                    break;
-                }
-            }
-        }
-
-        private void AutoCompleteTvSeasonEpisodes(Request incompleteRequest, PlexMediaItem plexMediaItem)
-        {
-            foreach (var season in incompleteRequest.Seasons)
-            {
-                var matchingSeason = plexMediaItem.Seasons.FirstOrDefault(x => x.Season == season.Index);
-
-                if (matchingSeason == null)
-                {
-                    continue;
-                }
-
-                season.PlexMediaUri = matchingSeason.PlexMediaUri;
-
-                foreach (var episode in season.Episodes)
-                {
-                    if (episode.Status == RequestStatuses.Completed)
-                    {
-                        continue;
-                    }
-
-                    var matchingEpisode = matchingSeason.Episodes.FirstOrDefault(x => x.Episode == episode.Index);
-
-                    if (matchingEpisode == null)
-                    {
-                        continue;
-                    }
-
-                    episode.PlexMediaUri = matchingEpisode.PlexMediaUri;
-                    episode.Status = RequestStatuses.Completed;
-                }
+                _logger.LogError($"Attempt to execute auto completion on PlexMediaType '{mediaType}' that has no configured auto complete implementation.");
+                return;
             }
 
-            incompleteRequest.Status = _requestService.CalculateAggregatedStatus(incompleteRequest);
+            await completer.AutoComplete(agentsByPlexId);
         }
     }
 }

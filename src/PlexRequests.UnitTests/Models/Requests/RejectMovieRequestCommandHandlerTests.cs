@@ -20,20 +20,20 @@ namespace PlexRequests.UnitTests.Models.Requests
     public class RejectMovieRequestCommandHandlerTests
     {
         private readonly IRequestHandler<RejectMovieRequestCommand> _underTest;
-        private readonly IRequestService _requestService;
+        private readonly IMovieRequestService _requestService;
 
         private readonly Fixture _fixture;
 
         private RejectMovieRequestCommand _command;
         private Func<Task> _commandAction;
-        private Request _request;
-        private Request _updatedRequest;
+        private MovieRequest _request;
+        private MovieRequest _updatedRequest;
 
         public RejectMovieRequestCommandHandlerTests()
         {
             _fixture = new Fixture();
 
-            _requestService = Substitute.For<IRequestService>();
+            _requestService = Substitute.For<IMovieRequestService>();
             
             _underTest = new RejectMovieRequestCommandHandler(_requestService);
         }
@@ -100,7 +100,7 @@ namespace PlexRequests.UnitTests.Models.Requests
 
         private void GivenARequestWithStatus(RequestStatuses status)
         {
-            _request = _fixture.Build<Request>()
+            _request = _fixture.Build<MovieRequest>()
                                .With(x => x.Status, status)
                                .Create();
 
@@ -109,7 +109,7 @@ namespace PlexRequests.UnitTests.Models.Requests
 
         private void GivenARequestIsUpdated()
         {
-            _requestService.Update(Arg.Do<Request>(x => _updatedRequest = x));
+            _requestService.Update(Arg.Do<MovieRequest>(x => _updatedRequest = x));
         }
 
         private void WhenCommandActionIsCreated()

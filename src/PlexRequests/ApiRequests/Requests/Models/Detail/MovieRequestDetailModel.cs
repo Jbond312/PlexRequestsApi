@@ -9,8 +9,6 @@ namespace PlexRequests.ApiRequests.Requests.Models.Detail
     {
         public Guid Id { get; set; }
         public string Title { get; set; }
-        [JsonConverter(typeof(StringEnumConverter))]
-        public PlexMediaTypes MediaType { get; set; }
         public string PlexMediaUri { get; set; }
         public string RequestedByUserName { get; set; }
         [JsonConverter(typeof(StringEnumConverter))]

@@ -14,12 +14,12 @@ namespace PlexRequests.ApiRequests.Requests.Queries
     public class GetMoviePagedRequestQueryHandler : IRequestHandler<GetMoviePagedRequestQuery, GetMoviePagedRequestQueryResult>
     {
         private readonly IMapper _mapper;
-        private readonly IRequestService _requestService;
+        private readonly IMovieRequestService _requestService;
         private readonly IClaimsPrincipalAccessor _claimsAccessor;
 
         public GetMoviePagedRequestQueryHandler(
             IMapper mapper,
-            IRequestService requestService,
+            IMovieRequestService requestService,
             IClaimsPrincipalAccessor claimsAccessor)
         {
             _mapper = mapper;
@@ -36,8 +36,7 @@ namespace PlexRequests.ApiRequests.Requests.Queries
                 userGuid = _claimsAccessor.UserId;
             }
             
-            var pagedResponse = await _requestService.GetPaged(request.Title, PlexMediaTypes.Movie, request.Status,
-                userGuid, request.Page, request.PageSize);
+            var pagedResponse = await _requestService.GetPaged(request.Title, request.Status, userGuid, request.Page, request.PageSize);
 
             var requestViewModels = _mapper.Map<List<MovieRequestDetailModel>>(pagedResponse.Items);
 

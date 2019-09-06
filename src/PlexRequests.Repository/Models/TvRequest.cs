@@ -5,12 +5,11 @@ using PlexRequests.Repository.Enums;
 
 namespace PlexRequests.Repository.Models
 {
-    public class Request
+    public class TvRequest
     {
         [BsonId]
         public Guid Id { get; set; }
         public string Title { get; set; }
-        public PlexMediaTypes MediaType { get; set; }
         public MediaAgent PrimaryAgent { get; set; }
         public string PlexMediaUri { get; set; }
         public Guid RequestedByUserId { get; set; }
