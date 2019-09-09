@@ -50,7 +50,7 @@ namespace PlexRequests.ApiRequests.Requests.Commands
                     ApproveEpisodes(request, command.EpisodesBySeason);
                 }
 
-                request.Status = _requestService.CalculateAggregatedStatus(request);
+                _requestService.SetAggregatedStatus(request);
             }
 
             await _requestService.Update(request);

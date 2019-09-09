@@ -16,16 +16,16 @@ namespace PlexRequests.ApiRequests.Issues.Commands
     public class CreateIssueCommandHandler : AsyncRequestHandler<CreateIssueCommand>
     {
         private readonly IIssueService _issueService;
-        private readonly ITheMovieDbApi _theMovieDbApi;
+        private readonly ITheMovieDbService _theMovieDbService;
         private readonly IClaimsPrincipalAccessor _claimsPrincipalAccessor;
 
         public CreateIssueCommandHandler(
             IIssueService issueService,
-            ITheMovieDbApi theMovieDbApi,
+            ITheMovieDbService theMovieDbService,
             IClaimsPrincipalAccessor claimsPrincipalAccessor)
         {
             _issueService = issueService;
-            _theMovieDbApi = theMovieDbApi;
+            _theMovieDbService = theMovieDbService;
             _claimsPrincipalAccessor = claimsPrincipalAccessor;
         }
 
@@ -79,14 +79,14 @@ namespace PlexRequests.ApiRequests.Issues.Commands
             DateTime airDate;
             if (mediaType == PlexMediaTypes.Show)
             {
-                var show = await _theMovieDbApi.GetTvDetails(theMovieDbId);
+                var show = await _theMovieDbService.GetTvDetails(theMovieDbId);
                 name = show.Name;
                 imagePath = show.Poster_Path;
                 airDate = DateTime.Parse(show.First_Air_Date);
             }
             else
             {
-                var movie = await _theMovieDbApi.GetMovieDetails(theMovieDbId);
+                var movie = await _theMovieDbService.GetMovieDetails(theMovieDbId);
                 name = movie.Title;
                 imagePath = movie.Poster_Path;
                 airDate = DateTime.Parse(movie.Release_Date);

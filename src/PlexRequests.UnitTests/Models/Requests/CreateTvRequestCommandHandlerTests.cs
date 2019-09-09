@@ -30,7 +30,7 @@ namespace PlexRequests.UnitTests.Models.Requests
         private readonly IRequestHandler<CreateTvRequestCommand> _underTest;
 
         private readonly ITvRequestService _requestService;
-        private readonly ITheMovieDbApi _theMovieDbApi;
+        private readonly ITheMovieDbService _theMovieDbService;
         private readonly IPlexService _plexService;
         private readonly IClaimsPrincipalAccessor _claimsPrincipalAccessor;
 
@@ -50,14 +50,14 @@ namespace PlexRequests.UnitTests.Models.Requests
         public CreateTvRequestCommandHandlerTests()
         {
             _requestService = Substitute.For<ITvRequestService>();
-            _theMovieDbApi = Substitute.For<ITheMovieDbApi>();
+            _theMovieDbService = Substitute.For<ITheMovieDbService>();
             _plexService = Substitute.For<IPlexService>();
             _claimsPrincipalAccessor = Substitute.For<IClaimsPrincipalAccessor>();
 
             var mapperConfig = new MapperConfiguration(opts => { opts.AddProfile(new RequestProfile()); });
             var mapper = mapperConfig.CreateMapper();
 
-            _underTest = new CreateTvRequestCommandHandler(mapper, _requestService, _theMovieDbApi, _plexService, _claimsPrincipalAccessor);
+            _underTest = new CreateTvRequestCommandHandler(mapper, _requestService, _theMovieDbService, _plexService, _claimsPrincipalAccessor);
 
             _fixture = new Fixture();
         }
@@ -374,7 +374,7 @@ namespace PlexRequests.UnitTests.Models.Requests
         {
             _externalIds = _fixture.Create<ExternalIds>();
 
-            _theMovieDbApi.GetTvExternalIds(Arg.Any<int>()).Returns(_externalIds);
+            _theMovieDbService.GetTvExternalIds(Arg.Any<int>()).Returns(_externalIds);
         }
 
         private void GivenTheTvDetailsReturnedFromTheMovieDb()
@@ -383,7 +383,7 @@ namespace PlexRequests.UnitTests.Models.Requests
                                  .With(x => x.First_Air_Date, "2019-12-25")
                                  .Create();
 
-            _theMovieDbApi.GetTvDetails(_command.TheMovieDbId).Returns(_tvDetails);
+            _theMovieDbService.GetTvDetails(_command.TheMovieDbId).Returns(_tvDetails);
         }
 
         private void GivenTvDetailsInProduction(bool inProduction)
@@ -395,7 +395,7 @@ namespace PlexRequests.UnitTests.Models.Requests
         {
             _season = _fixture.Create<TvSeasonDetails>();
 
-            _theMovieDbApi.GetTvSeasonDetails(Arg.Any<int>(), Arg.Any<int>()).Returns(_season);
+            _theMovieDbService.GetTvSeasonDetails(Arg.Any<int>(), Arg.Any<int>()).Returns(_season);
 
         }
 
@@ -461,7 +461,7 @@ namespace PlexRequests.UnitTests.Models.Requests
 
         private void ThenTvSeasonDetailsWereRetrieved(int expectedSeasonCount)
         {
-            _theMovieDbApi.Received(expectedSeasonCount).GetTvSeasonDetails(Arg.Any<int>(), Arg.Any<int>());
+            _theMovieDbService.Received(expectedSeasonCount).GetTvSeasonDetails(Arg.Any<int>(), Arg.Any<int>());
         }
 
         private List<PlexSeason> CreatePlexSeasonsFromCommand()

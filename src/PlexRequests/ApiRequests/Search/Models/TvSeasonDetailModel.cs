@@ -1,7 +1,8 @@
 ﻿using System;
 using System.Collections.Generic;
+using PlexRequests.Repository.Enums;
 
-namespace PlexRequests.ApiRequests.TheMovieDb.Models
+namespace PlexRequests.ApiRequests.Search.Models
 {
     public class TvSeasonDetailModel
     {
@@ -11,6 +12,8 @@ namespace PlexRequests.ApiRequests.TheMovieDb.Models
         public string Overview { get; set; }
         public string PosterPath { get; set; }
         public DateTime? AirDate { get; set; }
+        public RequestStatuses? RequestStatus { get; set; }
+        public string PlexMediaUri { get; set; }
         public List<EpisodeModel> Episodes { get; set; }
     }
 }

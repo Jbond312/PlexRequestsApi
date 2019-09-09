@@ -27,7 +27,7 @@ namespace PlexRequests.UnitTests.Models.Requests
     {
         private readonly IRequestHandler<CreateMovieRequestCommand> _underTest;
 
-        private readonly ITheMovieDbApi _theMovieDbApi;
+        private readonly ITheMovieDbService _theMovieDbService;
         private readonly IMovieRequestService _requestService;
         private readonly IPlexService _plexService;
         private readonly IClaimsPrincipalAccessor _claimsPrincipalAccessor;
@@ -46,13 +46,13 @@ namespace PlexRequests.UnitTests.Models.Requests
 
         public CreateMovieRequestCommandHandlerTests()
         {
-            _theMovieDbApi = Substitute.For<ITheMovieDbApi>();
+            _theMovieDbService = Substitute.For<ITheMovieDbService>();
             _requestService = Substitute.For<IMovieRequestService>();
             _plexService = Substitute.For<IPlexService>();
             _claimsPrincipalAccessor = Substitute.For<IClaimsPrincipalAccessor>();
             var logger = Substitute.For<ILogger<CreateRequestCommandHandler>>();
 
-            _underTest = new CreateRequestCommandHandler(_theMovieDbApi, _requestService, _plexService, _claimsPrincipalAccessor, logger);
+            _underTest = new CreateRequestCommandHandler(_theMovieDbService, _requestService, _plexService, _claimsPrincipalAccessor, logger);
 
             _fixture = new Fixture();
 
@@ -160,7 +160,7 @@ namespace PlexRequests.UnitTests.Models.Requests
                                     .With(x => x.Release_Date, "2019-12-25")
                                     .Create();
 
-            _theMovieDbApi.GetMovieDetails(Arg.Any<int>()).Returns(_movieDetails);
+            _theMovieDbService.GetMovieDetails(Arg.Any<int>()).Returns(_movieDetails);
         }
 
         private void GivenARequestIsCreated()
@@ -171,7 +171,7 @@ namespace PlexRequests.UnitTests.Models.Requests
         private void GivenExternalIdsFromTheMovieDb()
         {
             _externalIds = _fixture.Create<ExternalIds>();
-            _theMovieDbApi.GetMovieExternalIds(Arg.Any<int>()).Returns(_externalIds);
+            _theMovieDbService.GetMovieExternalIds(Arg.Any<int>()).Returns(_externalIds);
         }
 
         private void GivenUserDetailsFromClaims()

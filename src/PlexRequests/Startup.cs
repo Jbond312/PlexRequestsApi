@@ -65,7 +65,7 @@ namespace PlexRequests
                     Type = SecuritySchemeType.ApiKey,
                     Scheme = "Bearer"
                 });
-                options.AddSecurityRequirement(new OpenApiSecurityRequirement()
+                options.AddSecurityRequirement(new OpenApiSecurityRequirement
                 {
                     {
                         new OpenApiSecurityScheme

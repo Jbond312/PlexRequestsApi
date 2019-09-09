@@ -13,9 +13,10 @@ namespace PlexRequests.Core.Services
             int? pageSize);
         Task<List<TvRequest>> GetExistingRequests(AgentTypes agentType, string agentSourceId);
         Task<List<TvRequest>> GetIncompleteRequests();
+        Task<Dictionary<int, TvRequest>> GetRequestsByMovieDbIds(List<int> moviedbIds);
         Task Create(TvRequest request);
         Task Update(TvRequest request);
         Task DeleteRequest(Guid id);
-        RequestStatuses CalculateAggregatedStatus(TvRequest request);
+        void SetAggregatedStatus(TvRequest request);
     }
 }

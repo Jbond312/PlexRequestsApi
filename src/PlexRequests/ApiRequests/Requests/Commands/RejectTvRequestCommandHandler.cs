@@ -53,7 +53,7 @@ namespace PlexRequests.ApiRequests.Requests.Commands
                     PartialReject(request, command.EpisodesBySeason);
                 }
 
-                request.Status = _requestService.CalculateAggregatedStatus(request);
+                _requestService.SetAggregatedStatus(request);
             }
 
             request.Comment = command.Comment;

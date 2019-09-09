@@ -21,20 +21,20 @@ namespace PlexRequests.ApiRequests.Requests.Commands
     {
         private readonly IMapper _mapper;
         private readonly ITvRequestService _requestService;
-        private readonly ITheMovieDbApi _theMovieDbApi;
+        private readonly ITheMovieDbService _theMovieDbService;
         private readonly IPlexService _plexService;
         private readonly IClaimsPrincipalAccessor _claimsPrincipalAccessor;
 
         public CreateTvRequestCommandHandler(
             IMapper mapper,
             ITvRequestService requestService,
-            ITheMovieDbApi theMovieDbApi,
+            ITheMovieDbService theMovieDbService,
             IPlexService plexService,
             IClaimsPrincipalAccessor claimsPrincipalAccessor)
         {
             _mapper = mapper;
             _requestService = requestService;
-            _theMovieDbApi = theMovieDbApi;
+            _theMovieDbService = theMovieDbService;
             _plexService = plexService;
             _claimsPrincipalAccessor = claimsPrincipalAccessor;
         }
@@ -47,7 +47,7 @@ namespace PlexRequests.ApiRequests.Requests.Commands
 
             var tvDetails = await GetTvDetails(request.TheMovieDbId);
 
-            var externalIds = await _theMovieDbApi.GetTvExternalIds(request.TheMovieDbId);
+            var externalIds = await _theMovieDbService.GetTvExternalIds(request.TheMovieDbId);
 
             if (request.TrackShow)
             {
@@ -80,7 +80,7 @@ namespace PlexRequests.ApiRequests.Requests.Commands
 
         private async Task<TvDetails> GetTvDetails(int theMovieDbId)
         {
-            return await _theMovieDbApi.GetTvDetails(theMovieDbId);
+            return await _theMovieDbService.GetTvDetails(theMovieDbId);
         }
 
         private async Task CreateRequest(CreateTvRequestCommand request, List<RequestSeason> seasons,
@@ -133,7 +133,7 @@ namespace PlexRequests.ApiRequests.Requests.Commands
 
         private async Task SetAdditionalEpisodeData(int theMovieDbId, RequestSeason season)
         {
-            var seasonDetails = await _theMovieDbApi.GetTvSeasonDetails(theMovieDbId, season.Index);
+            var seasonDetails = await _theMovieDbService.GetTvSeasonDetails(theMovieDbId, season.Index);
 
             season.Episodes = season.Episodes ?? new List<RequestEpisode>();
 

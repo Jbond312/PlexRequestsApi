@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Threading.Tasks;
 using PlexRequests.Repository;
 using PlexRequests.Repository.Enums;
@@ -36,6 +37,14 @@ namespace PlexRequests.Core.Services
         public async Task<List<MovieRequest>> GetIncompleteRequests()
         {
             return await _requestRepository.GetMany(x => x.Status != RequestStatuses.Completed && x.PlexMediaUri == null);
+        }
+
+        public async Task<Dictionary<int, MovieRequest>> GetRequestsByMovieDbIds(List<int> moviedbIds)
+        {
+            //TODO Don't get all of the db entities here. Get the mongo filter working
+            var requests = await _requestRepository.GetMany();
+            var matchingRequests = requests.Where(x => moviedbIds.Contains(int.Parse(x.PrimaryAgent.AgentSourceId))).ToList();
+            return matchingRequests.ToDictionary(x => int.Parse(x.PrimaryAgent.AgentSourceId), x => x);
         }
 
         public async Task Create(MovieRequest request)

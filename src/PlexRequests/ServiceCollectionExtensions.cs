@@ -8,10 +8,12 @@ using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.IdentityModel.Tokens;
 using PlexRequests.Api;
+using PlexRequests.ApiRequests.Search.Helpers;
 using PlexRequests.Core.Helpers;
 using PlexRequests.Core.Services;
 using PlexRequests.Core.Settings;
 using PlexRequests.Plex;
+using PlexRequests.Plex.MediaItemRetriever;
 using PlexRequests.Repository;
 using PlexRequests.Sync;
 using PlexRequests.Sync.SyncProcessors;
@@ -61,7 +63,6 @@ namespace PlexRequests
             services.AddTransient<IClaimsPrincipalAccessor, ClaimsPrincipalAccessor>();
             services.AddTransient<IPlexApi, PlexApi>();
             services.AddTransient<ITheMovieDbApi, TheMovieDbApi>();
-            services.AddTransient<ICacheService, CacheService>();
             services.AddTransient<ISettingsService, SettingsService>();
             services.AddTransient<IUserService, UserService>();
             services.AddTransient<IPlexService, PlexService>();
@@ -69,8 +70,12 @@ namespace PlexRequests
             services.AddTransient<ITvRequestService, TvRequestService>();
             services.AddTransient<ICompletionService, CompletionService>();
             services.AddTransient<IIssueService, IssueService>();
+            services.AddTransient<ITheMovieDbService, TheMovieDbService>();
             services.AddTransient<IPlexSync, PlexSync>();
+            services.AddTransient<IMediaItemRetriever, MovieMediaItemRetriever>();
+            services.AddTransient<IMediaItemRetriever, TvMediaItemRetriever>();
 
+            services.AddSingleton<ICacheService, CacheService>();
             services.AddSingleton<IHttpContextAccessor, HttpContextAccessor>();
             services.AddSingleton<ITokenService, TokenService>();
             services.AddSingleton<IApiService, ApiService>();
@@ -79,11 +84,13 @@ namespace PlexRequests
             services.AddSingleton<IPlexRequestsHttpClient, PlexRequestsHttpClient>();
             services.AddSingleton<IAgentGuidParser, AgentGuidParser>();
             services.AddSingleton<IRequestHelper, RequestHelper>();
+            services.AddSingleton<IMovieQueryHelper, MovieQueryHelper>();
+            services.AddSingleton<ITvQueryHelper, TvQueryHelper>();
         }
 
         private static void RegisterRepositories(IServiceCollection services, DatabaseSettings databaseSettings)
         {
-            var connectionString = $"mongodb://{databaseSettings.User}:{databaseSettings.Password}@{databaseSettings.Server}:{databaseSettings.Port}/{databaseSettings.Database}?connectTimeoutMS=30000";
+            var connectionString = $"mongodb://{databaseSettings.User}:{databaseSettings.Password}@{databaseSettings.Server}:{databaseSettings.Port}?connectTimeoutMS=30000";
 
             services.AddTransient<ISettingsRepository>(repo =>
                 new SettingsRepository(connectionString, databaseSettings.Database));

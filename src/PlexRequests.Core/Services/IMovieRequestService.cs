@@ -13,6 +13,7 @@ namespace PlexRequests.Core.Services
             int? pageSize);
         Task<MovieRequest> GetExistingRequest(AgentTypes agentType, string agentSourceId);
         Task<List<MovieRequest>> GetIncompleteRequests();
+        Task<Dictionary<int, MovieRequest>> GetRequestsByMovieDbIds(List<int> moviedbIds);
         Task Create(MovieRequest request);
         Task Update(MovieRequest request);
         Task DeleteRequest(Guid id);

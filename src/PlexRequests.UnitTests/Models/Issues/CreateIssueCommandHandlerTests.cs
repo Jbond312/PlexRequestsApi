@@ -24,7 +24,7 @@ namespace PlexRequests.UnitTests.Models.Issues
         private readonly IRequestHandler<CreateIssueCommand> _underTest;
 
         private IIssueService _issueService;
-        private ITheMovieDbApi _theMovieDbApi;
+        private ITheMovieDbService _theMovieDbService;
         private IClaimsPrincipalAccessor _claimsPrincipalAccessor;
 
         private readonly Fixture _fixture;
@@ -41,10 +41,10 @@ namespace PlexRequests.UnitTests.Models.Issues
         public CreateIssueCommandHandlerTests()
         {
             _issueService = Substitute.For<IIssueService>();
-            _theMovieDbApi = Substitute.For<ITheMovieDbApi>();
+            _theMovieDbService = Substitute.For<ITheMovieDbService>();
             _claimsPrincipalAccessor = Substitute.For<IClaimsPrincipalAccessor>();
 
-            _underTest = new CreateIssueCommandHandler(_issueService, _theMovieDbApi, _claimsPrincipalAccessor);
+            _underTest = new CreateIssueCommandHandler(_issueService, _theMovieDbService, _claimsPrincipalAccessor);
 
             _fixture = new Fixture();
         }
@@ -120,7 +120,7 @@ namespace PlexRequests.UnitTests.Models.Issues
                                         .With(x => x.Release_Date, "2019-12-25")
                                         .Create();
 
-                _theMovieDbApi.GetMovieDetails(Arg.Any<int>()).Returns(_movieDetails);
+                _theMovieDbService.GetMovieDetails(Arg.Any<int>()).Returns(_movieDetails);
             }
             else
             {
@@ -128,7 +128,7 @@ namespace PlexRequests.UnitTests.Models.Issues
                      .With(x => x.First_Air_Date, "2019-12-25")
                      .Create();
 
-                _theMovieDbApi.GetTvDetails(Arg.Any<int>()).Returns(_tvDetails);
+                _theMovieDbService.GetTvDetails(Arg.Any<int>()).Returns(_tvDetails);
             }
         }
 
