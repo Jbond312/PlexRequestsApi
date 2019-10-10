@@ -1,4 +1,4 @@
-FROM mcr.microsoft.com/dotnet/core/sdk:2.2 AS build
+FROM mcr.microsoft.com/dotnet/core/sdk:3.0 AS build
 WORKDIR /app
 
 # copy csproj and restore as distinct layers
@@ -24,8 +24,7 @@ RUN dotnet publish -c Release -o out
 # run tests
 RUN dotnet test
 
-
-FROM mcr.microsoft.com/dotnet/core/aspnet:2.2 AS runtime
+FROM mcr.microsoft.com/dotnet/core/aspnet:3.0 AS runtime
 WORKDIR /app
-COPY --from=build /app/PlexRequests/out ./
+COPY --from=build /app/out ./
 ENTRYPOINT ["dotnet", "PlexRequests.dll"]
