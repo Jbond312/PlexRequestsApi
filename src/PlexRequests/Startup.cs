@@ -4,10 +4,11 @@ using AutoMapper;
 using MediatR;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
-using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
+using Microsoft.OpenApi.Models;
 using MongoDB.Driver;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Converters;
@@ -18,16 +19,15 @@ using PlexRequests.Middleware;
 using PlexRequests.Repository.Models;
 using Serilog;
 using Serilog.Events;
-using Swashbuckle.AspNetCore.Swagger;
 
 namespace PlexRequests
 {
     public class Startup
     {
         private IConfiguration Configuration { get; }
-        private IHostingEnvironment Environment { get; }
+        private IWebHostEnvironment Environment { get; }
 
-        public Startup(IHostingEnvironment env, IConfiguration configuration)
+        public Startup(IWebHostEnvironment env, IConfiguration configuration)
         {
             Environment = env;
             Configuration = configuration;
@@ -37,43 +37,52 @@ namespace PlexRequests
         public void ConfigureServices(IServiceCollection services)
         {
             services
-                .AddMvcCore()
+                .AddMvcCore(options => options.EnableEndpointRouting = false)
                 .AddMvcOptions(options => options.Filters.Add(typeof(ValidationFilter)))
                 .AddAuthorization()
-                .AddJsonFormatters()
-                .AddApiExplorer()
-                .AddDataAnnotations()
-                .AddJsonOptions(
-                options =>
+                .AddNewtonsoftJson(options =>
                 {
                     options.SerializerSettings.ContractResolver = new CamelCasePropertyNamesContractResolver();
                     options.SerializerSettings.Formatting = Formatting.Indented;
                     options.SerializerSettings.Converters.Add(new StringEnumConverter());
                 })
-                .SetCompatibilityVersion(CompatibilityVersion.Version_2_2);
+                .AddApiExplorer()
+                .AddDataAnnotations();
 
             services.AddSwaggerGen(options =>
             {
-                options.SwaggerDoc("v1", new Info
+                options.SwaggerDoc("v1", new OpenApiInfo
                 {
                     Title = "Plex Requests Api",
                     Version = "v1"
                 });
 
-                options.AddSecurityDefinition("Bearer", new ApiKeyScheme
+                options.AddSecurityDefinition("Bearer", new OpenApiSecurityScheme
                 {
                     Description = "JWT Authorization header using the Bearer scheme. Example: \"Authorization: Bearer {token}\"",
                     Name = "Authorization",
-                    In = "header",
-                    Type = "apiKey"
+                    In = ParameterLocation.Header,
+                    Type = SecuritySchemeType.ApiKey,
+                    Scheme = "Bearer"
                 });
-
-                var security = new Dictionary<string, IEnumerable<string>>
+                options.AddSecurityRequirement(new OpenApiSecurityRequirement()
                 {
-                    {"Bearer", new string[] { }},
-                };
-                options.AddSecurityRequirement(security);
-                options.DescribeAllEnumsAsStrings();
+                    {
+                        new OpenApiSecurityScheme
+                        {
+                            Reference = new OpenApiReference
+                            {
+                                Type = ReferenceType.SecurityScheme,
+                                Id = "Bearer"
+                            },
+                            Scheme = "oauth2",
+                            Name = "Bearer",
+                            In = ParameterLocation.Header,
+
+                        },
+                        new List<string>()
+                    }
+                });
                 options.EnableAnnotations();
             });
 
@@ -119,7 +128,7 @@ namespace PlexRequests
         }
 
         // This method gets called by the runtime. Use this method to configure the HTTP request pipeline.
-        public void Configure(IApplicationBuilder app, IHostingEnvironment env, ILoggerFactory loggerFactory)
+        public void Configure(IApplicationBuilder app, IWebHostEnvironment env, ILoggerFactory loggerFactory)
         {
             if (env.IsDevelopment())
             {
@@ -143,9 +152,12 @@ namespace PlexRequests
                 c.SwaggerEndpoint("/swagger/v1/swagger.json", "Plex Requests Api");
             });
 
-            app.UseAuthentication();
+            app.UseRouting();
 
-            app.UseMvc(routes => { routes.MapRoute("default", "api/{controller}/{action}"); });
+            app.UseAuthentication();
+            app.UseAuthorization();
+
+            app.UseEndpoints(routes => { routes.MapControllerRoute("default", "api/{controller}/{action}"); });
         }
 
         private void PrimeSettings(IApplicationBuilder app, IConfiguration configuration)
