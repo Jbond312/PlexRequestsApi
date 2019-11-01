@@ -29,7 +29,6 @@ namespace PlexRequests.UnitTests.Models.Requests
         private RejectTvRequestCommand _command;
         private Func<Task> _commandAction;
         private TvRequest _updatedRequest;
-        private RequestStatuses _overallStatus;
         private TvRequest _request;
 
         public RejectTvRequestCommandHandlerTests()
@@ -138,7 +137,6 @@ namespace PlexRequests.UnitTests.Models.Requests
             this.Given(x => x.GivenACommand(rejectAll))
                 .Given(x => x.GivenARequestIsFound())
                 .Given(x => x.GivenARequestIsUpdated())
-                .Given(x => x.GivenAggregateIsCalculated())
                 .When(x => x.WhenACommandActionIsCreated())
                 .Then(x => x.ThenCommandIsSuccessful())
                 .Then(x => x.ThenAggregateIsCorrect())
@@ -241,12 +239,6 @@ namespace PlexRequests.UnitTests.Models.Requests
             _requestService.Update(Arg.Do<TvRequest>(x => _updatedRequest = x));
         }
 
-        private void GivenAggregateIsCalculated()
-        {
-            _overallStatus = RequestStatuses.Completed;
-            _requestService.CalculateAggregatedStatus(Arg.Any<TvRequest>()).Returns(_overallStatus);
-        }
-
         private void GivenOneMatchingEpisodeInCommand()
         {
             var firstRequestSeason = _request.Seasons[0];
@@ -304,8 +296,7 @@ namespace PlexRequests.UnitTests.Models.Requests
 
         private void ThenAggregateIsCorrect()
         {
-            _updatedRequest.Status.Should().Be(_overallStatus);
-            _requestService.Received().CalculateAggregatedStatus(Arg.Any<TvRequest>());
+            _requestService.Received().SetAggregatedStatus(Arg.Any<TvRequest>());
         }
 
         private void ThenOnlyMatchingEpisodeRejected()

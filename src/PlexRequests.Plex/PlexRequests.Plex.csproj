@@ -5,6 +5,8 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <ProjectReference Include="..\PlexRequests.Core\PlexRequests.Core.csproj"/>
+    <ProjectReference Include="..\PlexRequests.TheMovieDb\PlexRequests.TheMovieDb.csproj"/>
     <ProjectReference Include="..\PlexRequests.Api\PlexRequests.Api.csproj" />
   </ItemGroup>
 

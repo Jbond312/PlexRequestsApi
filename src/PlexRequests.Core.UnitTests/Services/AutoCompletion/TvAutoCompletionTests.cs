@@ -26,7 +26,6 @@ namespace PlexRequests.Core.UnitTests.Services.AutoCompletion
         private List<TvRequest> _tvRequests;
         private Func<Task> _commandAction;
         private TvRequest _updatedRequest;
-        private RequestStatuses _aggregateStatus;
 
         public TvAutoCompletionTests()
         {
@@ -77,7 +76,6 @@ namespace PlexRequests.Core.UnitTests.Services.AutoCompletion
             this.Given(x => x.GivenRequestsAgentsForPlexMediaItems())
                 .Given(x => x.GivenAMatchingTvRequestWithAllMatchingEpisodes(isTracked))
                 .Given(x => x.GivenATvRequestIsUpdated())
-                .Given(x => x.GivenAggregateStatusIsRetrieved())
                 .When(x => x.WhenCommandActionIsCreated())
                 .Then(x => x.ThenResponseIsSuccessful())
                 .Then(x => x.ThenUpdatedRequestShouldBeCorrect(RequestStatuses.Completed))
@@ -167,12 +165,6 @@ namespace PlexRequests.Core.UnitTests.Services.AutoCompletion
             _requestService.Update(Arg.Do<TvRequest>(x => _updatedRequest = x));
         }
 
-        private void GivenAggregateStatusIsRetrieved()
-        {
-            _aggregateStatus = RequestStatuses.Completed;
-            _requestService.CalculateAggregatedStatus(Arg.Any<TvRequest>()).Returns(_aggregateStatus);
-        }
-
         private void WhenCommandActionIsCreated()
         {
             _commandAction = async () => await _underTest.AutoComplete(_agentsForPlexItems);
@@ -202,8 +194,7 @@ namespace PlexRequests.Core.UnitTests.Services.AutoCompletion
         private void ThenAggregateStatusIsCorrect()
         {
             _updatedRequest.Should().NotBeNull();
-            _updatedRequest.Status.Should().Be(_aggregateStatus);
-            _requestService.Received().CalculateAggregatedStatus(Arg.Any<TvRequest>());
+            _requestService.Received().SetAggregatedStatus(Arg.Any<TvRequest>());
         }
 
         private void ThenNoTvRequestIsUpdated()

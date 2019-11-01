@@ -9,7 +9,7 @@
     <PackageReference Include="Microsoft.Extensions.Logging.Abstractions" Version="3.0.0"/>
   </ItemGroup>
   <ItemGroup>
-    <ProjectReference Include="..\PlexRequests.Repository\PlexRequests.Repository.csproj"/>
+    <ProjectReference Include="..\PlexRequests.Repository\PlexRequests.Repository.csproj"/>  
   </ItemGroup>
    <ItemGroup>
     <FrameworkReference Include="Microsoft.AspNetCore.App" />

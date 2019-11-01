@@ -11,14 +11,14 @@ namespace PlexRequests.Core.Services.AutoCompletion
         private readonly ITvRequestService _requestService;
 
         public PlexMediaTypes MediaType => PlexMediaTypes.Show;
-        
+
         public TvAutoCompletion(
             ITvRequestService requestService
             )
         {
             _requestService = requestService;
         }
-        
+
         public async Task AutoComplete(Dictionary<MediaAgent, PlexMediaItem> agentsByPlexId)
         {
             var incompleteRequests = await _requestService.GetIncompleteRequests();
@@ -85,7 +85,7 @@ namespace PlexRequests.Core.Services.AutoCompletion
                 }
             }
 
-            incompleteRequest.Status = _requestService.CalculateAggregatedStatus(incompleteRequest);
+            _requestService.SetAggregatedStatus(incompleteRequest);
         }
     }
 }

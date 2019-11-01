@@ -1,4 +1,6 @@
-﻿namespace PlexRequests.ApiRequests.TheMovieDb.Models
+﻿using PlexRequests.Repository.Enums;
+
+namespace PlexRequests.ApiRequests.Search.Models
 {
     public class EpisodeModel
     {
@@ -8,5 +10,7 @@
         public string Overview { get; set; }
         public int SeasonIndex { get; set; }
         public string StillPath { get; set; }
+        public RequestStatuses? RequestStatus { get; set; }
+        public string PlexMediaUri { get; set; }
     }
 }

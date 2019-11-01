@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using System.Linq;
 using PlexRequests.Repository.Enums;
 using PlexRequests.Repository.Models;
@@ -7,24 +8,35 @@ namespace PlexRequests.Core.Helpers
 {
     public class RequestHelper : IRequestHelper
     {
-        public RequestStatuses CalculateAggregatedStatus(TvRequest request)
+        private IEnumerable<RequestStatuses> _allStatuses = Enum.GetValues(typeof(RequestStatuses)).Cast<RequestStatuses>();
+
+        public void SetAggregatedStatus(TvRequest request)
         {
             if (request.Track)
             {
-                return request.Status;
+                return;
             }
 
-            var possibleStatus = Enum.GetValues(typeof(RequestStatuses)).Cast<RequestStatuses>();
-            var statusCounts = possibleStatus.ToDictionary(status => status, count => 0);
+            var allStatusCounts = _allStatuses.ToDictionary(status => status, count => 0);
 
             foreach (var season in request.Seasons)
             {
+                var seasonStatusCounts = _allStatuses.ToDictionary(status => status, count => 0);
+
                 foreach (var episode in season.Episodes)
                 {
-                    statusCounts[episode.Status]++;
+                    allStatusCounts[episode.Status]++;
+                    seasonStatusCounts[episode.Status]++;
                 }
+
+                season.Status = CalculateStatus(seasonStatusCounts);
             }
 
+            request.Status = CalculateStatus(allStatusCounts);
+        }
+
+        private RequestStatuses CalculateStatus(Dictionary<RequestStatuses, int> statusCounts)
+        {
             var totalStatusCounts = statusCounts.Sum(x => x.Value);
             var overallStatus = RequestStatuses.PendingApproval;
 

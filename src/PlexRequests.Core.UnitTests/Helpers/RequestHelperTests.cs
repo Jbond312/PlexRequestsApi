@@ -16,7 +16,7 @@ namespace PlexRequests.Core.UnitTests.Helpers
         private readonly Fixture _fixture;
 
         private TvRequest _request;
-        private Func<RequestStatuses> _commandAction;
+        private Action _commandAction;
 
         public RequestHelperTests()
         {
@@ -34,6 +34,10 @@ namespace PlexRequests.Core.UnitTests.Helpers
         {
             this.Given(x => x.GivenAllRequestEpisodesOfStatus(status))
                 .When(x => x.WhenACommandActionIsCreated())
+                .Then(x => x.ThenTheCommandSucceeds())
+                .Then(x => x.ThenSeasonStatusIsCorrect(1, status))
+                .Then(x => x.ThenSeasonStatusIsCorrect(2, status))
+                .Then(x => x.ThenSeasonStatusIsCorrect(3, status))
                 .Then(x => x.ThenOverallStatusIsCorrect(status))
                 .BDDfy();
         }
@@ -46,6 +50,10 @@ namespace PlexRequests.Core.UnitTests.Helpers
         {
             this.Given(x => x.GivenOneEpisodeOfStatus(RequestStatuses.Completed, allOtherEpisodeStatuses))
                 .When(x => x.WhenACommandActionIsCreated())
+                .Then(x => x.ThenTheCommandSucceeds())
+                .Then(x => x.ThenSeasonStatusIsCorrect(1, RequestStatuses.PartialCompletion))
+                .Then(x => x.ThenSeasonStatusIsCorrect(2, allOtherEpisodeStatuses))
+                .Then(x => x.ThenSeasonStatusIsCorrect(3, allOtherEpisodeStatuses))
                 .Then(x => x.ThenOverallStatusIsCorrect(RequestStatuses.PartialCompletion))
                 .BDDfy();
         }
@@ -57,6 +65,10 @@ namespace PlexRequests.Core.UnitTests.Helpers
         {
             this.Given(x => x.GivenOneEpisodeOfStatus(RequestStatuses.Approved, allOtherEpisodeStatuses))
                 .When(x => x.WhenACommandActionIsCreated())
+                .Then(x => x.ThenTheCommandSucceeds())
+                .Then(x => x.ThenSeasonStatusIsCorrect(1, RequestStatuses.PartialApproval))
+                .Then(x => x.ThenSeasonStatusIsCorrect(2, allOtherEpisodeStatuses))
+                .Then(x => x.ThenSeasonStatusIsCorrect(3, allOtherEpisodeStatuses))
                 .Then(x => x.ThenOverallStatusIsCorrect(RequestStatuses.PartialApproval))
                 .BDDfy();
         }
@@ -71,7 +83,12 @@ namespace PlexRequests.Core.UnitTests.Helpers
         private void AggregateStatus_Sets_Status_To_Request_Status_When_Request_Is_Show_Tracking(RequestStatuses status)
         {
             this.Given(x => x.GivenTrackedRequest(status))
+            .Given(x => x.GivenAllRequestEpisodesOfStatus(status))
             .When(x => x.WhenACommandActionIsCreated())
+            .Then(x => x.ThenTheCommandSucceeds())
+            .Then(x => x.ThenSeasonStatusIsCorrect(1, status))
+            .Then(x => x.ThenSeasonStatusIsCorrect(2, status))
+            .Then(x => x.ThenSeasonStatusIsCorrect(3, status))
             .Then(x => x.ThenOverallStatusIsCorrect(status))
             .BDDfy();
         }
@@ -106,14 +123,22 @@ namespace PlexRequests.Core.UnitTests.Helpers
 
         private void WhenACommandActionIsCreated()
         {
-            _commandAction = () => _underTest.CalculateAggregatedStatus(_request);
+            _commandAction = () => _underTest.SetAggregatedStatus(_request);
         }
 
         private void ThenOverallStatusIsCorrect(RequestStatuses expectedStatus)
         {
-            var actualStatus = _commandAction();
+            _request.Status.Should().Be(expectedStatus);
+        }
 
-            actualStatus.Should().Be(expectedStatus);
+        private void ThenSeasonStatusIsCorrect(int season, RequestStatuses expectedStatus)
+        {
+            _request.Seasons[season - 1].Status.Should().Be(expectedStatus);
+        }
+
+        private void ThenTheCommandSucceeds()
+        {
+            _commandAction();
         }
 
         private void SetEpisodeStatuses(RequestStatuses status)

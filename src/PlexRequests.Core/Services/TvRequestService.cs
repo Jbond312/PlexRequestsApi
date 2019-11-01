@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Threading.Tasks;
 using PlexRequests.Core.Helpers;
 using PlexRequests.Repository;
@@ -42,6 +43,14 @@ namespace PlexRequests.Core.Services
             return await _requestRepository.GetMany(x => x.Status != RequestStatuses.Completed && x.PlexMediaUri == null);
         }
 
+        public async Task<Dictionary<int, TvRequest>> GetRequestsByMovieDbIds(List<int> moviedbIds)
+        {
+            //TODO Don't get all of the db entities here. Get the mongo filter working
+            var requests = await _requestRepository.GetMany();
+            var matchingRequests = requests.Where(x => moviedbIds.Contains(int.Parse(x.PrimaryAgent.AgentSourceId))).ToList();
+            return matchingRequests.ToDictionary(x => int.Parse(x.PrimaryAgent.AgentSourceId), x => x);
+        }
+
         public async Task Create(TvRequest request)
         {
             await _requestRepository.Create(request);
@@ -57,9 +66,9 @@ namespace PlexRequests.Core.Services
             await _requestRepository.Delete(id);
         }
 
-        public RequestStatuses CalculateAggregatedStatus(TvRequest request)
+        public void SetAggregatedStatus(TvRequest request)
         {
-            return _requestHelper.CalculateAggregatedStatus(request);
+            _requestHelper.SetAggregatedStatus(request);
         }
     }
 }

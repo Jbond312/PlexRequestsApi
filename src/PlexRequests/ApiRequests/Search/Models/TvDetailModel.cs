@@ -1,7 +1,10 @@
 ﻿using System;
 using System.Collections.Generic;
+using Newtonsoft.Json;
+using Newtonsoft.Json.Converters;
+using PlexRequests.Repository.Enums;
 
-namespace PlexRequests.ApiRequests.TheMovieDb.Models
+namespace PlexRequests.ApiRequests.Search.Models
 {
     public class TvDetailModel
     {
@@ -18,5 +21,8 @@ namespace PlexRequests.ApiRequests.TheMovieDb.Models
         public List<string> Networks { get; set; }
         public EpisodeToAirModel LastEpisode { get; set; }
         public EpisodeToAirModel NextEpisode { get; set; }
+        [JsonConverter(typeof(StringEnumConverter))]
+        public RequestStatuses? RequestStatus { get; set; }
+        public string PlexMediaUri { get; set; }
     }
 }

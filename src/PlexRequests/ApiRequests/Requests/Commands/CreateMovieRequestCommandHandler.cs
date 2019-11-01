@@ -17,19 +17,19 @@ namespace PlexRequests.ApiRequests.Requests.Commands
 {
     public class CreateRequestCommandHandler : AsyncRequestHandler<CreateMovieRequestCommand>
     {
-        private readonly ITheMovieDbApi _theMovieDbApi;
+        private readonly ITheMovieDbService _theMovieDbService;
         private readonly IMovieRequestService _requestService;
         private readonly IPlexService _plexService;
         private readonly IClaimsPrincipalAccessor _claimsPrincipalAccessor;
         private readonly ILogger<CreateRequestCommandHandler> _logger;
 
-        public CreateRequestCommandHandler(ITheMovieDbApi theMovieDbApi,
+        public CreateRequestCommandHandler(ITheMovieDbService theMovieDbService,
             IMovieRequestService requestService,
             IPlexService plexService,
             IClaimsPrincipalAccessor claimsPrincipalAccessor,
             ILogger<CreateRequestCommandHandler> logger)
         {
-            _theMovieDbApi = theMovieDbApi;
+            _theMovieDbService = theMovieDbService;
             _requestService = requestService;
             _plexService = plexService;
             _claimsPrincipalAccessor = claimsPrincipalAccessor;
@@ -40,7 +40,7 @@ namespace PlexRequests.ApiRequests.Requests.Commands
         {
             var movieDetail = await GetMovieDetails(request.TheMovieDbId);
 
-            var externalIds = await _theMovieDbApi.GetMovieExternalIds(request.TheMovieDbId);
+            var externalIds = await _theMovieDbService.GetMovieExternalIds(request.TheMovieDbId);
 
             await ValidateRequestNotDuplicate(request);
 
@@ -51,7 +51,7 @@ namespace PlexRequests.ApiRequests.Requests.Commands
 
         private async Task<MovieDetails> GetMovieDetails(int theMovieDbId)
         {
-            return await _theMovieDbApi.GetMovieDetails(theMovieDbId);
+            return await _theMovieDbService.GetMovieDetails(theMovieDbId);
         }
 
         private async Task CreateRequest(CreateMovieRequestCommand request, MovieDetails movieDetail, ExternalIds externalIds)

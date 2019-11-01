@@ -1,6 +1,9 @@
 ﻿using System;
+using Newtonsoft.Json;
+using Newtonsoft.Json.Converters;
+using PlexRequests.Repository.Enums;
 
-namespace PlexRequests.ApiRequests.TheMovieDb.Models
+namespace PlexRequests.ApiRequests.Search.Models
 {
     public class TvSearchModel
     {
@@ -10,5 +13,8 @@ namespace PlexRequests.ApiRequests.TheMovieDb.Models
         public string PosterPath { get; set; }
         public string BackdropPath { get; set; }
         public DateTime? ReleaseDate { get; set; }
+        [JsonConverter(typeof(StringEnumConverter))]
+        public RequestStatuses? RequestStatus { get; set; }
+        public string PlexMediaUri { get; set; }
     }
 }

@@ -1,6 +1,6 @@
 ﻿using System;
 
-namespace PlexRequests.ApiRequests.TheMovieDb.Models
+namespace PlexRequests.ApiRequests.Search.Models
 {
     public class EpisodeToAirModel
     {

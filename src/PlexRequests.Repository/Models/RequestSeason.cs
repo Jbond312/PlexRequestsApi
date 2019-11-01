@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using PlexRequests.Repository.Enums;
 
 namespace PlexRequests.Repository.Models
 {
@@ -10,5 +11,6 @@ namespace PlexRequests.Repository.Models
         public List<RequestEpisode> Episodes { get; set; }
         public string ImagePath { get; set; }
         public DateTime? AirDate { get; set; }
+        public RequestStatuses Status { get; set; }
     }
 }
