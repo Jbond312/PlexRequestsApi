@@ -31,6 +31,13 @@ namespace PlexRequests.Repository
             return await cursor.ToListAsync();
         }
 
+        public async Task<List<MovieRequest>> GetManyIn<TField>(Expression<Func<MovieRequest, TField>> filter, List<TField> values)
+        {
+            var fBuilder = Builders<MovieRequest>.Filter.In(filter, values);
+            var cursor = await Collection.FindAsync(fBuilder);
+            return await cursor.ToListAsync();
+        }
+
         public async Task<Paged<MovieRequest>> GetPaged(string title, RequestStatuses? status, Guid? userId, int? page, int? pageSize)
         {
             var query = Collection.AsQueryable();

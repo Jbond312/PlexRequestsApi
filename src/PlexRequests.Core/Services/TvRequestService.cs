@@ -45,10 +45,9 @@ namespace PlexRequests.Core.Services
 
         public async Task<Dictionary<int, TvRequest>> GetRequestsByMovieDbIds(List<int> moviedbIds)
         {
-            //TODO Don't get all of the db entities here. Get the mongo filter working
-            var requests = await _requestRepository.GetMany();
-            var matchingRequests = requests.Where(x => moviedbIds.Contains(int.Parse(x.PrimaryAgent.AgentSourceId))).ToList();
-            return matchingRequests.ToDictionary(x => int.Parse(x.PrimaryAgent.AgentSourceId), x => x);
+            var idsAsSourceIds = moviedbIds.Select(x => x.ToString()).ToList();
+            var requests = await _requestRepository.GetManyIn<string>(x => x.PrimaryAgent.AgentSourceId, idsAsSourceIds);
+            return requests.ToDictionary(x => int.Parse(x.PrimaryAgent.AgentSourceId), x => x);
         }
 
         public async Task Create(TvRequest request)

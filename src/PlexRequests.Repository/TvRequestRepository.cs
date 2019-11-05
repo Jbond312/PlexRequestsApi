@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Linq.Expressions;
 using System.Threading.Tasks;
 using MongoDB.Driver;
@@ -28,6 +29,13 @@ namespace PlexRequests.Repository
         public async Task<List<TvRequest>> GetMany(Expression<Func<TvRequest, bool>> filter = null)
         {
             var cursor = await GetRequestsCursor(filter);
+            return await cursor.ToListAsync();
+        }
+
+        public async Task<List<TvRequest>> GetManyIn<TField>(Expression<Func<TvRequest, TField>> filter, List<TField> values)
+        {
+            var fBuilder = Builders<TvRequest>.Filter.In(filter, values);
+            var cursor = await Collection.FindAsync(fBuilder);
             return await cursor.ToListAsync();
         }
 
