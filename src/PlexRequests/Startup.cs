@@ -117,7 +117,7 @@ namespace PlexRequests
             if (Environment.IsProduction())
             {
                 loggerConfiguration.MinimumLevel.Information();
-                loggerConfiguration.MinimumLevel.Override("Microsoft", LogEventLevel.Error);
+                loggerConfiguration.MinimumLevel.Override("Microsoft", LogEventLevel.Information);
             }
             else
             {

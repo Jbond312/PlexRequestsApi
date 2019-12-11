@@ -15,7 +15,7 @@ namespace PlexRequests.Core.Services
     public class TokenService : ITokenService
     {
         private readonly ILogger<TokenService> _logger;
-        private const int AccessTokenLifespanMinutes = 10;
+        private const int AccessTokenLifespanMinutes = 120;
         private const int RefreshTokenLifespanDays = 1;
 
         private readonly AuthenticationSettings _authSettings;
