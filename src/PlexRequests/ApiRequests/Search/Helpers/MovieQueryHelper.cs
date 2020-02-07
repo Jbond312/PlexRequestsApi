@@ -4,10 +4,8 @@ using System.Threading.Tasks;
 using AutoMapper;
 using PlexRequests.ApiRequests.Search.Models;
 using PlexRequests.Core.Services;
-using PlexRequests.Plex;
 using PlexRequests.Plex.MediaItemRetriever;
 using PlexRequests.Repository.Enums;
-using PlexRequests.TheMovieDb;
 using PlexRequests.TheMovieDb.Models;
 
 namespace PlexRequests.ApiRequests.Search.Helpers
@@ -16,22 +14,16 @@ namespace PlexRequests.ApiRequests.Search.Helpers
     {
         private readonly IMapper _mapper;
         private readonly IMovieRequestService _requestService;
-        private readonly IPlexService _plexService;
-        private readonly ITheMovieDbService _theMovieDbService;
         private readonly IMediaItemRetriever _mediaItemRetriever;
 
         public MovieQueryHelper(
             IMapper mapper,
             IMovieRequestService requestService,
-            IPlexService plexService,
-            ITheMovieDbService theMovieDbService,
             IEnumerable<IMediaItemRetriever> mediaItemRetrievers
             )
         {
             _mapper = mapper;
             _requestService = requestService;
-            _plexService = plexService;
-            _theMovieDbService = theMovieDbService;
             _mediaItemRetriever = mediaItemRetrievers.First(x => x.MediaType == PlexMediaTypes.Movie);
         }
 

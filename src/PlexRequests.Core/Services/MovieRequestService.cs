@@ -42,7 +42,7 @@ namespace PlexRequests.Core.Services
         public async Task<Dictionary<int, MovieRequest>> GetRequestsByMovieDbIds(List<int> moviedbIds)
         {
             var idsAsSourceIds = moviedbIds.Select(x => x.ToString()).ToList();
-            var requests = await _requestRepository.GetManyIn<string>(x => x.PrimaryAgent.AgentSourceId, idsAsSourceIds);
+            var requests = await _requestRepository.GetManyIn(x => x.PrimaryAgent.AgentSourceId, idsAsSourceIds);
             return requests.ToDictionary(x => int.Parse(x.PrimaryAgent.AgentSourceId), x => x);
         }
 

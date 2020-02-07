@@ -4,11 +4,9 @@ using System.Threading.Tasks;
 using AutoMapper;
 using PlexRequests.ApiRequests.Search.Models;
 using PlexRequests.Core.Services;
-using PlexRequests.Plex;
 using PlexRequests.Plex.MediaItemRetriever;
 using PlexRequests.Repository.Enums;
 using PlexRequests.Repository.Models;
-using PlexRequests.TheMovieDb;
 using PlexRequests.TheMovieDb.Models;
 
 namespace PlexRequests.ApiRequests.Search.Helpers
@@ -17,22 +15,16 @@ namespace PlexRequests.ApiRequests.Search.Helpers
     {
         private readonly IMapper _mapper;
         private readonly ITvRequestService _requestService;
-        private readonly IPlexService _plexService;
-        private readonly ITheMovieDbService _theMovieDbService;
         private readonly IMediaItemRetriever _mediaItemRetriever;
 
         public TvQueryHelper(
             IMapper mapper,
             ITvRequestService requestService,
-            IPlexService plexService,
-            ITheMovieDbService theMovieDbService,
             IEnumerable<IMediaItemRetriever> mediaItemRetrievers
         )
         {
             _mapper = mapper;
             _requestService = requestService;
-            _plexService = plexService;
-            _theMovieDbService = theMovieDbService;
             _mediaItemRetriever = mediaItemRetrievers.First(x => x.MediaType == PlexMediaTypes.Show);
         }
 
@@ -87,10 +79,9 @@ namespace PlexRequests.ApiRequests.Search.Helpers
 
             var tvSeasonDetailModel = _mapper.Map<TvSeasonDetailModel>(tvSeasonDetails);
 
-            RequestSeason requestSeason = null;
             if (associatedRequestLookup.TryGetValue(tvId, out var associatedRequest))
             {
-                requestSeason = associatedRequest.Seasons.FirstOrDefault(x => x.Index == tvSeasonDetailModel.Index);
+                var requestSeason = associatedRequest.Seasons.FirstOrDefault(x => x.Index == tvSeasonDetailModel.Index);
 
                 if (requestSeason != null)
                 {
@@ -103,7 +94,7 @@ namespace PlexRequests.ApiRequests.Search.Helpers
 
             if (plexMediaSeason != null)
             {
-                tvSeasonDetailModel.PlexMediaUri = plexMediaSeason?.PlexMediaUri;
+                tvSeasonDetailModel.PlexMediaUri = plexMediaSeason.PlexMediaUri;
 
                 SetEpisodePlexMediaUris(tvSeasonDetailModel, plexMediaSeason);
             }

@@ -7,7 +7,6 @@ using MediatR;
 using PlexRequests.ApiRequests.Requests.Models.Detail;
 using PlexRequests.Core.Helpers;
 using PlexRequests.Core.Services;
-using PlexRequests.Repository.Enums;
 
 namespace PlexRequests.ApiRequests.Requests.Queries
 {

@@ -25,7 +25,6 @@ namespace PlexRequests.Plex.MediaItemRetriever
         {
             var plexMediaItem = await GetPlexMediaItem(AgentTypes.TheMovieDb, theMovieDbId.ToString());
 
-            string plexMediaUri = string.Empty;
             if (plexMediaItem == null)
             {
                 var externalIds = await _theMovieDbService.GetTvExternalIds(theMovieDbId);
