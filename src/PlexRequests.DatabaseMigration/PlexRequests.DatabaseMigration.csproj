@@ -1,0 +1,27 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>netcoreapp3.0</TargetFramework>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <None Remove="Scripts\0_Create_Enum_Tables.sql" />
+    <None Remove="Scripts\0_Create_Enum_Tables_Rollback.sql" />
+    <None Remove="Scripts\1_InitialSchema.sql" />
+    <None Remove="Scripts\1_InitialSchema_Rollback.sql" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <EmbeddedResource Include="Scripts\0_Create_Enum_Tables_Rollback.sql" />
+    <EmbeddedResource Include="Scripts\0_Create_Enum_Tables.sql" />
+    <EmbeddedResource Include="Scripts\1_InitialSchema.sql" />
+    <EmbeddedResource Include="Scripts\1_InitialSchema_Rollback.sql" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="FluentMigrator" Version="3.2.1" />
+    <PackageReference Include="FluentMigrator.Runner" Version="3.2.1" />
+    <PackageReference Include="FluentMigrator.Tools" Version="3.2.1" />
+  </ItemGroup>
+
+</Project>

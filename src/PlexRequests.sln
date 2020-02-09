@@ -1,7 +1,7 @@
 ﻿
 Microsoft Visual Studio Solution File, Format Version 12.00
-# Visual Studio 15
-VisualStudioVersion = 15.0.28307.438
+# Visual Studio Version 16
+VisualStudioVersion = 16.0.29728.190
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "PlexRequests", "PlexRequests\PlexRequests.csproj", "{B907D102-335F-4B81-BD9D-9CF7E0A2F612}"
 EndProject
@@ -21,11 +21,15 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "PlexRequests.Sync", "PlexRe
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "PlexRequests.UnitTests", "PlexRequests.UnitTests\PlexRequests.UnitTests.csproj", "{E0DB8659-82D3-4793-8E29-859BA0CD3969}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "PlexRequests.Sync.UnitTests", "PlexRequests.Sync.UnitTests\PlexRequests.Sync.UnitTests.csproj", "{DD85AFDA-8E96-4E88-98EF-4E00E1B4637A}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "PlexRequests.Sync.UnitTests", "PlexRequests.Sync.UnitTests\PlexRequests.Sync.UnitTests.csproj", "{DD85AFDA-8E96-4E88-98EF-4E00E1B4637A}"
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "UnitTests", "UnitTests", "{505A8AFF-9ACF-41FC-B27A-2D010822163F}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "PlexRequests.Core.UnitTests", "PlexRequests.Core.UnitTests\PlexRequests.Core.UnitTests.csproj", "{16DB3073-1841-4380-866B-A38A75224944}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "PlexRequests.Core.UnitTests", "PlexRequests.Core.UnitTests\PlexRequests.Core.UnitTests.csproj", "{16DB3073-1841-4380-866B-A38A75224944}"
+EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "PlexRequests.DataAccess", "PlexRequests.DataAccess\PlexRequests.DataAccess.csproj", "{693EF2C5-9094-43DA-B331-35AA4452A889}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "PlexRequests.DatabaseMigration", "PlexRequests.DatabaseMigration\PlexRequests.DatabaseMigration.csproj", "{8B75CFFA-C80D-4340-B490-385CEB878A89}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -73,6 +77,14 @@ Global
 		{16DB3073-1841-4380-866B-A38A75224944}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{16DB3073-1841-4380-866B-A38A75224944}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{16DB3073-1841-4380-866B-A38A75224944}.Release|Any CPU.Build.0 = Release|Any CPU
+		{693EF2C5-9094-43DA-B331-35AA4452A889}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{693EF2C5-9094-43DA-B331-35AA4452A889}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{693EF2C5-9094-43DA-B331-35AA4452A889}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{693EF2C5-9094-43DA-B331-35AA4452A889}.Release|Any CPU.Build.0 = Release|Any CPU
+		{8B75CFFA-C80D-4340-B490-385CEB878A89}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{8B75CFFA-C80D-4340-B490-385CEB878A89}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{8B75CFFA-C80D-4340-B490-385CEB878A89}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{8B75CFFA-C80D-4340-B490-385CEB878A89}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
