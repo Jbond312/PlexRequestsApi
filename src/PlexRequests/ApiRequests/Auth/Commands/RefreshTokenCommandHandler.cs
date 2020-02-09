@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.Linq;
 using System.Security.Claims;
 using System.Threading;
@@ -7,7 +8,8 @@ using MediatR;
 using Microsoft.Extensions.Logging;
 using PlexRequests.Core.Exceptions;
 using PlexRequests.Core.Services;
-using PlexRequests.Repository.Models;
+using PlexRequests.DataAccess;
+using PlexRequests.DataAccess.Dtos;
 
 namespace PlexRequests.ApiRequests.Auth.Commands
 {
@@ -15,16 +17,19 @@ namespace PlexRequests.ApiRequests.Auth.Commands
     {
         private readonly ITokenService _tokenService;
         private readonly IUserService _userService;
+        private readonly IUnitOfWork _unitOfWork;
         private readonly ILogger<RefreshTokenCommandHandler> _logger;
 
         public RefreshTokenCommandHandler(
             ITokenService tokenService,
             IUserService userService,
+            IUnitOfWork unitOfWork,
             ILogger<RefreshTokenCommandHandler> logger
             )
         {
             _tokenService = tokenService;
             _userService = userService;
+            _unitOfWork = unitOfWork;
             _logger = logger;
         }
 
@@ -43,7 +48,7 @@ namespace PlexRequests.ApiRequests.Auth.Commands
 
             var user = await ValidateAndReturnUser(userIdClaim);
 
-            if (!IsUserRefreshTokenValid(user.RefreshToken, request.RefreshToken))
+            if (!IsUserRefreshTokenValid(user.UserRefreshTokens, request.RefreshToken))
             {
                 _logger.LogDebug("Refresh token has either expired or does not match the users current refresh token");
                 throw CreateInvalidTokenException();
@@ -51,9 +56,9 @@ namespace PlexRequests.ApiRequests.Auth.Commands
             
             var accessToken = _tokenService.CreateToken(user);
             var refreshToken = _tokenService.CreateRefreshToken();
-            user.RefreshToken = refreshToken;
-            
-            await _userService.UpdateUser(user);
+            user.UserRefreshTokens.Add(refreshToken);
+
+            await _unitOfWork.CommitAsync();
 
             return new UserLoginCommandResult
             {
@@ -62,7 +67,7 @@ namespace PlexRequests.ApiRequests.Auth.Commands
             };
         }
 
-        private async Task<User> ValidateAndReturnUser(Claim userIdClaim)
+        private async Task<UserRow> ValidateAndReturnUser(Claim userIdClaim)
         {
             if (userIdClaim?.Value == null)
             {
@@ -81,14 +86,9 @@ namespace PlexRequests.ApiRequests.Auth.Commands
             return user;
         }
 
-        private static bool IsUserRefreshTokenValid(RefreshToken userRefreshToken, string refreshTokenToValidate)
+        private static bool IsUserRefreshTokenValid(ICollection<UserRefreshTokenRow> userRefreshTokens, string refreshTokenToValidate)
         {
-            if (string.IsNullOrWhiteSpace(userRefreshToken?.Token))
-            {
-                return false;
-            }
-
-            return DateTime.UtcNow <= userRefreshToken.Expires && userRefreshToken.Token.Equals(refreshTokenToValidate, StringComparison.InvariantCultureIgnoreCase);
+            return userRefreshTokens.Any() && userRefreshTokens.Any(x => DateTime.UtcNow <= x.ExpiresUtc && x.Token.Equals(refreshTokenToValidate, StringComparison.InvariantCultureIgnoreCase));
         }
 
         private static PlexRequestException CreateInvalidTokenException()

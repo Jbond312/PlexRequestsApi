@@ -5,6 +5,7 @@ using MediatR;
 using Microsoft.Extensions.Logging;
 using PlexRequests.Core.Exceptions;
 using PlexRequests.Core.Services;
+using PlexRequests.DataAccess;
 using PlexRequests.Plex;
 
 namespace PlexRequests.ApiRequests.Auth.Commands
@@ -13,17 +14,20 @@ namespace PlexRequests.ApiRequests.Auth.Commands
     {
         private readonly IUserService _userService;
         private readonly ITokenService _tokenService;
+        private readonly IUnitOfWork _unitOfWork;
         private readonly IPlexApi _plexApi;
         private readonly ILogger<UserLoginCommandHandler> _logger;
 
         public UserLoginCommandHandler(
             IUserService userService,
             ITokenService tokenService,
+            IUnitOfWork unitOfWork,
             IPlexApi plexApi,
             ILogger<UserLoginCommandHandler> logger)
         {
             _userService = userService;
             _tokenService = tokenService;
+            _unitOfWork = unitOfWork;
             _plexApi = plexApi;
             _logger = logger;
         }
@@ -56,10 +60,10 @@ namespace PlexRequests.ApiRequests.Auth.Commands
             var refreshToken = _tokenService.CreateRefreshToken();
             var accessToken = _tokenService.CreateToken(plexRequestsUser);
 
-            plexRequestsUser.LastLogin = DateTime.UtcNow;
-            plexRequestsUser.RefreshToken = refreshToken;
+            plexRequestsUser.LastLoginUtc = DateTime.UtcNow;
+            plexRequestsUser.UserRefreshTokens.Add(refreshToken);
 
-            await _userService.UpdateUser(plexRequestsUser);
+            await _unitOfWork.CommitAsync();
 
             var result = new UserLoginCommandResult
             {

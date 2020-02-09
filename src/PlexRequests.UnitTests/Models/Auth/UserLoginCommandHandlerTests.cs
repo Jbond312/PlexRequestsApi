@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Linq;
 using System.Net;
 using System.Threading;
 using System.Threading.Tasks;
@@ -10,11 +11,12 @@ using NSubstitute.ReturnsExtensions;
 using PlexRequests.ApiRequests.Auth.Commands;
 using PlexRequests.Core.Exceptions;
 using PlexRequests.Core.Services;
+using PlexRequests.DataAccess;
+using PlexRequests.DataAccess.Dtos;
 using PlexRequests.Plex;
-using PlexRequests.Repository.Models;
+using PlexRequests.Plex.Models;
 using TestStack.BDDfy;
 using Xunit;
-using User = PlexRequests.Plex.Models.User;
 
 namespace PlexRequests.UnitTests.Models.Auth
 {
@@ -23,26 +25,31 @@ namespace PlexRequests.UnitTests.Models.Auth
         private readonly UserLoginCommandHandler _underTest;
         private readonly IUserService _userService;
         private readonly ITokenService _tokenService;
+        private readonly IUnitOfWork _unitOfWork;
         private readonly IPlexApi _plexApi;
 
         private readonly Fixture _fixture;
         private UserLoginCommand _command;
-        private Repository.Models.User _matchingDbUser;
-        private Repository.Models.User _updatedUser;
+        private UserRow _matchingDbUser;
         private string _createdToken;
-        private RefreshToken _createdRefreshToken;
+        private UserRefreshTokenRow _createdRefreshToken;
         private Func<Task<UserLoginCommandResult>> _commandAction;
 
         public UserLoginCommandHandlerTests()
         {
             _userService = Substitute.For<IUserService>();
             _tokenService = Substitute.For<ITokenService>();
+            _unitOfWork = Substitute.For<IUnitOfWork>();
             _plexApi = Substitute.For<IPlexApi>();
             var logger = Substitute.For<ILogger<UserLoginCommandHandler>>();
 
-            _underTest = new UserLoginCommandHandler(_userService, _tokenService, _plexApi, logger);
+            _underTest = new UserLoginCommandHandler(_userService, _tokenService, _unitOfWork, _plexApi, logger);
 
             _fixture = new Fixture();
+            _fixture.Behaviors.OfType<ThrowingRecursionBehavior>()
+                .ToList()
+                .ForEach(b => _fixture.Behaviors.Remove(b));
+            _fixture.Behaviors.Add(new OmitOnRecursionBehavior(1));
         }
 
         [Fact]
@@ -83,10 +90,10 @@ namespace PlexRequests.UnitTests.Models.Auth
             this.Given(x => x.GivenACommand())
                 .Given(x => x.GivenValidPlexCredentials())
                 .Given(x => x.GivenAMatchingUser(false))
-                .Given(x => x.GivenAUserIsUpdated())
                 .Given(x => x.GivenARefreshTokenIsCreated())
                 .When(x => x.WhenACommandActionIsCreated())
                 .Then(x => x.ThenUserIsUpdatedCorrectly())
+                .Then(x => x.ThenChangesAreCommitted())
                 .BDDfy();
         }
 
@@ -137,28 +144,24 @@ namespace PlexRequests.UnitTests.Models.Auth
 
         private void GivenAMatchingUser(bool isDisabled)
         {
-            _matchingDbUser = _fixture.Build<Repository.Models.User>()
+            _matchingDbUser = _fixture.Build<UserRow>()
                                       .With(x => x.IsDisabled, isDisabled)
                                       .Create();
 
             _userService.GetUserFromPlexId(Arg.Any<int>()).Returns(_matchingDbUser);
         }
 
-        private void GivenAUserIsUpdated()
-        {
-            _userService.UpdateUser(Arg.Do<Repository.Models.User>(x => _updatedUser = x));
-        }
 
         private void GivenATokenIsCreated()
         {
             _createdToken = _fixture.Create<string>();
 
-            _tokenService.CreateToken(Arg.Any<Repository.Models.User>()).Returns(_createdToken);
+            _tokenService.CreateToken(Arg.Any<UserRow>()).Returns(_createdToken);
         }
 
         private void GivenARefreshTokenIsCreated()
         {
-            _createdRefreshToken = _fixture.Create<RefreshToken>();
+            _createdRefreshToken = _fixture.Create<UserRefreshTokenRow>();
 
             _tokenService.CreateRefreshToken().Returns(_createdRefreshToken);
         }
@@ -180,13 +183,13 @@ namespace PlexRequests.UnitTests.Models.Auth
         {
             _commandAction.Should().NotThrow();
 
-            _updatedUser.Should().NotBeNull();
-
-            _updatedUser.Should().Be(_matchingDbUser);
-
+            _matchingDbUser.Should().NotBeNull();
+            
             var now = DateTime.UtcNow;
 
-            var loginDiff = (_updatedUser.LastLogin - now).Milliseconds;
+            _matchingDbUser.LastLoginUtc.Should().NotBeNull();
+
+            var loginDiff = (_matchingDbUser.LastLoginUtc.Value - now).Milliseconds;
 
             loginDiff.Should().BeLessOrEqualTo(500);
         }
@@ -205,6 +208,11 @@ namespace PlexRequests.UnitTests.Models.Auth
 
             response.Should().NotBeNull();
             response.RefreshToken.Should().Be(_createdRefreshToken.Token);
+        }
+
+        private void ThenChangesAreCommitted()
+        {
+            _unitOfWork.Received(1).CommitAsync();
         }
     }
 }

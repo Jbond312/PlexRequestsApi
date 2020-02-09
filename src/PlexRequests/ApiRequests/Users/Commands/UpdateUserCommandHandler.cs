@@ -1,22 +1,27 @@
-﻿using System.Net;
+﻿using System.Linq;
+using System.Net;
 using System.Threading;
 using System.Threading.Tasks;
 using MediatR;
 using PlexRequests.Core.Exceptions;
 using PlexRequests.Core.Services;
-using PlexRequests.Repository.Models;
+using PlexRequests.DataAccess;
+using PlexRequests.DataAccess.Dtos;
 
 namespace PlexRequests.ApiRequests.Users.Commands
 {
     public class UpdateUserCommandHandler : AsyncRequestHandler<UpdateUserCommand>
     {
         private readonly IUserService _userService;
+        private readonly IUnitOfWork _unitOfWork;
 
         public UpdateUserCommandHandler(
-            IUserService userService
+            IUserService userService,
+            IUnitOfWork unitOfWork
             )
         {
             _userService = userService;
+            _unitOfWork = unitOfWork;
         }
 
         protected override async Task Handle(UpdateUserCommand command, CancellationToken cancellationToken)
@@ -26,15 +31,18 @@ namespace PlexRequests.ApiRequests.Users.Commands
             await UpdateUser(command, user);
         }
 
-        private async Task UpdateUser(UpdateUserCommand command, User user)
+        private async Task UpdateUser(UpdateUserCommand command, UserRow user)
         {
             user.IsDisabled = command.IsDisabled;
-            user.Roles = command.Roles;
+            user.UserRoles = command.Roles.Select(newRole => new UserRoleRow
+            {
+                Role = newRole
+            }).ToList();
 
-            await _userService.UpdateUser(user);
+            await _unitOfWork.CommitAsync();
         }
 
-        private async Task<User> ValidateAndReturnUser(UpdateUserCommand command)
+        private async Task<UserRow> ValidateAndReturnUser(UpdateUserCommand command)
         {
             var user = await _userService.GetUser(command.Id);
 

@@ -1,8 +1,8 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Threading.Tasks;
-using PlexRequests.Repository;
-using PlexRequests.Repository.Models;
+using PlexRequests.DataAccess.Dtos;
+using PlexRequests.DataAccess.Repositories;
 
 namespace PlexRequests.Core.Services
 {
@@ -15,31 +15,32 @@ namespace PlexRequests.Core.Services
             _userRepository = userRepository;
         }
 
-        public async Task<List<User>> GetAllUsers(bool includeDisabled = false, bool includeAdmin = false)
+        public async Task<IEnumerable<UserRow>> GetAllUsers(bool includeDisabled = false, bool includeAdmin = false)
         {
+
             return await _userRepository.GetAllUsers(includeDisabled, includeAdmin);
         }
 
-        public async Task<User> GetUser(Guid id)
+        public async Task<UserRow> GetUser(int userId)
         {
-            return await _userRepository.GetUser(id);
+            return await _userRepository.GetUser(userId);
         }
 
-        public async Task<User> GetUserFromPlexId(int plexAccountId)
+        public async Task<UserRow> GetUser(Guid identifier)
         {
-            return await _userRepository.GetUser(plexAccountId);
+            return await _userRepository.GetUser(identifier);
         }
 
-        public async Task CreateUser(User user)
+        public async Task<UserRow> GetUserFromPlexId(int plexAccountId)
         {
-            await _userRepository.CreateUser(user);
+            return await _userRepository.GetUserFromPlexId(plexAccountId);
         }
-
-        public async Task<User> UpdateUser(User user)
+        
+        public void AddUser(UserRow userRow)
         {
-            return await _userRepository.UpdateUser(user);
+            _userRepository.Add(userRow);
         }
-
+        
         public async Task<bool> UserExists(string email)
         {
             var user = await _userRepository.GetUser(email);

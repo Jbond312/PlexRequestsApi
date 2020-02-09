@@ -5,6 +5,8 @@ using System.Text;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Http;
+using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.IdentityModel.Tokens;
 using PlexRequests.Api;
@@ -12,6 +14,7 @@ using PlexRequests.ApiRequests.Search.Helpers;
 using PlexRequests.Core.Helpers;
 using PlexRequests.Core.Services;
 using PlexRequests.Core.Settings;
+using PlexRequests.DataAccess;
 using PlexRequests.Plex;
 using PlexRequests.Plex.MediaItemRetriever;
 using PlexRequests.Repository;
@@ -23,10 +26,22 @@ namespace PlexRequests
 {
     public static class ServiceCollectionExtensions
     {
-        public static void RegisterDependencies(this IServiceCollection services, DatabaseSettings databaseSettings)
+        public static void RegisterDependencies(this IServiceCollection services, DatabaseSettings databaseSettings, IConfiguration configuration)
         {
             RegisterServices(services);
             RegisterRepositories(services, databaseSettings);
+            RegisterDbContext(services, configuration);
+        }
+
+        private static void RegisterDbContext(IServiceCollection services, IConfiguration configuration)
+        {
+            services.AddTransient<DataAccess.Repositories.IUserRepository, DataAccess.Repositories.UserRepository>();
+            services.AddDbContext<PlexRequestsDataContext>(
+                options =>
+                {
+                    options.UseSqlServer(configuration.GetConnectionString("PlexRequestsDataContext"));
+                });
+            services.AddTransient<IUnitOfWork, UnitOfWork>();
         }
 
         public static void ConfigureJwtAuthentication(this IServiceCollection services, AuthenticationSettings authSettings, bool isProduction)

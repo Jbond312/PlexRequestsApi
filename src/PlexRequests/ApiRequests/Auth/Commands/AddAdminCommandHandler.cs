@@ -10,10 +10,11 @@ using PlexRequests.Core.Auth;
 using PlexRequests.Core.Exceptions;
 using PlexRequests.Core.Services;
 using PlexRequests.Core.Settings;
+using PlexRequests.DataAccess;
+using PlexRequests.DataAccess.Dtos;
 using PlexRequests.Plex;
 using PlexRequests.Plex.Models;
 using PlexRequests.Repository.Models;
-using User = PlexRequests.Repository.Models.User;
 
 namespace PlexRequests.ApiRequests.Auth.Commands
 {
@@ -22,6 +23,7 @@ namespace PlexRequests.ApiRequests.Auth.Commands
         private readonly IUserService _userService;
         private readonly IPlexService _plexService;
         private readonly ITokenService _tokenService;
+        private readonly IUnitOfWork _unitOfWork;
         private readonly IPlexApi _plexApi;
         private readonly PlexSettings _plexSettings;
         private readonly ILogger<AddAdminCommandHandler> _logger;
@@ -30,6 +32,7 @@ namespace PlexRequests.ApiRequests.Auth.Commands
             IUserService userService,
             IPlexService plexService,
             ITokenService tokenService,
+            IUnitOfWork unitOfWork,
             IPlexApi plexApi,
             IOptions<PlexSettings> plexSettings,
             ILogger<AddAdminCommandHandler> logger
@@ -38,6 +41,7 @@ namespace PlexRequests.ApiRequests.Auth.Commands
             _userService = userService;
             _plexService = plexService;
             _tokenService = tokenService;
+            _unitOfWork = unitOfWork;
             _plexApi = plexApi;
             _plexSettings = plexSettings.Value;
             _logger = logger;
@@ -63,7 +67,7 @@ namespace PlexRequests.ApiRequests.Auth.Commands
 
             var refreshToken = _tokenService.CreateRefreshToken();
             
-            var adminUser = await CreateAdminUser(plexUser, refreshToken);
+            var adminUser = AddAdminUser(plexUser, refreshToken);
 
             await CreateAdminServer(plexUser);
 
@@ -72,6 +76,10 @@ namespace PlexRequests.ApiRequests.Auth.Commands
                 AccessToken = _tokenService.CreateToken(adminUser),
                 RefreshToken = refreshToken.Token
             };
+
+            adminUser.LastLoginUtc = DateTime.UtcNow;
+
+            await _unitOfWork.CommitAsync();
 
             return result;
         }
@@ -93,20 +101,35 @@ namespace PlexRequests.ApiRequests.Auth.Commands
             }
         }
 
-        private async Task<User> CreateAdminUser(PlexRequests.Plex.Models.User plexUser, RefreshToken refreshToken)
+        private UserRow AddAdminUser(PlexRequests.Plex.Models.User plexUser, UserRefreshTokenRow refreshToken)
         {
-            var adminUser = new User
+            var adminUser = new UserRow
             {
+                Identifier = Guid.NewGuid(),
                 Username = plexUser.Username,
                 Email = plexUser.Email,
                 PlexAccountId = plexUser.Id,
                 IsAdmin = true,
-                Roles = new List<string> { PlexRequestRoles.Admin, PlexRequestRoles.User, PlexRequestRoles.Commenter },
-                RefreshToken = refreshToken
+                UserRoles = new List<UserRoleRow>
+                {
+                    new UserRoleRow
+                    {
+                        Role = PlexRequestRoles.Admin
+                    },
+                    new UserRoleRow
+                    {
+                        Role = PlexRequestRoles.User
+                    },
+                    new UserRoleRow
+                    {
+                        Role = PlexRequestRoles.Commenter
+                    }
+                },
+                UserRefreshTokens = new List<UserRefreshTokenRow> {refreshToken}
             };
 
             _logger.LogInformation("Creating Admin account");
-            await _userService.CreateUser(adminUser);
+            _userService.AddUser(adminUser);
             return adminUser;
         }
 

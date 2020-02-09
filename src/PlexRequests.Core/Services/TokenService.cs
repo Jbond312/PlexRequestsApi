@@ -8,7 +8,7 @@ using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using Microsoft.IdentityModel.Tokens;
 using PlexRequests.Core.Settings;
-using PlexRequests.Repository.Models;
+using PlexRequests.DataAccess.Dtos;
 
 namespace PlexRequests.Core.Services
 {
@@ -28,20 +28,20 @@ namespace PlexRequests.Core.Services
             _authSettings = authSettings.Value;
         }
 
-        public string CreateToken(User user)
+        public string CreateToken(UserRow user)
         {
             var tokenHandler = new JwtSecurityTokenHandler();
             var secretKey = Encoding.ASCII.GetBytes(_authSettings.SecretKey);
             var claims = new List<Claim>
             {
                 new Claim(ClaimTypes.Name, user.Username),
-                new Claim(JwtRegisteredClaimNames.Sub, user.Id.ToString()),
+                new Claim(JwtRegisteredClaimNames.Sub, user.Identifier.ToString()),
                 new Claim(JwtRegisteredClaimNames.Jti, Guid.NewGuid().ToString("N"))
             };
 
-            foreach (var role in user.Roles)
+            foreach (var userRole in user.UserRoles)
             {
-                claims.Add(new Claim(ClaimTypes.Role, role));
+                claims.Add(new Claim(ClaimTypes.Role, userRole.Role));
             }
 
             var expiry = DateTime.UtcNow.AddMinutes(AccessTokenLifespanMinutes);
@@ -56,21 +56,23 @@ namespace PlexRequests.Core.Services
                 Issuer = "PlexRequests"
             };
 
-            user.InvalidateTokensBefore = expiry;
+            user.InvalidateTokensBeforeUtc = expiry;
 
             var token = tokenHandler.CreateToken(tokenDescriptor);
             return tokenHandler.WriteToken(token);
         }
 
-        public RefreshToken CreateRefreshToken()
+        public UserRefreshTokenRow CreateRefreshToken()
         {
             var randomNumber = new byte[32];
-            using (var rng = RandomNumberGenerator.Create())
+            using var rng = RandomNumberGenerator.Create();
+            rng.GetBytes(randomNumber);
+            var refreshToken = Convert.ToBase64String(randomNumber);
+            return new UserRefreshTokenRow
             {
-                rng.GetBytes(randomNumber);
-                var refreshToken = Convert.ToBase64String(randomNumber);
-                return new RefreshToken(refreshToken, DateTime.UtcNow.AddDays(RefreshTokenLifespanDays));
-            }
+                Token = refreshToken,
+                ExpiresUtc = DateTime.UtcNow.AddDays(RefreshTokenLifespanDays)
+            };
         }
 
         public ClaimsPrincipal GetPrincipalFromAccessToken(string accessToken)

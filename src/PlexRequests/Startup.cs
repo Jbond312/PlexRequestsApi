@@ -102,7 +102,7 @@ namespace PlexRequests
             var authSettings = Configuration.GetSection(nameof(AuthenticationSettings)).Get<AuthenticationSettings>();
             var databaseSettings = Configuration.GetSection(nameof(DatabaseSettings)).Get<DatabaseSettings>();
 
-            services.RegisterDependencies(databaseSettings);
+            services.RegisterDependencies(databaseSettings, Configuration);
             services.ConfigureJwtAuthentication(authSettings, Environment.IsProduction());
 
             MongoDefaults.AssignIdOnInsert = true;
@@ -142,8 +142,6 @@ namespace PlexRequests
 
             loggerFactory.AddSerilog();
 
-            PrimeSettings(app, Configuration);
-
             app.UseMiddleware<ExceptionMiddleware>();
 
             app.UseSwagger();
@@ -159,7 +157,7 @@ namespace PlexRequests
 
             app.UseEndpoints(routes => { routes.MapControllerRoute("default", "api/{controller}/{action}"); });
         }
-
+        
         private void PrimeSettings(IApplicationBuilder app, IConfiguration configuration)
         {
             var logger = app.ApplicationServices.GetService<ILogger<Startup>>();
