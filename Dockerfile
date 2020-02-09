@@ -10,6 +10,8 @@ COPY src/PlexRequests.Api/*.csproj ./PlexRequests.Api/
 COPY src/PlexRequests.Plex/*.csproj ./PlexRequests.Plex/
 COPY src/PlexRequests.TheMovieDb/*.csproj ./PlexRequests.TheMovieDb/
 COPY src/PlexRequests.Sync/*.csproj ./PlexRequests.Sync/
+COPY src/PlexRequests.DataAccess/*.csproj ./PlexRequests.DataAccess/
+COPY src/PlexRequests.DatabaseMigration/*.csproj ./PlexRequests.DatabaseMigration/
 
 COPY src/PlexRequests.UnitTests/*.csproj ./PlexRequests.UnitTests/
 COPY src/PlexRequests.Sync.UnitTests/*.csproj ./PlexRequests.Sync.UnitTests/
