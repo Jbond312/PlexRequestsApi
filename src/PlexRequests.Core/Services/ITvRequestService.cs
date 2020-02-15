@@ -12,7 +12,7 @@ namespace PlexRequests.Core.Services
         Task<TvRequestRow> GetRequestById(int id);
         Task<Paged<TvRequestRow>> GetPaged(string title, RequestStatuses? status, int? userId, int? page,
             int? pageSize);
-        Task<List<TvRequestRow>> GetExistingRequests(AgentTypes agentType, string agentSourceId);
+        Task<TvRequestRow> GetExistingRequest(AgentTypes agentType, string agentSourceId);
         Task<List<TvRequestRow>> GetIncompleteRequests();
         Task<Dictionary<int, TvRequestRow>> GetRequestsByMovieDbIds(List<int> moviedbIds);
         Task Add(TvRequestRow request);

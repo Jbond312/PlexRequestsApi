@@ -7,6 +7,7 @@ using System.Threading.Tasks;
 using AutoFixture;
 using FluentAssertions;
 using MediatR;
+using Microsoft.Extensions.Logging;
 using NSubstitute;
 using NSubstitute.ReturnsExtensions;
 using PlexRequests.ApiRequests.Requests.Commands;
@@ -32,15 +33,16 @@ namespace PlexRequests.UnitTests.Models.Requests
         private readonly Fixture _fixture;
         private Func<Task> _commandAction;
         private TvRequestRow _request;
-        private int _requestUserId;
+        private readonly int _requestUserId;
 
         public DeleteTvRequestCommandHandlerTests()
         {
             _requestService = Substitute.For<ITvRequestService>();
             _unitOfWork = Substitute.For<IUnitOfWork>();
             _claimsUserAccessor = Substitute.For<IClaimsPrincipalAccessor>();
+            var logger = Substitute.For<ILogger<DeleteTvRequestCommandHandler>>();
             
-            _underTest = new DeleteTvRequestCommandHandler(_requestService, _unitOfWork, _claimsUserAccessor);
+            _underTest = new DeleteTvRequestCommandHandler(_requestService, _unitOfWork, _claimsUserAccessor, logger);
             
             _fixture = new Fixture();
             _fixture.Behaviors.OfType<ThrowingRecursionBehavior>().ToList()
@@ -57,26 +59,6 @@ namespace PlexRequests.UnitTests.Models.Requests
                 .Given(x => x.GivenNoRequestIsFound())
                 .When(x => x.WhenCommandActionIsCreated())
                 .Then(x => x.ThenErrorIsThrown("Invalid request id", "A request for the given id was not found.", HttpStatusCode.NotFound))
-                .BDDfy();
-        }
-
-        [Fact]
-        private void Throws_Error_When_Valid_Request_But_User_Is_Not_Requesting_User()
-        {
-            this.Given(x => x.GivenACommand())
-                .Given(x => x.GivenARequestIsFound())
-                .Given(x=> x.GivenRequestUserIsNotCurrentUser())
-                .When(x => x.WhenCommandActionIsCreated())
-                .Then(x => x.ThenErrorIsThrown("Unable to delete request", "Forbidden access to protected resource.", HttpStatusCode.Forbidden))
-                .BDDfy();
-        }
-
-        [Fact]
-        private void Changes_Are_Not_Committed_When_User_Has_Not_Requested_Show()
-        {
-            this.Given(x => x.GivenACommand())
-                .Given(x => x.GivenARequestIsFound())
-                .When(x => x.WhenCommandActionIsCreated())
                 .Then(x => x.ThenChangesAreNotCommitted())
                 .BDDfy();
         }
@@ -89,6 +71,7 @@ namespace PlexRequests.UnitTests.Models.Requests
                 .Given(x => x.GivenUserHasRequestedTvShow())
                 .Given(x => x.GivenRequestUserIsCurrentUser())
                 .When(x => x.WhenCommandActionIsCreated())
+                .Then(x => x.ThenCommandIsSuccessful())
                 .Then(x => x.ThenEntireRequestIsDeleted())
                 .Then(x => x.ThenChangesAreCommitted())
                 .BDDfy();
@@ -99,9 +82,11 @@ namespace PlexRequests.UnitTests.Models.Requests
         {
             this.Given(x => x.GivenACommand())
                 .Given(x => x.GivenARequestIsFound())
-                .Given(x => x.GivenUserHasRequestedTvShow())
+                .Given(x => x.GivenMultipleUsersHaveRequestedTvShow())
                 .Given(x => x.GivenRequestUserIsCurrentUser())
                 .When(x => x.WhenCommandActionIsCreated())
+                .Then(x => x.ThenCommandIsSuccessful())
+                .Then(x => x.ThenEntireRequestIsNotDeleted())
                 .Then(x => x.ThenChangesAreCommitted())
                 .BDDfy();
         }
@@ -143,12 +128,7 @@ namespace PlexRequests.UnitTests.Models.Requests
 
             _request.TvRequestUsers.Add(requestUser);
         }
-
-        private void GivenRequestUserIsNotCurrentUser()
-        {
-            _claimsUserAccessor.UserId.Returns(_fixture.Create<int>());
-        }
-
+        
         private void GivenRequestUserIsCurrentUser()
         {
             _claimsUserAccessor.UserId.Returns(_requestUserId);
@@ -167,11 +147,19 @@ namespace PlexRequests.UnitTests.Models.Requests
                           .Where(x => x.StatusCode == statusCode);
         }
 
-        private void ThenEntireRequestIsDeleted()
+        private void ThenCommandIsSuccessful()
         {
             _commandAction.Should().NotThrow();
-            
+        }
+
+        private void ThenEntireRequestIsDeleted()
+        {
             _requestService.Received().DeleteRequest(Arg.Is(_command.Id));
+        }
+
+        private void ThenEntireRequestIsNotDeleted()
+        {
+            _requestService.DidNotReceive().DeleteRequest(Arg.Is(_command.Id));
         }
 
         private void ThenChangesAreCommitted()

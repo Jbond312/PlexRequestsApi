@@ -10,8 +10,7 @@
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\PlexRequests.DataAccess\PlexRequests.DataAccess.csproj" />
-    <ProjectReference Include="..\PlexRequests.Models\PlexRequests.Models.csproj" />
-    <ProjectReference Include="..\PlexRequests.Repository\PlexRequests.Repository.csproj" />  
+    <ProjectReference Include="..\PlexRequests.Models\PlexRequests.Models.csproj" />  
   </ItemGroup>
    <ItemGroup>
     <FrameworkReference Include="Microsoft.AspNetCore.App" />

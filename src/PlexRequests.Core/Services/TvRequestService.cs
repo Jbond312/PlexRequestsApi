@@ -33,9 +33,9 @@ namespace PlexRequests.Core.Services
             return await _requestRepository.GetPaged(title, status, userId, page, pageSize);
         }
 
-        public async Task<List<TvRequestRow>> GetExistingRequests(AgentTypes agentType, string agentSourceId)
+        public async Task<TvRequestRow> GetExistingRequest(AgentTypes agentType, string agentSourceId)
         {
-            return await _requestRepository.GetMany(x => x.PrimaryAgent.AgentType == agentType && x.PrimaryAgent.AgentSourceId == agentSourceId);
+            return await _requestRepository.GetOne(x => x.PrimaryAgent.AgentType == agentType && x.PrimaryAgent.AgentSourceId == agentSourceId);
         }
 
         public async Task<List<TvRequestRow>> GetIncompleteRequests()

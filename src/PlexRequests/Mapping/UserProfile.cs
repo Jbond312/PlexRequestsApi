@@ -1,6 +1,6 @@
 ﻿using AutoMapper;
 using PlexRequests.ApiRequests.Users.Models.Detail;
-using PlexRequests.Repository.Models;
+using PlexRequests.Models;
 
 namespace PlexRequests.Mapping
 {

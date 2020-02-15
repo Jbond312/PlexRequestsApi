@@ -3,6 +3,7 @@ using System.Net;
 using System.Threading;
 using System.Threading.Tasks;
 using MediatR;
+using Microsoft.Extensions.Logging;
 using PlexRequests.Core.Exceptions;
 using PlexRequests.Core.Helpers;
 using PlexRequests.Core.Services;
@@ -18,16 +19,19 @@ namespace PlexRequests.ApiRequests.Requests.Commands
         private readonly ITvRequestService _requestService;
         private readonly IUnitOfWork _unitOfWork;
         private readonly IClaimsPrincipalAccessor _claimsUserAccessor;
+        private readonly ILogger<DeleteTvRequestCommandHandler> _logger;
 
         public DeleteTvRequestCommandHandler(
             ITvRequestService requestService,
             IUnitOfWork unitOfWork,
-            IClaimsPrincipalAccessor claimsUserAccessor
+            IClaimsPrincipalAccessor claimsUserAccessor,
+            ILogger<DeleteTvRequestCommandHandler> logger
             )
         {
             _requestService = requestService;
             _unitOfWork = unitOfWork;
             _claimsUserAccessor = claimsUserAccessor;
+            _logger = logger;
         }
         
         protected override async Task Handle(DeleteTvRequestCommand command, CancellationToken cancellationToken)
@@ -36,30 +40,22 @@ namespace PlexRequests.ApiRequests.Requests.Commands
 
             var requestUser = request.TvRequestUsers.FirstOrDefault(x => x.UserId == _claimsUserAccessor.UserId);
 
-            if(requestUser == null)
+            if (requestUser != null)
             {
-                return;
+                request.TvRequestUsers.Remove(requestUser);
             }
-
-            ValidateUserCanDeleteRequest(requestUser);
-
-            request.TvRequestUsers.Remove(requestUser);
+            else
+            {
+                _logger.LogDebug($"TVRequest for user [{_claimsUserAccessor.UserId}] was not deleted as no matching requests were found");
+            }
 
             if(!request.TvRequestUsers.Any())
             {
+                _logger.LogDebug("Deleting entire TV request as no requests remain for any users");
                 await _requestService.DeleteRequest(command.Id);
             }
 
             await _unitOfWork.CommitAsync();
-        }
-
-        private void ValidateUserCanDeleteRequest(TvRequestUserRow tvRequestUser)
-        {
-            if (!tvRequestUser.UserId.Equals(_claimsUserAccessor.UserId))
-            {
-                throw new PlexRequestException("Unable to delete request", "Forbidden access to protected resource.",
-                    HttpStatusCode.Forbidden);
-            }
         }
 
         private async Task<TvRequestRow> ValidateRequestExists(DeleteTvRequestCommand command)

@@ -27,7 +27,7 @@ namespace PlexRequests.Core.UnitTests.Services.AutoCompletion
         private Dictionary<MediaAgent, PlexMediaItemRow> _agentsForPlexItems;
         private List<TvRequestRow> _tvRequests;
         private Func<Task> _commandAction;
-        private TvRequestRow _updatedRequest;
+        private TvRequestRow _request;
 
         public TvAutoCompletionTests()
         {
@@ -154,17 +154,17 @@ namespace PlexRequests.Core.UnitTests.Services.AutoCompletion
         {
             var plexItem = _agentsForPlexItems.First().Value;
 
-            var request = _fixture.Create<TvRequestRow>();
-            request.TvRequestAgents.Add(GetMatchingAgent());
-            request.TvRequestSeasons = new List<TvRequestSeasonRow>();
-            request.Track = istracked;
+            _request = _fixture.Create<TvRequestRow>();
+            _request.TvRequestAgents.Add(GetMatchingAgent());
+            _request.TvRequestSeasons = new List<TvRequestSeasonRow>();
+            _request.Track = istracked;
 
             if (!istracked)
             {
-                MirrorPlexSeasons(plexItem, request, false, false);
+                MirrorPlexSeasons(plexItem, _request, false, false);
             }
 
-            _tvRequests = new List<TvRequestRow> { request };
+            _tvRequests = new List<TvRequestRow> { _request };
 
             _requestService.GetIncompleteRequests().Returns(_tvRequests);
         }
@@ -181,13 +181,13 @@ namespace PlexRequests.Core.UnitTests.Services.AutoCompletion
 
         private void ThenUpdatedRequestShouldBeCorrect(RequestStatuses expectedStatus)
         {
-            _updatedRequest.Should().NotBeNull();
-            _updatedRequest.RequestStatus.Should().Be(expectedStatus);
+            _request.Should().NotBeNull();
+            _request.RequestStatus.Should().Be(expectedStatus);
         }
 
         private void ThenAggregateStatusIsCorrect()
         {
-            _updatedRequest.Should().NotBeNull();
+            _request.Should().NotBeNull();
             _requestService.Received().SetAggregatedStatus(Arg.Any<TvRequestRow>());
         }
 

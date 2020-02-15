@@ -9,14 +9,12 @@ using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
 using Microsoft.OpenApi.Models;
-using MongoDB.Driver;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Converters;
 using Newtonsoft.Json.Serialization;
 using PlexRequests.Core.Settings;
 using PlexRequests.Filters;
 using PlexRequests.Middleware;
-using PlexRequests.Repository.Models;
 using Serilog;
 using Serilog.Events;
 
@@ -98,14 +96,13 @@ namespace PlexRequests
             services.Configure<TheMovieDbSettings>(Configuration.GetSection(nameof(TheMovieDbSettings)));
             services.Configure<PlexSettings>(Configuration.GetSection(nameof(PlexSettings)));
             services.Configure<DatabaseSettings>(Configuration.GetSection(nameof(DatabaseSettings)));
+            services.Configure<PlexRequestsSettings>(Configuration.GetSection(nameof(PlexRequestsSettings)));
 
             var authSettings = Configuration.GetSection(nameof(AuthenticationSettings)).Get<AuthenticationSettings>();
             var databaseSettings = Configuration.GetSection(nameof(DatabaseSettings)).Get<DatabaseSettings>();
 
             services.RegisterDependencies(databaseSettings, Configuration);
             services.ConfigureJwtAuthentication(authSettings, Environment.IsProduction());
-
-            MongoDefaults.AssignIdOnInsert = true;
         }
 
         private void ConfigureLogging()
@@ -156,18 +153,6 @@ namespace PlexRequests
             app.UseAuthorization();
 
             app.UseEndpoints(routes => { routes.MapControllerRoute("default", "api/{controller}/{action}"); });
-        }
-        
-        private void PrimeSettings(IApplicationBuilder app, IConfiguration configuration)
-        {
-            var logger = app.ApplicationServices.GetService<ILogger<Startup>>();
-            var settingsService = app.ApplicationServices.GetService<ISettingsService>();
-
-            var settings = configuration.GetSection(nameof(Settings)).Get<Settings>();
-
-            logger.LogDebug($"Persisting settings to database. Overwrite: {settings.OverwriteSettings}");
-
-            settingsService.PrimeSettings(settings).GetAwaiter().GetResult();
         }
     }
 }

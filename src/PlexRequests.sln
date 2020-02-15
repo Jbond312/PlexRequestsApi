@@ -5,8 +5,6 @@ VisualStudioVersion = 16.0.29728.190
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "PlexRequests", "PlexRequests\PlexRequests.csproj", "{B907D102-335F-4B81-BD9D-9CF7E0A2F612}"
 EndProject
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "PlexRequests.Repository", "PlexRequests.Repository\PlexRequests.Repository.csproj", "{4B560905-8907-4750-B3AA-B803D731EB6B}"
-EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "PlexRequests.Core", "PlexRequests.Core\PlexRequests.Core.csproj", "{E7F44CF6-C8D3-4BB2-969D-AE192C6903B9}"
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "PlexRequests.Plex", "PlexRequests.Plex\PlexRequests.Plex.csproj", "{9AA2E6CD-09BA-4525-A706-14BFA7AD07A7}"
@@ -31,7 +29,7 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "PlexRequests.DataAccess", "
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "PlexRequests.DatabaseMigration", "PlexRequests.DatabaseMigration\PlexRequests.DatabaseMigration.csproj", "{8B75CFFA-C80D-4340-B490-385CEB878A89}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "PlexRequests.Models", "PlexRequests.Models\PlexRequests.Models.csproj", "{C6C7BA34-2BD2-49D3-A849-F2839FE1AFC9}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "PlexRequests.Models", "PlexRequests.Models\PlexRequests.Models.csproj", "{C6C7BA34-2BD2-49D3-A849-F2839FE1AFC9}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -43,10 +41,6 @@ Global
 		{B907D102-335F-4B81-BD9D-9CF7E0A2F612}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{B907D102-335F-4B81-BD9D-9CF7E0A2F612}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{B907D102-335F-4B81-BD9D-9CF7E0A2F612}.Release|Any CPU.Build.0 = Release|Any CPU
-		{4B560905-8907-4750-B3AA-B803D731EB6B}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{4B560905-8907-4750-B3AA-B803D731EB6B}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{4B560905-8907-4750-B3AA-B803D731EB6B}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{4B560905-8907-4750-B3AA-B803D731EB6B}.Release|Any CPU.Build.0 = Release|Any CPU
 		{E7F44CF6-C8D3-4BB2-969D-AE192C6903B9}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
 		{E7F44CF6-C8D3-4BB2-969D-AE192C6903B9}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{E7F44CF6-C8D3-4BB2-969D-AE192C6903B9}.Release|Any CPU.ActiveCfg = Release|Any CPU
