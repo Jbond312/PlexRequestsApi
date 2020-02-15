@@ -15,9 +15,10 @@ using PlexRequests.Core.Auth;
 using PlexRequests.Core.Exceptions;
 using PlexRequests.Core.Services;
 using PlexRequests.Core.Settings;
+using PlexRequests.DataAccess;
+using PlexRequests.DataAccess.Dtos;
 using PlexRequests.Plex;
 using PlexRequests.Plex.Models;
-using PlexRequests.Repository.Models;
 using TestStack.BDDfy;
 using Xunit;
 using User = PlexRequests.Plex.Models.User;
@@ -32,6 +33,7 @@ namespace PlexRequests.UnitTests.Models.Auth
         private readonly IUserService _userService;
         private readonly ITokenService _tokenService;
         private readonly IPlexService _plexService;
+        private readonly IUnitOfWork _unitOfWork;
         private readonly IPlexApi _plexApi;
         private readonly IOptions<PlexSettings> _plexSettings;
 
@@ -40,12 +42,12 @@ namespace PlexRequests.UnitTests.Models.Auth
         private AddAdminCommand _command;
         private Func<Task<UserLoginCommandResult>> _commandAction;
         private User _plexUser;
-        private Repository.Models.User _createdAdminUser;
+        private UserRow _createdAdminUser;
         private List<Server> _plexServers;
-        private PlexServer _createdServer;
+        private PlexServerRow _createdServer;
         private PlexMediaContainer _plexLibraryContainer;
         private string _createdToken;
-        private RefreshToken _createdRefreshToken;
+        private UserRefreshTokenRow _createdRefreshToken;
 
         public AddAdminCommandHandlerTests()
         {
@@ -53,14 +55,19 @@ namespace PlexRequests.UnitTests.Models.Auth
             _tokenService = Substitute.For<ITokenService>();
             _plexService = Substitute.For<IPlexService>();
             _plexApi = Substitute.For<IPlexApi>();
+            _unitOfWork = Substitute.For<IUnitOfWork>();
             var logger = Substitute.For<ILogger<AddAdminCommandHandler>>();
 
             _fixture = new Fixture();
+            _fixture.Behaviors.OfType<ThrowingRecursionBehavior>()
+                .ToList()
+                .ForEach(b => _fixture.Behaviors.Remove(b));
+            _fixture.Behaviors.Add(new OmitOnRecursionBehavior(1));
 
             var settings = _fixture.Create<PlexSettings>();
             _plexSettings = Options.Create(settings);
 
-            _underTest = new AddAdminCommandHandler(_userService, _plexService, _tokenService, _plexApi, _plexSettings, logger);
+            _underTest = new AddAdminCommandHandler(_userService, _plexService, _tokenService, _unitOfWork, _plexApi, _plexSettings, logger);
         }
 
         [Fact]
@@ -71,6 +78,7 @@ namespace PlexRequests.UnitTests.Models.Auth
                 .When(x => x.WhenACommandActionIsCreated())
                 .Then(x => x.ThenAnErrorIsThrown("Unable to add Plex Admin",
                     "An Admin account has already been created", HttpStatusCode.BadRequest))
+                .Then(x => x.ThenChangesAreNotCommitted())
                 .BDDfy();
         }
 
@@ -83,6 +91,7 @@ namespace PlexRequests.UnitTests.Models.Auth
                 .When(x => x.WhenACommandActionIsCreated())
                 .Then(x => x.ThenAnErrorIsThrown("Invalid PlexCredentials",
                     "The Login credentials for Plex were invalid.", HttpStatusCode.BadRequest))
+                .Then(x => x.ThenChangesAreNotCommitted())
                 .BDDfy();
         }
 
@@ -96,6 +105,7 @@ namespace PlexRequests.UnitTests.Models.Auth
                 .Given(x => x.GivenARefreshTokenIsReturned())
                 .When(x => x.WhenACommandActionIsCreated())
                 .Then(x => x.ThenAnAdminUserWasCreated())
+                .Then(x => x.ThenChangesAreCommitted())
                 .BDDfy();
         }
 
@@ -110,6 +120,7 @@ namespace PlexRequests.UnitTests.Models.Auth
                 .Given(x => x.GivenARefreshTokenIsReturned())
                 .When(x => x.WhenACommandActionIsCreated())
                 .Then(x => x.ThenAServerWasCreated(false))
+                .Then(x => x.ThenChangesAreCommitted())
                 .BDDfy();
         }
 
@@ -125,6 +136,7 @@ namespace PlexRequests.UnitTests.Models.Auth
                 .Given(x => x.GivenARefreshTokenIsReturned())
                 .When(x => x.WhenACommandActionIsCreated())
                 .Then(x => x.ThenAServerWasCreated(true))
+                .Then(x => x.ThenChangesAreCommitted())
                 .BDDfy();
         }
 
@@ -139,6 +151,7 @@ namespace PlexRequests.UnitTests.Models.Auth
                 .Given(x => x.GivenARefreshTokenIsReturned())
                 .When(x => x.WhenACommandActionIsCreated())
                 .Then(x => x.ThenCommandReturnsAccessToken())
+                .Then(x => x.ThenChangesAreCommitted())
                 .BDDfy();
         }
 
@@ -152,6 +165,7 @@ namespace PlexRequests.UnitTests.Models.Auth
                 .Given(x => x.GivenARefreshTokenIsReturned())
                 .When(x => x.WhenACommandActionIsCreated())
                 .Then(x => x.ThenCommandReturnsRefreshToken())
+                .Then(x => x.ThenChangesAreCommitted())
                 .BDDfy();
         }
 
@@ -183,7 +197,7 @@ namespace PlexRequests.UnitTests.Models.Auth
 
         private void GivenAnAdminIsCreated()
         {
-            _userService.CreateUser(Arg.Do<Repository.Models.User>(x => _createdAdminUser = x));
+            _userService.AddUser(Arg.Do<UserRow>(x => _createdAdminUser = x));
         }
 
         private void GivenAPlexServerWasFound()
@@ -200,7 +214,7 @@ namespace PlexRequests.UnitTests.Models.Auth
 
         private void GivenAServerIsCreated()
         {
-            _plexService.Create(Arg.Do<PlexServer>(x => _createdServer = x));
+            _plexService.AddServer(Arg.Do<PlexServerRow>(x => _createdServer = x));
         }
 
         private void GivenServerLibraries()
@@ -214,12 +228,12 @@ namespace PlexRequests.UnitTests.Models.Auth
         {
             _createdToken = _fixture.Create<string>();
 
-            _tokenService.CreateToken(Arg.Any<Repository.Models.User>()).Returns(_createdToken);
+            _tokenService.CreateToken(Arg.Any<UserRow>()).Returns(_createdToken);
         }
 
         private void GivenARefreshTokenIsReturned()
         {
-            _createdRefreshToken = _fixture.Create<RefreshToken>();
+            _createdRefreshToken = _fixture.Create<UserRefreshTokenRow>();
 
             _tokenService.CreateRefreshToken().Returns(_createdRefreshToken);
         }
@@ -242,7 +256,8 @@ namespace PlexRequests.UnitTests.Models.Auth
             _createdAdminUser.Username.Should().Be(_plexUser.Username);
             _createdAdminUser.Email.Should().Be(_plexUser.Email);
             _createdAdminUser.IsAdmin.Should().BeTrue();
-            _createdAdminUser.Roles.Should()
+            var adminRoles = _createdAdminUser.UserRoles.Select(x => x.Role);
+            adminRoles.Should()
                              .BeEquivalentTo(new List<string> { PlexRequestRoles.Admin, PlexRequestRoles.User, PlexRequestRoles.Commenter });
         }
 
@@ -263,17 +278,17 @@ namespace PlexRequests.UnitTests.Models.Auth
 
             if (createdLibraries)
             {
-                var expectedLibraries = _plexLibraryContainer.MediaContainer.Directory.Select(x => new PlexServerLibrary
+                var expectedLibraries = _plexLibraryContainer.MediaContainer.Directory.Select(x => new PlexLibraryRow
                 {
-                    Key = x.Key,
+                    LibraryKey = x.Key,
                     Title = x.Title,
                     Type = x.Type
                 }).ToList();
-                _createdServer.Libraries.Should().BeEquivalentTo(expectedLibraries);
+                _createdServer.PlexLibraries.Should().BeEquivalentTo(expectedLibraries, options => options.Excluding(x => x.CreatedUtc));
             }
             else
             {
-                _createdServer.Libraries.Should().BeEmpty();
+                _createdServer.PlexLibraries.Should().BeEmpty();
             }
         }
 
@@ -291,6 +306,16 @@ namespace PlexRequests.UnitTests.Models.Auth
 
             response.Should().NotBeNull();
             response.RefreshToken.Should().Be(_createdRefreshToken.Token);
+        }
+
+        private void ThenChangesAreCommitted()
+        {
+            _unitOfWork.Received(1).CommitAsync();
+        }
+
+        private void ThenChangesAreNotCommitted()
+        {
+            _unitOfWork.DidNotReceive().CommitAsync();
         }
     }
 }

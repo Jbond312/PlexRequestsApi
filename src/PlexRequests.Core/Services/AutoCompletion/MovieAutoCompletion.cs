@@ -1,32 +1,35 @@
 ﻿using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
-using PlexRequests.Repository.Enums;
-using PlexRequests.Repository.Models;
+using PlexRequests.DataAccess;
+using PlexRequests.DataAccess.Dtos;
+using PlexRequests.DataAccess.Enums;
 
 namespace PlexRequests.Core.Services.AutoCompletion
 {
     public class MovieAutoCompletion : IAutoComplete
     {
         private readonly IMovieRequestService _requestService;
+        private readonly IUnitOfWork _unitOfWork;
 
         public PlexMediaTypes MediaType => PlexMediaTypes.Movie;
         
         public MovieAutoCompletion(
-            IMovieRequestService requestService
+            IMovieRequestService requestService,
+            IUnitOfWork unitOfWork
             )
         {
             _requestService = requestService;
+            _unitOfWork = unitOfWork;
         }
 
-        public async Task AutoComplete(Dictionary<MediaAgent, PlexMediaItem> agentsByPlexId)
+        public async Task AutoComplete(Dictionary<MediaAgent, PlexMediaItemRow> agentsByPlexId)
         {
             var incompleteRequests = await _requestService.GetIncompleteRequests();
 
             foreach (var incompleteRequest in incompleteRequests)
             {
-                var allAgents =
-                    new List<MediaAgent> { incompleteRequest.PrimaryAgent }.Concat(incompleteRequest.AdditionalAgents);
+                var allAgents = incompleteRequest.MovieRequestAgents.Select(x => new MediaAgent(x.AgentType, x.AgentSourceId));
 
                 foreach (var requestAgent in allAgents)
                 {
@@ -35,14 +38,14 @@ namespace PlexRequests.Core.Services.AutoCompletion
                         continue;
                     }
 
-                    incompleteRequest.PlexMediaUri = plexMediaItem.PlexMediaUri;
-                    incompleteRequest.Status = RequestStatuses.Completed;
-
-                    await _requestService.Update(incompleteRequest);
+                    incompleteRequest.PlexMediaItem.MediaUri = plexMediaItem.MediaUri;
+                    incompleteRequest.RequestStatus = RequestStatuses.Completed;
 
                     break;
                 }
             }
+
+            await _unitOfWork.CommitAsync();
         }
     }
 }

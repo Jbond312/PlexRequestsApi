@@ -8,12 +8,12 @@ namespace PlexRequests.ApiRequests.Requests.Commands
     public class RejectMovieRequestCommand : IRequest
     {
         [JsonIgnore]
-        public Guid RequestId { get; set; }
+        public int RequestId { get; set; }
         [Required]
         [MinLength(1)]
         public string Comment { get; set; }
 
-        public RejectMovieRequestCommand(Guid id, string comment)
+        public RejectMovieRequestCommand(int id, string comment)
         {
             RequestId = id;
             Comment = comment;

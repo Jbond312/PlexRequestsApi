@@ -1,4 +1,5 @@
 using System;
+using System.Linq;
 using System.Net;
 using System.Threading;
 using System.Threading.Tasks;
@@ -10,8 +11,9 @@ using NSubstitute.ReturnsExtensions;
 using PlexRequests.ApiRequests.Requests.Commands;
 using PlexRequests.Core.Exceptions;
 using PlexRequests.Core.Services;
-using PlexRequests.Repository.Enums;
-using PlexRequests.Repository.Models;
+using PlexRequests.DataAccess;
+using PlexRequests.DataAccess.Dtos;
+using PlexRequests.DataAccess.Enums;
 using TestStack.BDDfy;
 using Xunit;
 
@@ -21,21 +23,25 @@ namespace PlexRequests.UnitTests.Models.Requests
     {
         private readonly IRequestHandler<RejectMovieRequestCommand> _underTest;
         private readonly IMovieRequestService _requestService;
+        private readonly IUnitOfWork _unitOfWork;
 
         private readonly Fixture _fixture;
 
         private RejectMovieRequestCommand _command;
         private Func<Task> _commandAction;
-        private MovieRequest _request;
-        private MovieRequest _updatedRequest;
+        private MovieRequestRow _request;
 
         public RejectMovieRequestCommandHandlerTests()
         {
             _fixture = new Fixture();
+            _fixture.Behaviors.OfType<ThrowingRecursionBehavior>().ToList()
+                .ForEach(b => _fixture.Behaviors.Remove(b));
+            _fixture.Behaviors.Add(new OmitOnRecursionBehavior());
 
             _requestService = Substitute.For<IMovieRequestService>();
+            _unitOfWork = Substitute.For<IUnitOfWork>();
             
-            _underTest = new RejectMovieRequestCommandHandler(_requestService);
+            _underTest = new RejectMovieRequestCommandHandler(_requestService, _unitOfWork);
         }
 
         [Fact]
@@ -45,6 +51,7 @@ namespace PlexRequests.UnitTests.Models.Requests
                 .Given(x => x.GivenNoRequestFound())
                 .When(x => x.WhenCommandActionIsCreated())
                 .Then(x => x.ThenAnErrorIsThrown("Invalid request", "No request was found with the given Id", HttpStatusCode.NotFound))
+                .Then(x => x.ThenChangesAreNotCommitted())
                 .BDDfy();
         }
 
@@ -55,6 +62,7 @@ namespace PlexRequests.UnitTests.Models.Requests
                 .Given(x => x.GivenARequestWithStatus(RequestStatuses.Completed))
                 .When(x => x.WhenCommandActionIsCreated())
                 .Then(x => x.ThenAnErrorIsThrown("Invalid request", "Request has already been completed", HttpStatusCode.BadRequest))
+                .Then(x => x.ThenChangesAreNotCommitted())
                 .BDDfy();
         }
         
@@ -67,6 +75,7 @@ namespace PlexRequests.UnitTests.Models.Requests
                 .Given(x => x.GivenARequestWithStatus(RequestStatuses.Approved))
                 .When(x => x.WhenCommandActionIsCreated())
                 .Then(x => x.ThenAnErrorIsThrown("Invalid comment", "A comment must be specified when rejecting a request", HttpStatusCode.BadRequest))
+                .Then(x => x.ThenChangesAreNotCommitted())
                 .BDDfy();
         }
 
@@ -75,9 +84,9 @@ namespace PlexRequests.UnitTests.Models.Requests
         {
             this.Given(x => x.GivenACommand())
                 .Given(x => x.GivenARequestWithStatus(RequestStatuses.Approved))
-                .Given(x => x.GivenARequestIsUpdated())
                 .When(x => x.WhenCommandActionIsCreated())
                 .Then(x => x.ThenRequestUpdatedCorrectly())
+                .Then(x => x.ThenChangesAreCommitted())
                 .BDDfy();
         }
 
@@ -95,21 +104,16 @@ namespace PlexRequests.UnitTests.Models.Requests
 
         private void GivenNoRequestFound()
         {
-            _requestService.GetRequestById(Arg.Any<Guid>()).ReturnsNull();
+            _requestService.GetRequestById(Arg.Any<int>()).ReturnsNull();
         }
 
         private void GivenARequestWithStatus(RequestStatuses status)
         {
-            _request = _fixture.Build<MovieRequest>()
-                               .With(x => x.Status, status)
+            _request = _fixture.Build<MovieRequestRow>()
+                               .With(x => x.RequestStatus, status)
                                .Create();
 
-            _requestService.GetRequestById(Arg.Any<Guid>()).Returns(_request);
-        }
-
-        private void GivenARequestIsUpdated()
-        {
-            _requestService.Update(Arg.Do<MovieRequest>(x => _updatedRequest = x));
+            _requestService.GetRequestById(Arg.Any<int>()).Returns(_request);
         }
 
         private void WhenCommandActionIsCreated()
@@ -130,9 +134,19 @@ namespace PlexRequests.UnitTests.Models.Requests
         {
             _commandAction.Should().NotThrow();
 
-            _updatedRequest.Should().NotBeNull();
-            _updatedRequest.Status.Should().Be(RequestStatuses.Rejected);
-            _updatedRequest.Comment.Should().Be(_command.Comment);
+            _request.Should().NotBeNull();
+            _request.RequestStatus.Should().Be(RequestStatuses.Rejected);
+            _request.Comment.Should().Be(_command.Comment);
+        }
+
+        private void ThenChangesAreCommitted()
+        {
+            _unitOfWork.Received(1).CommitAsync();
+        }
+
+        private void ThenChangesAreNotCommitted()
+        {
+            _unitOfWork.DidNotReceive().CommitAsync();
         }
     }
 }

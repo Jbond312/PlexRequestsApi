@@ -1,15 +1,16 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Threading.Tasks;
 using AutoFixture;
 using FluentAssertions;
 using Microsoft.Extensions.Logging;
 using NSubstitute;
 using PlexRequests.Core.Settings;
+using PlexRequests.DataAccess.Dtos;
+using PlexRequests.DataAccess.Enums;
 using PlexRequests.Plex;
 using PlexRequests.Plex.Models;
-using PlexRequests.Repository.Enums;
-using PlexRequests.Repository.Models;
 using PlexRequests.Sync.SyncProcessors;
 using TestStack.BDDfy;
 using Xunit;
@@ -32,6 +33,9 @@ namespace PlexRequests.Sync.UnitTests.SyncProcessors
         public MovieProcessorTests()
         {
             _fixture = new Fixture();
+            _fixture.Behaviors.OfType<ThrowingRecursionBehavior>().ToList()
+                .ForEach(b => _fixture.Behaviors.Remove(b));
+            _fixture.Behaviors.Add(new OmitOnRecursionBehavior());
 
             _plexService = Substitute.For<IPlexService>();
             _mediaItemProcessor = Substitute.For<IMediaItemProcessor>();
@@ -100,7 +104,7 @@ namespace PlexRequests.Sync.UnitTests.SyncProcessors
         {
             _mediaItemResult = _fixture.Create<MediaItemResult>();
 
-            _mediaItemProcessor.GetMediaItem(Arg.Any<int>(), Arg.Any<PlexMediaTypes>(), Arg.Any<List<PlexMediaItem>>(),
+            _mediaItemProcessor.GetMediaItem(Arg.Any<int>(), Arg.Any<PlexMediaTypes>(), Arg.Any<List<PlexMediaItemRow>>(),
                 Arg.Any<string>(), Arg.Any<string>(), Arg.Any<string>(), Arg.Any<string>()).Returns(_mediaItemResult);
         }
 
@@ -127,14 +131,14 @@ namespace PlexRequests.Sync.UnitTests.SyncProcessors
 
         private void ThenAMediaItemWasProcessed()
         {
-            _mediaItemProcessor.Received().GetMediaItem(Arg.Any<int>(), Arg.Any<PlexMediaTypes>(), Arg.Any<List<PlexMediaItem>>(),
+            _mediaItemProcessor.Received().GetMediaItem(Arg.Any<int>(), Arg.Any<PlexMediaTypes>(), Arg.Any<List<PlexMediaItemRow>>(),
                 Arg.Any<string>(), Arg.Any<string>(), Arg.Any<string>(), Arg.Any<string>());
         }
 
         private void ThenAResultWasUpdated()
         {
             _mediaItemProcessor
-                .Received().UpdateResult(Arg.Any<SyncResult>(), Arg.Any<bool>(), Arg.Any<PlexMediaItem>());
+                .Received().UpdateResult(Arg.Any<SyncResult>(), Arg.Any<bool>(), Arg.Any<PlexMediaItemRow>());
         }
     }
 }

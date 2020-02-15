@@ -8,7 +8,7 @@ namespace PlexRequests.ApiRequests.Issues.Commands
     public class CreateIssueCommentCommand : IRequest
     {
         [JsonIgnore]
-        public Guid Id { get; set; }
+        public int Id { get; set; }
         [Required]
         [MinLength(1)]
         public string Comment { get; set; }

@@ -1,13 +1,13 @@
 using System;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Converters;
-using PlexRequests.Repository.Enums;
+using PlexRequests.DataAccess.Enums;
 
 namespace PlexRequests.ApiRequests.Requests.Models.Detail
 {
     public class MovieRequestDetailModel
     {
-        public Guid Id { get; set; }
+        public int Id { get; set; }
         public string Title { get; set; }
         public string PlexMediaUri { get; set; }
         public string RequestedByUserName { get; set; }

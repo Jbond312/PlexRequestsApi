@@ -9,8 +9,9 @@ using MediatR;
 using NSubstitute;
 using PlexRequests.ApiRequests.Plex.Commands;
 using PlexRequests.Core.Exceptions;
+using PlexRequests.DataAccess;
+using PlexRequests.DataAccess.Dtos;
 using PlexRequests.Plex;
-using PlexRequests.Repository.Models;
 using TestStack.BDDfy;
 using Xunit;
 
@@ -20,20 +21,25 @@ namespace PlexRequests.UnitTests.Models.Plex
     {
         private readonly IRequestHandler<UpdatePlexServerLibraryCommand> _underTest;
         private readonly IPlexService _plexService;
+        private readonly IUnitOfWork _unitOfWork;
 
         private readonly Fixture _fixture;
         
         private UpdatePlexServerLibraryCommand _command;
         private Func<Task> _commandAction;
-        private PlexServer _updatedServer;
+        private PlexServerRow _plexServer;
 
         public UpdatePlexServerLibraryCommandHandlerTests()
         {
             _fixture = new Fixture();
+            _fixture.Behaviors.OfType<ThrowingRecursionBehavior>().ToList()
+                .ForEach(b => _fixture.Behaviors.Remove(b));
+            _fixture.Behaviors.Add(new OmitOnRecursionBehavior());
 
             _plexService = Substitute.For<IPlexService>();
+            _unitOfWork = Substitute.For<IUnitOfWork>();
             
-            _underTest = new UpdatePlexServerLibraryCommandHandler(_plexService);
+            _underTest = new UpdatePlexServerLibraryCommandHandler(_plexService, _unitOfWork);
         }
 
         [Theory]
@@ -54,10 +60,10 @@ namespace PlexRequests.UnitTests.Models.Plex
         {
             this.Given(x => x.GivenACommand())
                 .Given(x => x.GivenAMatchingLibrary())
-                .Given(x => x.GivenALibraryIsUpdated())
                 .When(x => x.WhenACommandActionIsCreated())
                 .Then(x => x.ThenCommandIsSuccessful())
                 .Then(x => x.ThenLibraryIsUpdatedCorrectly())
+                .Then(x => x.ThenChangesAreCommitted())
                 .BDDfy();
         }
 
@@ -70,30 +76,25 @@ namespace PlexRequests.UnitTests.Models.Plex
 
         private void GivenNoMatchingLibrary(bool isArchived)
         {
-            var plexServer = _fixture.Create<PlexServer>();
+            _plexServer = _fixture.Create<PlexServerRow>();
 
-            plexServer.Libraries[0].IsArchived = isArchived;
+            _plexServer.PlexLibraries.ElementAt(0).IsArchived = isArchived;
             
             if (isArchived)
             {
-                plexServer.Libraries[0].Key = _command.Key;
+                _plexServer.PlexLibraries.ElementAt(0).LibraryKey = _command.Key;
             }
             
-            _plexService.GetServer().Returns(plexServer);
+            _plexService.GetServer().Returns(_plexServer);
         }
 
         private void GivenAMatchingLibrary()
         {
-            var plexServer = _fixture.Create<PlexServer>();
-            plexServer.Libraries[0].Key = _command.Key;
-            plexServer.Libraries[0].IsEnabled = false;
+            _plexServer = _fixture.Create<PlexServerRow>();
+            _plexServer.PlexLibraries.ElementAt(0).LibraryKey = _command.Key;
+            _plexServer.PlexLibraries.ElementAt(0).IsEnabled = false;
 
-            _plexService.GetServer().Returns(plexServer);
-        }
-
-        private void GivenALibraryIsUpdated()
-        {
-            _plexService.Update(Arg.Do<PlexServer>(x => _updatedServer = x));
+            _plexService.GetServer().Returns(_plexServer);
         }
 
         private void WhenACommandActionIsCreated()
@@ -116,9 +117,13 @@ namespace PlexRequests.UnitTests.Models.Plex
 
         private void ThenLibraryIsUpdatedCorrectly()
         {
-            _updatedServer.Should().NotBeNull();
-            var updatedLibrary = _updatedServer.Libraries.First(x => x.Key == _command.Key);
+            var updatedLibrary = _plexServer.PlexLibraries.First(x => x.LibraryKey == _command.Key);
             updatedLibrary.IsEnabled.Should().Be(_command.IsEnabled);
+        }
+
+        private void ThenChangesAreCommitted()
+        {
+            _unitOfWork.Received(1).CommitAsync();
         }
     }
 }

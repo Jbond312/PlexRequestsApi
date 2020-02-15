@@ -23,12 +23,12 @@ namespace PlexRequests.Core.Helpers
             }
         }
 
-        public Guid UserId
+        public int UserId
         {
             get
             {
                 var userIdClaim = _httpContextAccessor.HttpContext.User.Claims.First(x => x.Type == ClaimTypes.NameIdentifier);
-                return Guid.Parse(userIdClaim.Value);
+                return int.Parse(userIdClaim.Value);
             }
         }
     }

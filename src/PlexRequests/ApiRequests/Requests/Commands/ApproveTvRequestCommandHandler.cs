@@ -5,20 +5,24 @@ using System.Threading.Tasks;
 using MediatR;
 using PlexRequests.Core.Exceptions;
 using PlexRequests.Core.Services;
-using PlexRequests.Repository.Enums;
-using PlexRequests.Repository.Models;
+using PlexRequests.DataAccess;
+using PlexRequests.DataAccess.Dtos;
+using PlexRequests.DataAccess.Enums;
 
 namespace PlexRequests.ApiRequests.Requests.Commands
 {
     public class ApproveTvRequestCommandHandler : AsyncRequestHandler<ApproveTvRequestCommand>
     {
         private readonly ITvRequestService _requestService;
+        private readonly IUnitOfWork _unitOfWork;
 
         public ApproveTvRequestCommandHandler(
-            ITvRequestService requestService
+            ITvRequestService requestService,
+            IUnitOfWork unitOfWork
             )
         {
             _requestService = requestService;
+            _unitOfWork = unitOfWork;
         }
 
         protected override async Task Handle(ApproveTvRequestCommand command, CancellationToken cancellationToken)
@@ -30,14 +34,14 @@ namespace PlexRequests.ApiRequests.Requests.Commands
                 throw new PlexRequestException("Invalid request", "No request was found with the given Id", HttpStatusCode.NotFound);
             }
 
-            if (request.Status == RequestStatuses.Completed)
+            if (request.RequestStatus == RequestStatuses.Completed)
             {
                 throw new PlexRequestException("Invalid request", "Request has already been completed");
             }
 
             if (request.Track)
             {
-                request.Status = RequestStatuses.Approved;
+                request.RequestStatus = RequestStatuses.Approved;
             }
             else
             {
@@ -53,21 +57,21 @@ namespace PlexRequests.ApiRequests.Requests.Commands
                 _requestService.SetAggregatedStatus(request);
             }
 
-            await _requestService.Update(request);
+            await _unitOfWork.CommitAsync();
         }
 
-        private static void ApproveEpisodes(TvRequest request, IReadOnlyDictionary<int, List<int>> commandEpisodesBySeason)
+        private static void ApproveEpisodes(TvRequestRow request, IReadOnlyDictionary<int, List<int>> commandEpisodesBySeason)
         {
-            foreach (var season in request.Seasons)
+            foreach (var season in request.TvRequestSeasons)
             {
-                if (!commandEpisodesBySeason.TryGetValue(season.Index, out var commandEpisodes))
+                if (!commandEpisodesBySeason.TryGetValue(season.SeasonIndex, out var commandEpisodes))
                 {
                     continue;
                 }
 
-                foreach (var episode in season.Episodes)
+                foreach (var episode in season.TvRequestEpisodes)
                 {
-                    if (!commandEpisodes.Contains(episode.Index))
+                    if (!commandEpisodes.Contains(episode.EpisodeIndex))
                     {
                         continue;
                     }
@@ -77,22 +81,22 @@ namespace PlexRequests.ApiRequests.Requests.Commands
             }
         }
 
-        private static void ApproveAllEpisodes(TvRequest request)
+        private static void ApproveAllEpisodes(TvRequestRow request)
         {
-            foreach (var season in request.Seasons)
+            foreach (var season in request.TvRequestSeasons)
             {
-                foreach (var episode in season.Episodes)
+                foreach (var episode in season.TvRequestEpisodes)
                 {
                     ApproveEpisode(episode);
                 }
             }
         }
 
-        private static void ApproveEpisode(RequestEpisode episode)
+        private static void ApproveEpisode(TvRequestEpisodeRow episode)
         {
-            if (episode.Status != RequestStatuses.Completed)
+            if (episode.RequestStatus != RequestStatuses.Completed)
             {
-                episode.Status = RequestStatuses.Approved;
+                episode.RequestStatus = RequestStatuses.Approved;
             }
         }
     }

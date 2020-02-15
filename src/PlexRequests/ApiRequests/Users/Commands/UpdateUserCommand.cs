@@ -9,7 +9,7 @@ namespace PlexRequests.ApiRequests.Users.Commands
     public class UpdateUserCommand : IRequest
     {
         [JsonIgnore]
-        public Guid Id { get; set; }
+        public int Id { get; set; }
         public bool IsDisabled { get; set; }
         [ValidRole]
         public List<string> Roles { get; set; }

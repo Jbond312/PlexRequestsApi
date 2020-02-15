@@ -9,12 +9,12 @@ using MediatR;
 using NSubstitute;
 using PlexRequests.ApiRequests.Plex.Commands;
 using PlexRequests.Core.Services;
+using PlexRequests.DataAccess;
+using PlexRequests.DataAccess.Dtos;
 using PlexRequests.Plex;
 using PlexRequests.Plex.Models;
-using PlexRequests.Repository.Models;
 using TestStack.BDDfy;
 using Xunit;
-using User = PlexRequests.Repository.Models.User;
 
 namespace PlexRequests.UnitTests.Models.Plex
 {
@@ -25,12 +25,13 @@ namespace PlexRequests.UnitTests.Models.Plex
         private readonly IPlexApi _plexApi;
         private readonly IUserService _userService;
         private readonly IPlexService _plexService;
-
+        private readonly IUnitOfWork _unitOfWork;
+        
         private readonly Fixture _fixture;
         
         private SyncUsersCommand _command;
         private List<Friend> _remoteFriends;
-        private List<User> _localUsers;
+        private List<UserRow> _localUsers;
         private Func<Task> _commandAction;
 
         public SyncUsersCommandHandlerTests()
@@ -38,10 +39,15 @@ namespace PlexRequests.UnitTests.Models.Plex
             _plexApi = Substitute.For<IPlexApi>();
             _userService = Substitute.For<IUserService>();
             _plexService = Substitute.For<IPlexService>();
+            _unitOfWork = Substitute.For<IUnitOfWork>();
 
-            _underTest = new SyncUsersCommandHandler(_plexApi, _userService, _plexService);
+            _underTest = new SyncUsersCommandHandler(_plexApi, _userService, _plexService, _unitOfWork);
 
             _fixture = new Fixture();
+            _fixture.Behaviors.OfType<ThrowingRecursionBehavior>()
+                .ToList()
+                .ForEach(b => _fixture.Behaviors.Remove(b));
+            _fixture.Behaviors.Add(new OmitOnRecursionBehavior(1));
         }
 
         [Fact]
@@ -53,6 +59,7 @@ namespace PlexRequests.UnitTests.Models.Plex
                 .Given(x => x.GivenLocalUsers(true))
                 .When(x => x.WhenACommandIsCreated())
                 .Then(x => x.ThenLocalUsersAreDisabled())
+                .Then(x => x.ThenChangesAreCommitted())
                 .BDDfy();
         }
 
@@ -65,6 +72,7 @@ namespace PlexRequests.UnitTests.Models.Plex
                 .Given(x => x.GivenLocalUsers(false))
                 .When(x => x.WhenACommandIsCreated())
                 .Then(x => x.ThenLocalUsersAreCreated())
+                .Then(x => x.ThenChangesAreCommitted())
                 .BDDfy();
         }
 
@@ -75,7 +83,7 @@ namespace PlexRequests.UnitTests.Models.Plex
 
         private void GivenAServer()
         {
-            _plexService.GetServer().Returns(_fixture.Create<PlexServer>());
+            _plexService.GetServer().Returns(_fixture.Create<PlexServerRow>());
         }
 
         private void GivenRemoteFriends(bool hasRemoteFriends)
@@ -95,11 +103,11 @@ namespace PlexRequests.UnitTests.Models.Plex
 
         private void GivenLocalUsers(bool hasLocalUsers)
         {
-            _localUsers = new List<User>();
+            _localUsers = new List<UserRow>();
 
             if (hasLocalUsers)
             {
-                _localUsers = _fixture.Build<User>()
+                _localUsers = _fixture.Build<UserRow>()
                                       .With(x => x.IsAdmin, false)
                                       .CreateMany()
                                       .ToList();
@@ -117,14 +125,22 @@ namespace PlexRequests.UnitTests.Models.Plex
         {
             _commandAction.Should().NotThrow();
 
-            _userService.Received(_remoteFriends.Count).CreateUser(Arg.Any<User>());
+            _userService.Received(_remoteFriends.Count).AddUser(Arg.Any<UserRow>());
         }
 
         private void ThenLocalUsersAreDisabled()
         {
             _commandAction.Should().NotThrow();
 
-            _userService.Received(_localUsers.Count).UpdateUser(Arg.Any<User>());
+            foreach (var localUser in _localUsers)
+            {
+                localUser.IsDisabled.Should().BeTrue();
+            }
+        }
+
+        private void ThenChangesAreCommitted()
+        {
+            _unitOfWork.Received(1).CommitAsync();
         }
     }
 }

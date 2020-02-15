@@ -1,32 +1,35 @@
 ﻿using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
-using PlexRequests.Repository.Enums;
-using PlexRequests.Repository.Models;
+using PlexRequests.DataAccess;
+using PlexRequests.DataAccess.Dtos;
+using PlexRequests.DataAccess.Enums;
 
 namespace PlexRequests.Core.Services.AutoCompletion
 {
     public class TvAutoCompletion : IAutoComplete
     {
         private readonly ITvRequestService _requestService;
+        private readonly IUnitOfWork _unitOfWork;
 
         public PlexMediaTypes MediaType => PlexMediaTypes.Show;
 
         public TvAutoCompletion(
-            ITvRequestService requestService
+            ITvRequestService requestService,
+            IUnitOfWork unitOfWork
             )
         {
             _requestService = requestService;
+            _unitOfWork = unitOfWork;
         }
 
-        public async Task AutoComplete(Dictionary<MediaAgent, PlexMediaItem> agentsByPlexId)
+        public async Task AutoComplete(Dictionary<MediaAgent, PlexMediaItemRow> agentsByPlexId)
         {
             var incompleteRequests = await _requestService.GetIncompleteRequests();
 
             foreach (var incompleteRequest in incompleteRequests)
             {
-                var allAgents =
-                    new List<MediaAgent> { incompleteRequest.PrimaryAgent }.Concat(incompleteRequest.AdditionalAgents);
+                var allAgents = incompleteRequest.TvRequestAgents.Select(x => new MediaAgent(x.AgentType, x.AgentSourceId));
 
                 foreach (var requestAgent in allAgents)
                 {
@@ -35,8 +38,8 @@ namespace PlexRequests.Core.Services.AutoCompletion
                         continue;
                     }
 
-                    incompleteRequest.PlexMediaUri = plexMediaItem.PlexMediaUri;
-                    incompleteRequest.Status = RequestStatuses.Completed;
+                    incompleteRequest.PlexMediaItem = plexMediaItem;
+                    incompleteRequest.RequestStatus = RequestStatuses.Completed;
 
                     if (incompleteRequest.Track)
                     {
@@ -44,44 +47,43 @@ namespace PlexRequests.Core.Services.AutoCompletion
                     }
 
                     AutoCompleteTvSeasonEpisodes(incompleteRequest, plexMediaItem);
-
-
-                    await _requestService.Update(incompleteRequest);
-
+                    
                     break;
                 }
             }
+
+            await _unitOfWork.CommitAsync();
         }
 
-        private void AutoCompleteTvSeasonEpisodes(TvRequest incompleteRequest, PlexMediaItem plexMediaItem)
+        private void AutoCompleteTvSeasonEpisodes(TvRequestRow incompleteRequest, PlexMediaItemRow plexMediaItem)
         {
-            foreach (var season in incompleteRequest.Seasons)
+            foreach (var season in incompleteRequest.TvRequestSeasons)
             {
-                var matchingSeason = plexMediaItem.Seasons.FirstOrDefault(x => x.Season == season.Index);
+                var matchingSeason = plexMediaItem.PlexSeasons.FirstOrDefault(x => x.Season == season.SeasonIndex);
 
                 if (matchingSeason == null)
                 {
                     continue;
                 }
 
-                season.PlexMediaUri = matchingSeason.PlexMediaUri;
+                season.PlexSeason = matchingSeason;
 
-                foreach (var episode in season.Episodes)
+                foreach (var episode in season.TvRequestEpisodes)
                 {
-                    if (episode.Status == RequestStatuses.Completed)
+                    if (episode.RequestStatus == RequestStatuses.Completed)
                     {
                         continue;
                     }
 
-                    var matchingEpisode = matchingSeason.Episodes.FirstOrDefault(x => x.Episode == episode.Index);
+                    var matchingEpisode = matchingSeason.PlexEpisodes.FirstOrDefault(x => x.Episode == episode.EpisodeIndex);
 
                     if (matchingEpisode == null)
                     {
                         continue;
                     }
 
-                    episode.PlexMediaUri = matchingEpisode.PlexMediaUri;
-                    episode.Status = RequestStatuses.Completed;
+                    episode.PlexEpisode = matchingEpisode;
+                    episode.RequestStatus = RequestStatuses.Completed;
                 }
             }
 

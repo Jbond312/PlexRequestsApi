@@ -4,6 +4,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using MediatR;
 using PlexRequests.Core.Exceptions;
+using PlexRequests.DataAccess;
 using PlexRequests.Plex;
 
 namespace PlexRequests.ApiRequests.Plex.Commands
@@ -11,19 +12,22 @@ namespace PlexRequests.ApiRequests.Plex.Commands
     public class UpdatePlexServerLibraryCommandHandler : AsyncRequestHandler<UpdatePlexServerLibraryCommand>
     {
         private readonly IPlexService _plexService;
+        private readonly IUnitOfWork _unitOfWork;
 
         public UpdatePlexServerLibraryCommandHandler(
-            IPlexService plexService
+            IPlexService plexService,
+            IUnitOfWork unitOfWork
             )
         {
             _plexService = plexService;
+            _unitOfWork = unitOfWork;
         }
         
         protected override async Task Handle(UpdatePlexServerLibraryCommand request, CancellationToken cancellationToken)
         {
             var server = await _plexService.GetServer();
 
-            var libraryToUpdate = server.Libraries.FirstOrDefault(x => x.Key == request.Key && !x.IsArchived);
+            var libraryToUpdate = server.PlexLibraries.FirstOrDefault(x => x.LibraryKey == request.Key && !x.IsArchived);
 
             if (libraryToUpdate == null)
             {
@@ -31,8 +35,8 @@ namespace PlexRequests.ApiRequests.Plex.Commands
             }
 
             libraryToUpdate.IsEnabled = request.IsEnabled;
-            
-            await _plexService.Update(server);
+
+            await _unitOfWork.CommitAsync();
         }
     }
 }

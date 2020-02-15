@@ -1,4 +1,5 @@
 using System;
+using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 using AutoFixture;
@@ -6,9 +7,9 @@ using AutoMapper;
 using FluentAssertions;
 using NSubstitute;
 using PlexRequests.ApiRequests.Plex.Queries;
+using PlexRequests.DataAccess.Dtos;
 using PlexRequests.Mapping;
 using PlexRequests.Plex;
-using PlexRequests.Repository.Models;
 using TestStack.BDDfy;
 using Xunit;
 
@@ -23,11 +24,14 @@ namespace PlexRequests.UnitTests.Models.Plex
         
         private GetManyPlexServerLibraryQuery _request;
         private Func<Task<GetManyPlexServerLibraryQueryResult>> _commandAction;
-        private PlexServer _server;
+        private PlexServerRow _server;
 
         public GetManyPlexServerLibraryQueryHandlerTests()
         {
             _fixture = new Fixture();
+            _fixture.Behaviors.OfType<ThrowingRecursionBehavior>().ToList()
+                .ForEach(b => _fixture.Behaviors.Remove(b));
+            _fixture.Behaviors.Add(new OmitOnRecursionBehavior());
 
             _plexService = Substitute.For<IPlexService>();
             
@@ -65,7 +69,7 @@ namespace PlexRequests.UnitTests.Models.Plex
 
         private void GivenLibrariesAreReturned()
         {
-            _server = _fixture.Create<PlexServer>();
+            _server = _fixture.Create<PlexServerRow>();
             _plexService.GetServer().Returns(_server);
         }
         
@@ -89,7 +93,17 @@ namespace PlexRequests.UnitTests.Models.Plex
             var result = await _commandAction();
 
             result.Should().NotBeNull();
-            result.Libraries.Should().BeEquivalentTo(_server.Libraries);
+
+            foreach (var actualLibrary in result.Libraries)
+            {
+                var matchingLibrary = _server.PlexLibraries.FirstOrDefault(x => x.LibraryKey == actualLibrary.Key);
+
+                matchingLibrary.Should().NotBeNull();
+                actualLibrary.IsArchived.Should().Be(matchingLibrary.IsArchived);
+                actualLibrary.IsEnabled.Should().Be(matchingLibrary.IsEnabled);
+                actualLibrary.Title.Should().Be(matchingLibrary.Title);
+                actualLibrary.Type.Should().Be(matchingLibrary.Type);
+            }
         }
     }
 }

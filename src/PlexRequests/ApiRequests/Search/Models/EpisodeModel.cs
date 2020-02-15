@@ -1,4 +1,4 @@
-﻿using PlexRequests.Repository.Enums;
+﻿using PlexRequests.DataAccess.Enums;
 
 namespace PlexRequests.ApiRequests.Search.Models
 {

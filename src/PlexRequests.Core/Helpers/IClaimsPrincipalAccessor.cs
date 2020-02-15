@@ -5,6 +5,6 @@ namespace PlexRequests.Core.Helpers
     public interface IClaimsPrincipalAccessor
     {
         string Username { get; }
-        Guid UserId { get; }
+        int UserId { get; }
     }
 }

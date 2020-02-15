@@ -4,8 +4,8 @@ using System.Threading.Tasks;
 using AutoMapper;
 using PlexRequests.ApiRequests.Search.Models;
 using PlexRequests.Core.Services;
+using PlexRequests.DataAccess.Enums;
 using PlexRequests.Plex.MediaItemRetriever;
-using PlexRequests.Repository.Enums;
 using PlexRequests.TheMovieDb.Models;
 
 namespace PlexRequests.ApiRequests.Search.Helpers
@@ -40,12 +40,12 @@ namespace PlexRequests.ApiRequests.Search.Helpers
                 if (!requests.TryGetValue(searchModel.Id, out var associatedRequest))
                 {
                     var plexMediaItem = await _mediaItemRetriever.Get(searchModel.Id);
-                    searchModel.PlexMediaUri = plexMediaItem?.PlexMediaUri;
+                    searchModel.PlexMediaUri = plexMediaItem?.MediaUri;
                 }
                 else
                 {
-                    searchModel.RequestStatus = associatedRequest.Status;
-                    searchModel.PlexMediaUri = associatedRequest.PlexMediaUri;
+                    searchModel.RequestStatus = associatedRequest.RequestStatus;
+                    searchModel.PlexMediaUri = associatedRequest.PlexMediaItem.MediaUri;
                 }
             }
 
@@ -61,12 +61,12 @@ namespace PlexRequests.ApiRequests.Search.Helpers
             if (!associatedRequestLookup.TryGetValue(movieDetailModel.Id, out var associatedRequest))
             {
                 var plexMediaItem = await _mediaItemRetriever.Get(movieDetailModel.Id);
-                movieDetailModel.PlexMediaUri = plexMediaItem?.PlexMediaUri;
+                movieDetailModel.PlexMediaUri = plexMediaItem?.MediaUri;
             }
             else
             {
-                movieDetailModel.RequestStatus = associatedRequest.Status;
-                movieDetailModel.PlexMediaUri = associatedRequest.PlexMediaUri;
+                movieDetailModel.RequestStatus = associatedRequest.RequestStatus;
+                movieDetailModel.PlexMediaUri = associatedRequest.PlexMediaItem?.MediaUri;
             }
 
             return movieDetailModel;

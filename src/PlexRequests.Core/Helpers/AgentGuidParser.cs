@@ -3,7 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text.RegularExpressions;
 using Microsoft.Extensions.Logging;
-using PlexRequests.Repository.Enums;
+using PlexRequests.DataAccess.Enums;
 
 namespace PlexRequests.Core.Helpers
 {

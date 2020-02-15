@@ -1,6 +1,6 @@
 using System.ComponentModel.DataAnnotations;
 using MediatR;
-using PlexRequests.Repository.Enums;
+using PlexRequests.DataAccess.Enums;
 
 namespace PlexRequests.ApiRequests.Issues.Commands
 {

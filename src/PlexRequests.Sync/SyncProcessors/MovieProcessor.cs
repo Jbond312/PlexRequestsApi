@@ -2,9 +2,9 @@
 using System.Threading.Tasks;
 using Microsoft.Extensions.Logging;
 using PlexRequests.Core.Settings;
+using PlexRequests.DataAccess.Enums;
 using PlexRequests.Plex;
 using PlexRequests.Plex.Models;
-using PlexRequests.Repository.Enums;
 
 namespace PlexRequests.Sync.SyncProcessors
 {

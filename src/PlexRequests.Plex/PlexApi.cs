@@ -2,6 +2,7 @@
 using System.Linq;
 using System.Net.Http;
 using System.Threading.Tasks;
+using Microsoft.Extensions.Options;
 using PlexRequests.Api;
 using PlexRequests.Core.Settings;
 using PlexRequests.Plex.Models;
@@ -13,15 +14,15 @@ namespace PlexRequests.Plex
     public class PlexApi : IPlexApi
     {
         private readonly IApiService _apiService;
-        private readonly ISettingsService _settingsService;
+        private readonly PlexRequestsSettings _settings;
         private readonly string _baseUri = "https://plex.tv/api/v2/";
 
         public PlexApi(
-            IApiService apiService, 
-            ISettingsService settingsService)
+            IApiService apiService,
+            IOptions<PlexRequestsSettings> settings)
         {
             _apiService = apiService;
-            _settingsService = settingsService;
+            _settings = settings.Value;
         }
 
         public async Task<OAuthPin> CreatePin()
@@ -30,8 +31,8 @@ namespace PlexRequests.Plex
                 new ApiRequestBuilder(_baseUri, "pins", HttpMethod.Post)
                     .AcceptJson()
                     .AddQueryParam("strong", "true")
-                    .AddRequestHeaders(await GetClientIdentifierHeader())
-                    .AddRequestHeaders(await GetClientMetaHeaders())
+                    .AddRequestHeaders(GetClientIdentifierHeader())
+                    .AddRequestHeaders(GetClientMetaHeaders())
                     .Build();
 
             var oauthPin = await _apiService.InvokeApiAsync<OAuthPin>(apiRequest);
@@ -44,7 +45,7 @@ namespace PlexRequests.Plex
             var apiRequest =
                 new ApiRequestBuilder(_baseUri, $"pins/{pinId}", HttpMethod.Get)
                     .AcceptJson()
-                    .AddRequestHeaders(await GetClientIdentifierHeader())
+                    .AddRequestHeaders(GetClientIdentifierHeader())
                     .Build();
 
             var oauthPin = await _apiService.InvokeApiAsync<OAuthPin>(apiRequest);
@@ -65,8 +66,8 @@ namespace PlexRequests.Plex
 
             var apiRequest =
                 new ApiRequestBuilder("https://plex.tv/users/sign_in.json", "", HttpMethod.Post)
-                    .AddRequestHeaders(await GetClientIdentifierHeader())
-                    .AddRequestHeaders(await GetClientMetaHeaders())
+                    .AddRequestHeaders(GetClientIdentifierHeader())
+                    .AddRequestHeaders(GetClientMetaHeaders())
                     .AcceptJson()
                     .AddJsonBody(signInRequest)
                     .Build();
@@ -80,7 +81,7 @@ namespace PlexRequests.Plex
         {
             var apiRequest = new ApiRequestBuilder("https://plex.tv/users/account.json", "", HttpMethod.Get)
                 .AddPlexToken(authToken)
-                .AddRequestHeaders(await GetClientIdentifierHeader())
+                .AddRequestHeaders(GetClientIdentifierHeader())
                 .Build();
 
             var account = await _apiService.InvokeApiAsync<SignInAccount>(apiRequest);
@@ -92,7 +93,7 @@ namespace PlexRequests.Plex
         {
             var apiRequest = new ApiRequestBuilder("https://plex.tv/pms/servers.xml", "", HttpMethod.Get)
                 .AddPlexToken(authToken)
-                .AddRequestHeaders(await GetClientIdentifierHeader())
+                .AddRequestHeaders(GetClientIdentifierHeader())
                 .Build();
 
             var serverContainer = await _apiService.InvokeApiAsync<ServerContainer>(apiRequest);
@@ -104,7 +105,7 @@ namespace PlexRequests.Plex
         {
             var apiRequest = new ApiRequestBuilder("https://plex.tv/pms/friends/all", "", HttpMethod.Get)
                 .AddPlexToken(authToken)
-                .AddRequestHeaders(await GetClientIdentifierHeader())
+                .AddRequestHeaders(GetClientIdentifierHeader())
                 .Build();
 
             var friendContainer = await _apiService.InvokeApiAsync<FriendContainer>(apiRequest);
@@ -116,7 +117,7 @@ namespace PlexRequests.Plex
         {
             var apiRequest = new ApiRequestBuilder(plexServerHost, "library/sections", HttpMethod.Get)
                 .AddPlexToken(authToken)
-                .AddRequestHeaders(await GetClientIdentifierHeader())
+                .AddRequestHeaders(GetClientIdentifierHeader())
                 .AcceptJson()
                 .Build();
 
@@ -129,7 +130,7 @@ namespace PlexRequests.Plex
         {
             var apiRequest = new ApiRequestBuilder(plexServerHost, $"library/sections/{key}/all", HttpMethod.Get)
                 .AddPlexToken(authToken)
-                .AddRequestHeaders(await GetClientIdentifierHeader())
+                .AddRequestHeaders(GetClientIdentifierHeader())
                 .AcceptJson()
                 .Build();
 
@@ -142,7 +143,7 @@ namespace PlexRequests.Plex
         {
             var apiRequest = new ApiRequestBuilder(plexServerHost, $"library/sections/{key}/recentlyAdded", HttpMethod.Get)
                 .AddPlexToken(authToken)
-                .AddRequestHeaders(await GetClientIdentifierHeader())
+                .AddRequestHeaders(GetClientIdentifierHeader())
                 .AcceptJson()
                 .Build();
 
@@ -155,7 +156,7 @@ namespace PlexRequests.Plex
         {
             var apiRequest = new ApiRequestBuilder(plexServerHost, $"library/metadata/{metadataId}", HttpMethod.Get)
                 .AddPlexToken(authToken)
-                .AddRequestHeaders(await GetClientIdentifierHeader())
+                .AddRequestHeaders(GetClientIdentifierHeader())
                 .AcceptJson()
                 .Build();
 
@@ -168,7 +169,7 @@ namespace PlexRequests.Plex
         {
             var apiRequest = new ApiRequestBuilder(plexServerHost, $"library/metadata/{metadataId}/children", HttpMethod.Get)
                 .AddPlexToken(authToken)
-                .AddRequestHeaders(await GetClientIdentifierHeader())
+                .AddRequestHeaders(GetClientIdentifierHeader())
                 .AcceptJson()
                 .Build();
 
@@ -181,7 +182,7 @@ namespace PlexRequests.Plex
         {
             var apiRequest = new ApiRequestBuilder(plexServerHost, "", HttpMethod.Get)
                 .AddPlexToken(authToken)
-                .AddRequestHeaders(await GetClientIdentifierHeader())
+                .AddRequestHeaders(GetClientIdentifierHeader())
                 .AcceptJson()
                 .Build();
 
@@ -190,26 +191,22 @@ namespace PlexRequests.Plex
             return plexMediaContainer;
         }
 
-        private async Task<Dictionary<string, string>> GetClientIdentifierHeader()
+        private Dictionary<string, string> GetClientIdentifierHeader()
         {
-            var plexSettings = await _settingsService.Get();
-
             var plexHeaders = new Dictionary<string, string>
             {
-                ["X-Plex-Client-Identifier"] = plexSettings.PlexClientId.ToString("N")
+                ["X-Plex-Client-Identifier"] = _settings.PlexRequestsClientId
             };
 
             return plexHeaders;
         }
 
-        private async Task<Dictionary<string, string>> GetClientMetaHeaders()
+        private Dictionary<string, string> GetClientMetaHeaders()
         {
-            var plexSettings = await _settingsService.Get();
-
             var plexHeaders = new Dictionary<string, string>
             {
-                ["X-Plex-Product"] = plexSettings.ApplicationName,
-                ["X-Plex-Version"] = plexSettings.Version,
+                ["X-Plex-Product"] = _settings.ApplicationName,
+                ["X-Plex-Version"] = _settings.Version,
                 ["X-Plex-Device"] = "Web",
                 ["X-Plex-Platform"] = "Web"
             };

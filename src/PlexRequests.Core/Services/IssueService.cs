@@ -1,9 +1,9 @@
-using System;
 using System.Collections.Generic;
 using System.Threading.Tasks;
-using PlexRequests.Repository;
-using PlexRequests.Repository.Enums;
-using PlexRequests.Repository.Models;
+using PlexRequests.DataAccess;
+using PlexRequests.DataAccess.Dtos;
+using PlexRequests.DataAccess.Enums;
+using PlexRequests.DataAccess.Repositories;
 
 namespace PlexRequests.Core.Services
 {
@@ -16,29 +16,24 @@ namespace PlexRequests.Core.Services
             _issueRepository = issueRepository;
         }
 
-        public async Task<Issue> GetIssueById(Guid id)
+        public async Task<IssueRow> GetIssueById(int id)
         {
-            return await _issueRepository.GetOne(x => x.Id == id);
+            return await _issueRepository.GetOne(x => x.IssueId == id);
         }
 
-        public async Task Create(Issue issue)
+        public void Add(IssueRow issue)
         {
-            await _issueRepository.Create(issue);
+            _issueRepository.Add(issue);
         }
 
-        public async Task Update(Issue issue)
+        public async Task<List<IssueRow>> GetIncompleteIssues()
         {
-            await _issueRepository.Update(issue);
+            return await _issueRepository.GetMany(x => x.IssueStatus != IssueStatuses.Resolved);
         }
 
-        public async Task<List<Issue>> GetIncompleteIssues()
+        public async Task<Paged<IssueRow>> GetPaged(int? page, int? pageSize, List<IssueStatuses> includeStatuses = null)
         {
-            return await _issueRepository.GetMany(x => x.Status != IssueStatuses.Resolved);
-        }
-
-        public async Task<Paged<Issue>> GetPaged(int? page, int? pageSize, List<IssueStatuses> includeStatuses = null)
-        {
-            return await _issueRepository.GetPaged(page, includeStatuses == null ? null : pageSize, x => includeStatuses.Contains(x.Status));
+            return await _issueRepository.GetPaged(page, includeStatuses == null ? null : pageSize, x => includeStatuses.Contains(x.IssueStatus));
         }
     }
 }

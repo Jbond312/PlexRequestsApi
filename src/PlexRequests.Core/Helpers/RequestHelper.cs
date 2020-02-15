@@ -1,8 +1,8 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using PlexRequests.Repository.Enums;
-using PlexRequests.Repository.Models;
+using PlexRequests.DataAccess.Dtos;
+using PlexRequests.DataAccess.Enums;
 
 namespace PlexRequests.Core.Helpers
 {
@@ -10,7 +10,7 @@ namespace PlexRequests.Core.Helpers
     {
         private IEnumerable<RequestStatuses> _allStatuses = Enum.GetValues(typeof(RequestStatuses)).Cast<RequestStatuses>();
 
-        public void SetAggregatedStatus(TvRequest request)
+        public void SetAggregatedStatus(TvRequestRow request)
         {
             if (request.Track)
             {
@@ -19,20 +19,20 @@ namespace PlexRequests.Core.Helpers
 
             var allStatusCounts = _allStatuses.ToDictionary(status => status, count => 0);
 
-            foreach (var season in request.Seasons)
+            foreach (var season in request.TvRequestSeasons)
             {
                 var seasonStatusCounts = _allStatuses.ToDictionary(status => status, count => 0);
 
-                foreach (var episode in season.Episodes)
+                foreach (var episode in season.TvRequestEpisodes)
                 {
-                    allStatusCounts[episode.Status]++;
-                    seasonStatusCounts[episode.Status]++;
+                    allStatusCounts[episode.RequestStatus]++;
+                    seasonStatusCounts[episode.RequestStatus]++;
                 }
 
-                season.Status = CalculateStatus(seasonStatusCounts);
+                season.RequestStatus = CalculateStatus(seasonStatusCounts);
             }
 
-            request.Status = CalculateStatus(allStatusCounts);
+            request.RequestStatus = CalculateStatus(allStatusCounts);
         }
 
         private RequestStatuses CalculateStatus(Dictionary<RequestStatuses, int> statusCounts)

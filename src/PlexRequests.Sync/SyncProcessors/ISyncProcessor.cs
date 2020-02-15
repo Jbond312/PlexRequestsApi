@@ -1,6 +1,6 @@
 ﻿using System.Threading.Tasks;
+using PlexRequests.DataAccess.Enums;
 using PlexRequests.Plex.Models;
-using PlexRequests.Repository.Enums;
 
 namespace PlexRequests.Sync.SyncProcessors
 {

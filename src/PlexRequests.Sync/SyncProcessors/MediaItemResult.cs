@@ -1,16 +1,17 @@
-using PlexRequests.Repository.Models;
+
+using PlexRequests.DataAccess.Dtos;
 
 namespace PlexRequests.Sync.SyncProcessors
 {
     public class MediaItemResult
     {
-        public MediaItemResult(bool isNew, PlexMediaItem mediaItem)
+        public MediaItemResult(bool isNew, PlexMediaItemRow mediaItem)
         {
             IsNew = isNew;
             MediaItem = mediaItem;
         }
 
         public bool IsNew { get; set; }
-        public PlexMediaItem MediaItem { get; set; }
+        public PlexMediaItemRow MediaItem { get; set; }
     }
 }

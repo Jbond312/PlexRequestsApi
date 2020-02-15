@@ -1,7 +1,7 @@
 using System;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Converters;
-using PlexRequests.Repository.Enums;
+using PlexRequests.DataAccess.Enums;
 
 namespace PlexRequests.ApiRequests.Requests.Models.Detail
 {

@@ -1,9 +1,10 @@
 using System;
+using System.Linq;
 using AutoFixture;
 using FluentAssertions;
 using PlexRequests.Core.Helpers;
-using PlexRequests.Repository.Enums;
-using PlexRequests.Repository.Models;
+using PlexRequests.DataAccess.Dtos;
+using PlexRequests.DataAccess.Enums;
 using TestStack.BDDfy;
 using Xunit;
 
@@ -15,12 +16,15 @@ namespace PlexRequests.Core.UnitTests.Helpers
 
         private readonly Fixture _fixture;
 
-        private TvRequest _request;
+        private TvRequestRow _request;
         private Action _commandAction;
 
         public RequestHelperTests()
         {
             _fixture = new Fixture();
+            _fixture.Behaviors.OfType<ThrowingRecursionBehavior>().ToList()
+                .ForEach(b => _fixture.Behaviors.Remove(b));
+            _fixture.Behaviors.Add(new OmitOnRecursionBehavior());
 
             _underTest = new RequestHelper();
         }
@@ -95,7 +99,7 @@ namespace PlexRequests.Core.UnitTests.Helpers
 
         private void GivenAllRequestEpisodesOfStatus(RequestStatuses status)
         {
-            _request = _fixture.Build<TvRequest>()
+            _request = _fixture.Build<TvRequestRow>()
             .With(x => x.Track, false)
             .Create();
 
@@ -104,20 +108,20 @@ namespace PlexRequests.Core.UnitTests.Helpers
 
         private void GivenOneEpisodeOfStatus(RequestStatuses status, RequestStatuses allOtherEpisodeStatus)
         {
-            _request = _fixture.Build<TvRequest>()
+            _request = _fixture.Build<TvRequestRow>()
             .With(x => x.Track, false)
             .Create();
 
             SetEpisodeStatuses(allOtherEpisodeStatus);
 
-            _request.Seasons[0].Episodes[0].Status = status;
+            _request.TvRequestSeasons.ElementAt(0).TvRequestEpisodes.ElementAt(0).RequestStatus = status;
         }
 
         private void GivenTrackedRequest(RequestStatuses status)
         {
-            _request = _fixture.Build<TvRequest>()
+            _request = _fixture.Build<TvRequestRow>()
             .With(x => x.Track, true)
-            .With(x => x.Status, status)
+            .With(x => x.RequestStatus, status)
             .Create();
         }
 
@@ -128,12 +132,12 @@ namespace PlexRequests.Core.UnitTests.Helpers
 
         private void ThenOverallStatusIsCorrect(RequestStatuses expectedStatus)
         {
-            _request.Status.Should().Be(expectedStatus);
+            _request.RequestStatus.Should().Be(expectedStatus);
         }
 
         private void ThenSeasonStatusIsCorrect(int season, RequestStatuses expectedStatus)
         {
-            _request.Seasons[season - 1].Status.Should().Be(expectedStatus);
+            _request.TvRequestSeasons.ElementAt(season - 1).RequestStatus.Should().Be(expectedStatus);
         }
 
         private void ThenTheCommandSucceeds()
@@ -143,11 +147,11 @@ namespace PlexRequests.Core.UnitTests.Helpers
 
         private void SetEpisodeStatuses(RequestStatuses status)
         {
-            foreach (var season in _request.Seasons)
+            foreach (var season in _request.TvRequestSeasons)
             {
-                foreach (var episode in season.Episodes)
+                foreach (var episode in season.TvRequestEpisodes)
                 {
-                    episode.Status = status;
+                    episode.RequestStatus = status;
                 }
             }
         }

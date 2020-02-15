@@ -5,7 +5,7 @@ namespace PlexRequests.ApiRequests.Users.Models.Detail
 {
     public class UserDetailModel
     {
-        public Guid Id { get; set; }
+        public int Id { get; set; }
         public string Username { get; set; }
         public bool IsDisabled { get; set; }
         public DateTime LastLogin { get; set; }

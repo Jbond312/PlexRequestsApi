@@ -3,10 +3,12 @@ using System.Threading;
 using System.Threading.Tasks;
 using MediatR;
 using Microsoft.Extensions.Options;
+using PlexRequests.Core.ExtensionMethods;
 using PlexRequests.Core.Settings;
+using PlexRequests.DataAccess;
+using PlexRequests.DataAccess.Dtos;
 using PlexRequests.Plex;
 using PlexRequests.Plex.Models;
-using PlexRequests.Repository.Models;
 
 namespace PlexRequests.ApiRequests.Plex.Commands
 {
@@ -14,15 +16,18 @@ namespace PlexRequests.ApiRequests.Plex.Commands
     {
         private readonly IPlexApi _plexApi;
         private readonly IPlexService _plexService;
+        private readonly IUnitOfWork _unitOfWork;
         private readonly PlexSettings _plexSettings;
 
         public SyncLibrariesCommandHandler(
             IPlexApi plexApi,
             IPlexService plexService,
+            IUnitOfWork unitOfWork,
             IOptions<PlexSettings> plexSettings)
         {
             _plexApi = plexApi;
             _plexService = plexService;
+            _unitOfWork = unitOfWork;
             _plexSettings = plexSettings.Value;
         }
 
@@ -35,30 +40,34 @@ namespace PlexRequests.ApiRequests.Plex.Commands
             CheckForDeletedLibraries(server, libraryContainer);
 
             SetNewLibraries(libraryContainer, server);
-
-            await _plexService.Update(server);
+            
+            await _unitOfWork.CommitAsync();
         }
 
-        private static void SetNewLibraries(PlexMediaContainer libraryContainer, PlexServer server)
+        private static void SetNewLibraries(PlexMediaContainer libraryContainer, PlexServerRow server)
         {
             var newLibraries =
                 libraryContainer.MediaContainer.Directory.Where(rl =>
-                    !server.Libraries.Select(x => x.Key).Contains(rl.Key)).Select(nl => new PlexServerLibrary
+                    !server.PlexLibraries.Select(x => x.LibraryKey).Contains(rl.Key)).Select(nl => new PlexLibraryRow
                 {
-                    Key = nl.Key,
+                    LibraryKey = nl.Key,
                     Title = nl.Title,
                     Type = nl.Type,
                     IsEnabled = false
                 });
 
-            server.Libraries.AddRange(newLibraries);
+
+            foreach (var newLibrary in newLibraries)
+            {
+                server.PlexLibraries.Add(newLibrary);
+            }
         }
 
-        private static void CheckForDeletedLibraries(PlexServer server, PlexMediaContainer libraryContainer)
+        private static void CheckForDeletedLibraries(PlexServerRow server, PlexMediaContainer libraryContainer)
         {
-            foreach (var existingLibrary in server.Libraries.Where(x => !x.IsArchived))
+            foreach (var existingLibrary in server.PlexLibraries.Where(x => !x.IsArchived))
             {
-                var libraryExists = libraryContainer.MediaContainer.Directory.Any(x => x.Key == existingLibrary.Key);
+                var libraryExists = libraryContainer.MediaContainer.Directory.Any(x => x.Key == existingLibrary.LibraryKey);
 
                 if (libraryExists)
                 {

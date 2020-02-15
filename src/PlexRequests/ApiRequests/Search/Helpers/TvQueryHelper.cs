@@ -4,9 +4,9 @@ using System.Threading.Tasks;
 using AutoMapper;
 using PlexRequests.ApiRequests.Search.Models;
 using PlexRequests.Core.Services;
+using PlexRequests.DataAccess.Dtos;
+using PlexRequests.DataAccess.Enums;
 using PlexRequests.Plex.MediaItemRetriever;
-using PlexRequests.Repository.Enums;
-using PlexRequests.Repository.Models;
 using PlexRequests.TheMovieDb.Models;
 
 namespace PlexRequests.ApiRequests.Search.Helpers
@@ -41,12 +41,12 @@ namespace PlexRequests.ApiRequests.Search.Helpers
                 if (!requests.TryGetValue(searchModel.Id, out var associatedRequest))
                 {
                     var plexMediaItem = await _mediaItemRetriever.Get(searchModel.Id);
-                    searchModel.PlexMediaUri = plexMediaItem?.PlexMediaUri;
+                    searchModel.PlexMediaUri = plexMediaItem?.MediaUri;
                 }
                 else
                 {
-                    searchModel.RequestStatus = associatedRequest.Status;
-                    searchModel.PlexMediaUri = associatedRequest.PlexMediaUri;
+                    searchModel.RequestStatus = associatedRequest.RequestStatus;
+                    searchModel.PlexMediaUri = associatedRequest.PlexMediaItem?.MediaUri;
                 }
             }
 
@@ -62,12 +62,12 @@ namespace PlexRequests.ApiRequests.Search.Helpers
             if (!associatedRequestLookup.TryGetValue(tvDetailModel.Id, out var associatedRequest))
             {
                 var plexMediaItem = await _mediaItemRetriever.Get(tvDetailModel.Id);
-                tvDetailModel.PlexMediaUri = plexMediaItem?.PlexMediaUri;
+                tvDetailModel.PlexMediaUri = plexMediaItem?.MediaUri;
             }
             else
             {
-                tvDetailModel.RequestStatus = associatedRequest.Status;
-                tvDetailModel.PlexMediaUri = associatedRequest.PlexMediaUri;
+                tvDetailModel.RequestStatus = associatedRequest.RequestStatus;
+                tvDetailModel.PlexMediaUri = associatedRequest.PlexMediaItem.MediaUri;
             }
 
             return tvDetailModel;
@@ -81,20 +81,20 @@ namespace PlexRequests.ApiRequests.Search.Helpers
 
             if (associatedRequestLookup.TryGetValue(tvId, out var associatedRequest))
             {
-                var requestSeason = associatedRequest.Seasons.FirstOrDefault(x => x.Index == tvSeasonDetailModel.Index);
+                var requestSeason = associatedRequest.TvRequestSeasons.FirstOrDefault(x => x.SeasonIndex == tvSeasonDetailModel.Index);
 
                 if (requestSeason != null)
                 {
-                    tvSeasonDetailModel.RequestStatus = requestSeason.Status;
+                    tvSeasonDetailModel.RequestStatus = requestSeason.RequestStatus;
                 }
             }
 
             var plexMediaItem = await _mediaItemRetriever.Get(tvId);
-            var plexMediaSeason = plexMediaItem?.Seasons?.FirstOrDefault(x => x.Season == tvSeasonDetailModel.Index);
+            var plexMediaSeason = plexMediaItem?.PlexSeasons?.FirstOrDefault(x => x.Season == tvSeasonDetailModel.Index);
 
             if (plexMediaSeason != null)
             {
-                tvSeasonDetailModel.PlexMediaUri = plexMediaSeason.PlexMediaUri;
+                tvSeasonDetailModel.PlexMediaUri = plexMediaSeason.MediaUri;
 
                 SetEpisodePlexMediaUris(tvSeasonDetailModel, plexMediaSeason);
             }
@@ -102,17 +102,17 @@ namespace PlexRequests.ApiRequests.Search.Helpers
             return tvSeasonDetailModel;
         }
 
-        private void SetEpisodePlexMediaUris(TvSeasonDetailModel tvSeasonDetailModel, PlexSeason plexMediaSeason)
+        private void SetEpisodePlexMediaUris(TvSeasonDetailModel tvSeasonDetailModel, PlexSeasonRow plexMediaSeason)
         {
             foreach (var episodeModel in tvSeasonDetailModel.Episodes)
             {
                 if (string.IsNullOrEmpty(episodeModel.PlexMediaUri))
                 {
-                    var plexEpisode = plexMediaSeason.Episodes.FirstOrDefault(x => x.Episode == episodeModel.Index);
+                    var plexEpisode = plexMediaSeason.PlexEpisodes.FirstOrDefault(x => x.Episode == episodeModel.Index);
 
                     if (plexEpisode != null)
                     {
-                        episodeModel.PlexMediaUri = plexEpisode.PlexMediaUri;
+                        episodeModel.PlexMediaUri = plexEpisode.MediaUri;
                     }
                 }
             }

@@ -3,8 +3,9 @@ using System.Linq;
 using System.Threading.Tasks;
 using Microsoft.Extensions.Logging;
 using PlexRequests.Core.Services.AutoCompletion;
-using PlexRequests.Repository.Enums;
-using PlexRequests.Repository.Models;
+using PlexRequests.DataAccess;
+using PlexRequests.DataAccess.Dtos;
+using PlexRequests.DataAccess.Enums;
 
 namespace PlexRequests.Core.Services
 {
@@ -17,18 +18,19 @@ namespace PlexRequests.Core.Services
         public CompletionService(
             IMovieRequestService movieRequestService,
             ITvRequestService tvRequestService,
+            IUnitOfWork unitOfWork,
             ILogger<CompletionService> logger
         )
         {
             _logger = logger;
             _autoCompleters = new List<IAutoComplete>
             {
-                new MovieAutoCompletion(movieRequestService),
-                new TvAutoCompletion(tvRequestService)
+                new MovieAutoCompletion(movieRequestService, unitOfWork),
+                new TvAutoCompletion(tvRequestService, unitOfWork)
             };
         }
 
-        public async Task AutoCompleteRequests(Dictionary<MediaAgent, PlexMediaItem> agentsByPlexId,
+        public async Task AutoCompleteRequests(Dictionary<MediaAgent, PlexMediaItemRow> agentsByPlexId,
             PlexMediaTypes mediaType)
         {
             var completer = _autoCompleters.FirstOrDefault(x => x.MediaType == mediaType);

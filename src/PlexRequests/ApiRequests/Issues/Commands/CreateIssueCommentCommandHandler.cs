@@ -1,4 +1,3 @@
-using System;
 using System.Net;
 using System.Threading;
 using System.Threading.Tasks;
@@ -6,7 +5,9 @@ using MediatR;
 using PlexRequests.Core.Exceptions;
 using PlexRequests.Core.Helpers;
 using PlexRequests.Core.Services;
-using PlexRequests.Repository.Models;
+using PlexRequests.DataAccess;
+using PlexRequests.DataAccess.Dtos;
+
 // ReSharper disable ParameterOnlyUsedForPreconditionCheck.Local
 
 namespace PlexRequests.ApiRequests.Issues.Commands
@@ -14,13 +15,16 @@ namespace PlexRequests.ApiRequests.Issues.Commands
     public class CreateIssueCommentCommandHandler : AsyncRequestHandler<CreateIssueCommentCommand>
     {
         private readonly IIssueService _issueService;
+        private readonly IUnitOfWork _unitOfWork;
         private readonly IClaimsPrincipalAccessor _claimsPrincipalAccessor;
 
         public CreateIssueCommentCommandHandler(
             IIssueService issueService,
+            IUnitOfWork unitOfWork,
             IClaimsPrincipalAccessor claimsPrincipalAccessor)
         {
             _issueService = issueService;
+            _unitOfWork = unitOfWork;
             _claimsPrincipalAccessor = claimsPrincipalAccessor;
         }
 
@@ -35,17 +39,15 @@ namespace PlexRequests.ApiRequests.Issues.Commands
                 throw new PlexRequestException("Comment not created", "An issue could not be found with the given Id", HttpStatusCode.NotFound);
             }
 
-            var issueComment = new IssueComment
+            var issueComment = new IssueCommentRow
             {
                 UserId = _claimsPrincipalAccessor.UserId,
-                UserName = _claimsPrincipalAccessor.Username,
-                Comment = command.Comment,
-                Created = DateTime.UtcNow
+                Comment = command.Comment
             };
 
-            issue.Comments.Add(issueComment);
+            issue.IssueComments.Add(issueComment);
 
-            await _issueService.Update(issue);
+            await _unitOfWork.CommitAsync();
         }
 
         private void ValidateCommand(CreateIssueCommentCommand command)

@@ -6,9 +6,10 @@ using System.Threading.Tasks;
 using MediatR;
 using PlexRequests.Core.Auth;
 using PlexRequests.Core.Services;
+using PlexRequests.DataAccess;
+using PlexRequests.DataAccess.Dtos;
 using PlexRequests.Plex;
 using PlexRequests.Plex.Models;
-using User = PlexRequests.Repository.Models.User;
 
 namespace PlexRequests.ApiRequests.Plex.Commands
 {
@@ -17,15 +18,18 @@ namespace PlexRequests.ApiRequests.Plex.Commands
         private readonly IPlexApi _plexApi;
         private readonly IUserService _userService;
         private readonly IPlexService _plexService;
+        private readonly IUnitOfWork _unitOfWork;
 
         public SyncUsersCommandHandler(
             IPlexApi plexApi,
             IUserService userService,
-            IPlexService plexService)
+            IPlexService plexService,
+            IUnitOfWork unitOfWork)
         {
             _plexApi = plexApi;
             _userService = userService;
             _plexService = plexService;
+            _unitOfWork = unitOfWork;
         }
 
         protected override async Task Handle(SyncUsersCommand request, CancellationToken cancellationToken)
@@ -36,9 +40,11 @@ namespace PlexRequests.ApiRequests.Plex.Commands
 
             var existingFriends = await _userService.GetAllUsers();
 
-            await DisableDeletedUsers(existingFriends, remoteFriends);
+            DisableDeletedUsers(existingFriends, remoteFriends);
 
             await CreateNewUsers(remoteFriends);
+
+            await _unitOfWork.CommitAsync();
         }
 
         private async Task CreateNewUsers(List<Friend> remoteFriends)
@@ -50,19 +56,30 @@ namespace PlexRequests.ApiRequests.Plex.Commands
                     continue;
                 }
 
-                var user = new User
+                var user = new UserRow
                 {
+                    Identifier = Guid.NewGuid(),
                     Username = friend.Username,
                     Email = friend.Email,
                     PlexAccountId = Convert.ToInt32(friend.Id),
-                    Roles = new List<string> { PlexRequestRoles.User, PlexRequestRoles.Commenter }
+                    UserRoles = new List<UserRoleRow>
+                    {
+                        new UserRoleRow
+                        {
+                            Role = PlexRequestRoles.User
+                        },
+                        new UserRoleRow
+                        {
+                            Role = PlexRequestRoles.Commenter
+                        }
+                    }
                 };
 
-                await _userService.CreateUser(user);
+                await _userService.AddUser(user);
             }
         }
 
-        private async Task DisableDeletedUsers(List<User> existingFriends, List<Friend> remoteFriends)
+        private static void DisableDeletedUsers(IEnumerable<UserRow> existingFriends, IReadOnlyCollection<Friend> remoteFriends)
         {
             var deletedFriends = existingFriends
                 .Where(ef => !remoteFriends.Select(rf => rf.Email).Contains(ef.Email) && !ef.IsAdmin).ToList();
@@ -70,7 +87,6 @@ namespace PlexRequests.ApiRequests.Plex.Commands
             foreach (var friend in deletedFriends)
             {
                 friend.IsDisabled = true;
-                await _userService.UpdateUser(friend);
             }
         }
     }

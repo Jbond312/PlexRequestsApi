@@ -1,12 +1,12 @@
 using System.Threading.Tasks;
-using PlexRequests.Repository.Models;
-using PlexRequests.Repository.Enums;
+using PlexRequests.DataAccess.Dtos;
+using PlexRequests.DataAccess.Enums;
 
 namespace PlexRequests.Plex.MediaItemRetriever
 {
     public interface IMediaItemRetriever
     {
-        Task<PlexMediaItem> Get(int theMovieDbId);
+        Task<PlexMediaItemRow> Get(int theMovieDbId);
         PlexMediaTypes MediaType { get; }
     }
 }
