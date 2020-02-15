@@ -180,7 +180,8 @@ namespace PlexRequests.ApiRequests.Requests.Commands
                 Title = tvDetails.Result.Name,
                 AirDateUtc = DateTime.Parse(tvDetails.Result.First_Air_Date),
                 ImagePath = tvDetails.Result.Poster_Path,
-                Track = request.TrackShow
+                Track = request.TrackShow,
+                TheMovieDbId = request.TheMovieDbId
             };
 
             tvRequest.TvRequestAgents.Add(new TvRequestAgentRow(AgentTypes.TheMovieDb, request.TheMovieDbId.ToString()));

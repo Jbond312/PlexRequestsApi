@@ -3,6 +3,7 @@ using System.ComponentModel.DataAnnotations.Schema;
 
 namespace PlexRequests.DataAccess.Dtos
 {
+    [Table("TvRequestUsers", Schema = "Plex")]
     public class TvRequestUserRow : TimestampRow
     {
         [Key]

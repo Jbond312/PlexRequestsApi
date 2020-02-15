@@ -46,7 +46,7 @@ namespace PlexRequests.Core.Services
         public async Task<Dictionary<int, TvRequestRow>> GetRequestsByMovieDbIds(List<int> moviedbIds)
         {
             var idsAsSourceIds = moviedbIds.Select(x => x.ToString()).ToList();
-            var requests = await _requestRepository.GetMany(x => idsAsSourceIds.Contains(x.PrimaryAgent.AgentSourceId));
+            var requests = (await _requestRepository.GetMany()).AsEnumerable().Where(x => idsAsSourceIds.Contains(x.PrimaryAgent.AgentSourceId));
             return requests.ToDictionary(x => int.Parse(x.PrimaryAgent.AgentSourceId), x => x);
         }
 

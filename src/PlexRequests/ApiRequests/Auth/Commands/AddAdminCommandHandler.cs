@@ -147,6 +147,7 @@ namespace PlexRequests.ApiRequests.Auth.Commands
             _logger.LogInformation("Found a PlexServer owned by the Admin account");
             var plexServer = new PlexServerRow
             {
+                Identifier = Guid.NewGuid(),
                 AccessToken = adminServer.AccessToken,
                 Name = adminServer.Name,
                 MachineIdentifier = adminServer.MachineIdentifier,

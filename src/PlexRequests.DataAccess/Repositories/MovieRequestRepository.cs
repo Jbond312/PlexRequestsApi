@@ -16,6 +16,7 @@ namespace PlexRequests.DataAccess.Repositories
         Task<Paged<MovieRequestRow>> GetPaged(string title, RequestStatuses? status, int? userId, int? page,
             int? pageSize);
         Task<MovieRequestRow> GetOne(Expression<Func<MovieRequestRow, bool>> filter);
+        Task<MovieRequestRow> GetOne(AgentTypes agentType, string agentSourceId);
         Task Delete(int id);
     }
 
@@ -95,6 +96,15 @@ namespace PlexRequests.DataAccess.Repositories
         public async Task<MovieRequestRow> GetOne(Expression<Func<MovieRequestRow, bool>> filter)
         {
             return await DbContext.MovieRequests.FirstOrDefaultAsync(filter);
+        }
+
+        public async Task<MovieRequestRow> GetOne(AgentTypes agentType, string agentSourceId)
+        {
+            return await DbContext.
+                MovieRequests
+                .Include(x => x.MovieRequestAgents)
+                .Where(x => x.MovieRequestAgents.Any(mra => mra.AgentType == agentType && mra.AgentSourceId == agentSourceId)).
+                FirstOrDefaultAsync();
         }
 
         public async Task Delete(int id)

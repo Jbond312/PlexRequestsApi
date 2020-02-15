@@ -5,11 +5,13 @@ using PlexRequests.DataAccess.Enums;
 
 namespace PlexRequests.DataAccess.Dtos
 {
+    [Table("Issues", Schema = "Plex")]
     public class IssueRow : TimestampRow
     {
         public IssueRow()
         {
             IssueComments = new List<IssueCommentRow>();
+            IssueStatus = IssueStatuses.Pending;
         }
 
         [Key]
@@ -22,6 +24,7 @@ namespace PlexRequests.DataAccess.Dtos
         public int UserId { get; set; }
         public string Title { get; set; }
         public string Description { get; set; }
+        [Column("IssueStatusId")]
         public IssueStatuses IssueStatus { get; set; }
         public virtual  ICollection<IssueCommentRow> IssueComments { get; set; }
     }

@@ -23,7 +23,9 @@ namespace PlexRequests.DataAccess.Repositories
 
         public async Task<PlexServerRow> Get()
         {
-            return await DbContext.PlexServers.FirstOrDefaultAsync();
+            return await DbContext.PlexServers
+                .Include(x => x.PlexLibraries).
+                FirstOrDefaultAsync();
         }
     }
 }

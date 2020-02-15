@@ -37,12 +37,12 @@ namespace PlexRequests.Controllers
         }
 
         [HttpPut]
-        [Route("{id:guid}")]
+        [Route("{id:int}")]
         [Admin]
         [SwaggerResponse(204)]
         [SwaggerResponse(400, null, typeof(ApiErrorResponse))]
         [SwaggerResponse(401)]
-        public async Task<ActionResult> UpdateUser([FromRoute] Guid id, [FromBody] UpdateUserCommand command)
+        public async Task<ActionResult> UpdateUser([FromRoute] int id, [FromBody] UpdateUserCommand command)
         {
             command.Id = id;
             await _mediator.Send(command);

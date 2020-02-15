@@ -7,6 +7,11 @@ namespace PlexRequests.DataAccess.Dtos
     [Table("PlexLibraries", Schema = "Plex")]
     public class PlexLibraryRow : TimestampRow
     {
+        public PlexLibraryRow()
+        {
+            PlexMediaItems = new List<PlexMediaItemRow>();
+        }
+
         [Key]
         public int PlexLibraryId { get; set; }
         [ForeignKey("PlexServerId")]

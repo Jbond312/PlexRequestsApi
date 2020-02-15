@@ -1,4 +1,5 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
 using Microsoft.Extensions.Logging;
@@ -42,6 +43,7 @@ namespace PlexRequests.Sync.SyncProcessors
             {
                 mediaItem = new PlexMediaItemRow
                 {
+                    Identifier = Guid.NewGuid(),
                     MediaItemKey = ratingKey,
                     MediaType = mediaType,
                     Title = metadata.Title,

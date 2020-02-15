@@ -9,6 +9,12 @@ namespace PlexRequests.DataAccess
         {
         }
 
+        protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)
+        {
+            optionsBuilder.UseLazyLoadingProxies();
+            base.OnConfiguring(optionsBuilder);
+        }
+
         public DbSet<UserRow> Users { get; set; }
         public DbSet<UserRoleRow> UserRoles { get; set; }
         public DbSet<UserRefreshTokenRow> UserRefreshTokens { get; set; }

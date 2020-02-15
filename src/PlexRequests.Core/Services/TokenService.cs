@@ -35,7 +35,7 @@ namespace PlexRequests.Core.Services
             var claims = new List<Claim>
             {
                 new Claim(ClaimTypes.Name, user.Username),
-                new Claim(JwtRegisteredClaimNames.Sub, user.Identifier.ToString()),
+                new Claim(JwtRegisteredClaimNames.Sub, user.UserId.ToString()),
                 new Claim(JwtRegisteredClaimNames.Jti, Guid.NewGuid().ToString("N"))
             };
 

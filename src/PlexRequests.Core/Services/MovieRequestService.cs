@@ -31,7 +31,7 @@ namespace PlexRequests.Core.Services
 
         public async Task<MovieRequestRow> GetExistingRequest(AgentTypes agentType, string agentSourceId)
         {
-            return await _requestRepository.GetOne(x => x.PrimaryAgent.AgentType == agentType && x.PrimaryAgent.AgentSourceId == agentSourceId);
+            return await _requestRepository.GetOne(agentType, agentSourceId);
         }
 
         public async Task<List<MovieRequestRow>> GetIncompleteRequests()
@@ -42,7 +42,7 @@ namespace PlexRequests.Core.Services
         public async Task<Dictionary<int, MovieRequestRow>> GetRequestsByMovieDbIds(List<int> moviedbIds)
         {
             var idsAsSourceIds = moviedbIds.Select(x => x.ToString()).ToList();
-            var requests = await _requestRepository.GetMany(x => idsAsSourceIds.Contains(x.PrimaryAgent.AgentSourceId));
+            var requests = (await _requestRepository.GetMany()).AsEnumerable().Where(x => idsAsSourceIds.Contains(x.PrimaryAgent.AgentSourceId));
             return requests.ToDictionary(x => int.Parse(x.PrimaryAgent.AgentSourceId), x => x);
         }
 

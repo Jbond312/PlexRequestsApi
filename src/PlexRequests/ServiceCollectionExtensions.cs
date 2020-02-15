@@ -25,7 +25,7 @@ namespace PlexRequests
 {
     public static class ServiceCollectionExtensions
     {
-        public static void RegisterDependencies(this IServiceCollection services, DatabaseSettings databaseSettings, IConfiguration configuration)
+        public static void RegisterDependencies(this IServiceCollection services, IConfiguration configuration)
         {
             RegisterServices(services);
             RegisterDbContext(services, configuration);
@@ -115,7 +115,7 @@ namespace PlexRequests
                 return;
             }
 
-            var user = await userService.GetUser(Guid.Parse(userIdClaim.Value));
+            var user = await userService.GetUser(int.Parse(userIdClaim.Value));
 
             if (user == null)
             {

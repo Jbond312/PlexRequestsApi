@@ -95,13 +95,11 @@ namespace PlexRequests
             services.Configure<AuthenticationSettings>(Configuration.GetSection(nameof(AuthenticationSettings)));
             services.Configure<TheMovieDbSettings>(Configuration.GetSection(nameof(TheMovieDbSettings)));
             services.Configure<PlexSettings>(Configuration.GetSection(nameof(PlexSettings)));
-            services.Configure<DatabaseSettings>(Configuration.GetSection(nameof(DatabaseSettings)));
             services.Configure<PlexRequestsSettings>(Configuration.GetSection(nameof(PlexRequestsSettings)));
 
             var authSettings = Configuration.GetSection(nameof(AuthenticationSettings)).Get<AuthenticationSettings>();
-            var databaseSettings = Configuration.GetSection(nameof(DatabaseSettings)).Get<DatabaseSettings>();
 
-            services.RegisterDependencies(databaseSettings, Configuration);
+            services.RegisterDependencies(Configuration);
             services.ConfigureJwtAuthentication(authSettings, Environment.IsProduction());
         }
 

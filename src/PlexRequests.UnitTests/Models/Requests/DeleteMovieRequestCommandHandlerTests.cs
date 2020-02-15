@@ -12,6 +12,7 @@ using PlexRequests.ApiRequests.Requests.Commands;
 using PlexRequests.Core.Exceptions;
 using PlexRequests.Core.Helpers;
 using PlexRequests.Core.Services;
+using PlexRequests.DataAccess;
 using PlexRequests.DataAccess.Dtos;
 using TestStack.BDDfy;
 using Xunit;
@@ -24,6 +25,7 @@ namespace PlexRequests.UnitTests.Models.Requests
         
         private DeleteMovieRequestCommand _command;
         private readonly IMovieRequestService _requestService;
+        private readonly IUnitOfWork _unitOfWork;
         private readonly IClaimsPrincipalAccessor _claimsUserAccessor;
 
         private readonly Fixture _fixture;
@@ -33,9 +35,10 @@ namespace PlexRequests.UnitTests.Models.Requests
         public DeleteMovieRequestCommandHandlerTests()
         {
             _requestService = Substitute.For<IMovieRequestService>();
+            _unitOfWork = Substitute.For<IUnitOfWork>();
             _claimsUserAccessor = Substitute.For<IClaimsPrincipalAccessor>();
             
-            _underTest = new DeleteMovieRequestCommandHandler(_requestService, _claimsUserAccessor);
+            _underTest = new DeleteMovieRequestCommandHandler(_requestService, _unitOfWork, _claimsUserAccessor);
             
             _fixture = new Fixture();
             _fixture.Behaviors.OfType<ThrowingRecursionBehavior>().ToList()
@@ -50,6 +53,7 @@ namespace PlexRequests.UnitTests.Models.Requests
                 .Given(x => x.GivenNoRequestIsFound())
                 .When(x => x.WhenCommandActionIsCreated())
                 .Then(x => x.ThenErrorIsThrown("Invalid request id", "A request for the given id was not found.", HttpStatusCode.NotFound))
+                .Then(x => x.ThenChangesAreNotCommitted())
                 .BDDfy();
         }
 
@@ -61,6 +65,7 @@ namespace PlexRequests.UnitTests.Models.Requests
                 .Given(x=> x.GivenRequestUserIsNotCurrentUser())
                 .When(x => x.WhenCommandActionIsCreated())
                 .Then(x => x.ThenErrorIsThrown("Unable to delete request", "Forbidden access to protected resource.", HttpStatusCode.Forbidden))
+                .Then(x => x.ThenChangesAreNotCommitted())
                 .BDDfy();
         }
 
@@ -72,6 +77,7 @@ namespace PlexRequests.UnitTests.Models.Requests
                 .Given(x => x.GivenRequestUserIsCurrentUser())
                 .When(x => x.WhenCommandActionIsCreated())
                 .Then(x => x.ThenDeleteIsSuccessful())
+                .Then(x => x.ThenChangesAreCommitted())
                 .BDDfy();
         }
 
@@ -120,6 +126,16 @@ namespace PlexRequests.UnitTests.Models.Requests
             _commandAction.Should().NotThrow();
             
             _requestService.Received().DeleteRequest(Arg.Is(_command.Id));
+        }
+
+        private void ThenChangesAreCommitted()
+        {
+            _unitOfWork.Received(1).CommitAsync();
+        }
+
+        private void ThenChangesAreNotCommitted()
+        {
+            _unitOfWork.DidNotReceive().CommitAsync();
         }
     }
 }

@@ -8,6 +8,12 @@ namespace PlexRequests.DataAccess.Dtos
     [Table("Users", Schema = "Plex")]
     public class UserRow : TimestampRow
     {
+        public UserRow()
+        {
+            UserRoles = new List<UserRoleRow>();
+            UserRefreshTokens = new List<UserRefreshTokenRow>();
+        }
+
         [Key]
         public int UserId { get; set; }
         public Guid Identifier { get; set; }

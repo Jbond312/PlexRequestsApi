@@ -6,6 +6,7 @@ using Microsoft.Extensions.Logging;
 using PlexRequests.Core.Exceptions;
 using PlexRequests.Core.Helpers;
 using PlexRequests.Core.Services;
+using PlexRequests.DataAccess;
 using PlexRequests.DataAccess.Dtos;
 using PlexRequests.DataAccess.Enums;
 using PlexRequests.Plex;
@@ -19,18 +20,21 @@ namespace PlexRequests.ApiRequests.Requests.Commands
         private readonly ITheMovieDbService _theMovieDbService;
         private readonly IMovieRequestService _requestService;
         private readonly IPlexService _plexService;
+        private readonly IUnitOfWork _unitOfWork;
         private readonly IClaimsPrincipalAccessor _claimsPrincipalAccessor;
         private readonly ILogger<CreateRequestCommandHandler> _logger;
 
         public CreateRequestCommandHandler(ITheMovieDbService theMovieDbService,
             IMovieRequestService requestService,
             IPlexService plexService,
+            IUnitOfWork unitOfWork,
             IClaimsPrincipalAccessor claimsPrincipalAccessor,
             ILogger<CreateRequestCommandHandler> logger)
         {
             _theMovieDbService = theMovieDbService;
             _requestService = requestService;
             _plexService = plexService;
+            _unitOfWork = unitOfWork;
             _claimsPrincipalAccessor = claimsPrincipalAccessor;
             _logger = logger;
         }
@@ -46,6 +50,8 @@ namespace PlexRequests.ApiRequests.Requests.Commands
             await ValidateRequestedItemNotInPlex(request.TheMovieDbId, externalIds);
 
             await CreateRequest(request, movieDetail, externalIds);
+
+            await _unitOfWork.CommitAsync();
         }
 
         private async Task<MovieDetails> GetMovieDetails(int theMovieDbId)
@@ -61,6 +67,7 @@ namespace PlexRequests.ApiRequests.Requests.Commands
                 Title = movieDetail.Title,
                 AirDateUtc = DateTime.Parse(movieDetail.Release_Date),
                 ImagePath = movieDetail.Poster_Path,
+                TheMovieDbId = request.TheMovieDbId
             };
 
             newRequest.MovieRequestAgents.Add(new MovieRequestAgentRow(AgentTypes.TheMovieDb, request.TheMovieDbId.ToString()));

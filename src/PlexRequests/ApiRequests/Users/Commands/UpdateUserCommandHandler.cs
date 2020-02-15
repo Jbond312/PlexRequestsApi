@@ -48,7 +48,7 @@ namespace PlexRequests.ApiRequests.Users.Commands
 
             if (user == null)
             {
-                throw new PlexRequestException("Invalid user id", "A user for the given id was not fond",
+                throw new PlexRequestException("Invalid user id", "A user for the given id was not found",
                     HttpStatusCode.NotFound);
             }
 

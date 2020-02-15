@@ -2,7 +2,7 @@ namespace PlexRequests.DataAccess.Enums
 {
     public enum IssueStatuses
     {
-        Pending,
+        Pending = 1,
         InProgress,
         Resolved
     }

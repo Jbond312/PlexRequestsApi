@@ -148,6 +148,7 @@ CREATE TABLE Plex.MovieRequests
 	TheMovieDbId INT NOT NULL,
 	PlexMediaItemId INT NULL,
 	UserId INT NOT NULL,
+	Title NVARCHAR(256) NOT NULL,
 	RequestStatusId INT NOT NULL,
 	ImagePath NVARCHAR(2048) NULL,
 	AirDateUTC DATETIME NULL,

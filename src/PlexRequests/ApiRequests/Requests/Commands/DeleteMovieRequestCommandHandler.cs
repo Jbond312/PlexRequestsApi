@@ -5,6 +5,7 @@ using MediatR;
 using PlexRequests.Core.Exceptions;
 using PlexRequests.Core.Helpers;
 using PlexRequests.Core.Services;
+using PlexRequests.DataAccess;
 using PlexRequests.DataAccess.Dtos;
 
 // ReSharper disable ParameterOnlyUsedForPreconditionCheck.Local
@@ -14,14 +15,17 @@ namespace PlexRequests.ApiRequests.Requests.Commands
     public class DeleteMovieRequestCommandHandler : AsyncRequestHandler<DeleteMovieRequestCommand>
     {
         private readonly IMovieRequestService _requestService;
+        private readonly IUnitOfWork _unitOfWork;
         private readonly IClaimsPrincipalAccessor _claimsUserAccessor;
 
         public DeleteMovieRequestCommandHandler(
             IMovieRequestService requestService,
+            IUnitOfWork unitOfWork,
             IClaimsPrincipalAccessor claimsUserAccessor
             )
         {
             _requestService = requestService;
+            _unitOfWork = unitOfWork;
             _claimsUserAccessor = claimsUserAccessor;
         }
         
@@ -32,6 +36,8 @@ namespace PlexRequests.ApiRequests.Requests.Commands
             ValidateUserCanDeleteRequest(request);
 
             await _requestService.DeleteRequest(command.Id);
+
+            await _unitOfWork.CommitAsync();
         }
 
         private void ValidateUserCanDeleteRequest(MovieRequestRow request)

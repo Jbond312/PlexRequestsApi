@@ -58,6 +58,7 @@ namespace PlexRequests.ApiRequests.Plex.Commands
 
                 var user = new UserRow
                 {
+                    Identifier = Guid.NewGuid(),
                     Username = friend.Username,
                     Email = friend.Email,
                     PlexAccountId = Convert.ToInt32(friend.Id),

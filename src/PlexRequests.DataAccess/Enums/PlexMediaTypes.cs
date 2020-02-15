@@ -2,7 +2,7 @@
 {
     public enum PlexMediaTypes
     {
-        Movie,
+        Movie = 1,
         Show
     }
 }

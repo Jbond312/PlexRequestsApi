@@ -28,6 +28,7 @@ namespace PlexRequests.Sync.UnitTests
         private readonly IPlexService _plexService;
         private readonly IProcessorProvider _processorProvider;
         private readonly ICompletionService _completionService;
+        private readonly IUnitOfWork _unitOfWork;
 
         private readonly Fixture _fixture;
 
@@ -36,7 +37,6 @@ namespace PlexRequests.Sync.UnitTests
         private PlexMediaContainer _remoteLibraryContainer;
         private ISyncProcessor _syncProcessor;
         private SyncResult _syncProcessorResult;
-        private List<PlexMediaItemRow> _createdMediaItems;
 
         public PlexSyncTests()
         {
@@ -44,6 +44,7 @@ namespace PlexRequests.Sync.UnitTests
             _plexService = Substitute.For<IPlexService>();
             _processorProvider = Substitute.For<IProcessorProvider>();
             _completionService = Substitute.For<ICompletionService>();
+            _unitOfWork = Substitute.For<IUnitOfWork>();
 
             var logger = Substitute.For<ILogger<PlexSync>>();
 
@@ -55,7 +56,7 @@ namespace PlexRequests.Sync.UnitTests
             var plexSettings = _fixture.Create<PlexSettings>();
             var options = Options.Create(plexSettings);
 
-            _underTest = new PlexSync(_plexApi, _plexService, _completionService, _processorProvider, options, logger);
+            _underTest = new PlexSync(_plexApi, _plexService, _completionService, _processorProvider, _unitOfWork, options, logger);
         }
 
         [Fact]
@@ -67,6 +68,7 @@ namespace PlexRequests.Sync.UnitTests
                 .When(x => x.WhenACommandActionIsCreated(true))
                 .Then(x => x.ThenCommandShouldBeSuccessful())
                 .Then(x => x.ThenExistingPlexItemsAreDeleted())
+                .Then(x => x.ThenChangesAreNotCommited())
                 .BDDfy();
         }
 
@@ -80,6 +82,7 @@ namespace PlexRequests.Sync.UnitTests
                 .When(x => x.WhenACommandActionIsCreated(true))
                 .Then(x => x.ThenCommandShouldBeSuccessful())
                 .Then(x => x.ThenAllLibraryMetadataIsRetrieved())
+                .Then(x => x.ThenChangesAreCommited())
                 .BDDfy();
         }
 
@@ -93,6 +96,7 @@ namespace PlexRequests.Sync.UnitTests
                 .When(x => x.WhenACommandActionIsCreated(false))
                 .Then(x => x.ThenCommandShouldBeSuccessful())
                 .Then(x => x.ThenRecentlyAddedMetadataIsRetrieved())
+                .Then(x => x.ThenChangesAreCommited())
                 .BDDfy();
         }
 
@@ -103,10 +107,9 @@ namespace PlexRequests.Sync.UnitTests
                 .Given(x => x.GivenASingleEnabledLibrary())
                 .Given(x => x.GivenMatchingRemoteLibraries())
                 .Given(x => x.GivenASyncProcessor())
-                .Given(x => x.GivenSyncResultPersisted())
                 .When(x => x.WhenACommandActionIsCreated(true))
                 .Then(x => x.ThenCommandShouldBeSuccessful())
-                .Then(x => x.ThenSyncResultsShouldHaveBeenPersisted())
+                .Then(x => x.ThenChangesAreCommited())
                 .BDDfy();
         }
 
@@ -130,10 +133,10 @@ namespace PlexRequests.Sync.UnitTests
                 .Given(x => x.GivenASingleEnabledLibrary())
                 .Given(x => x.GivenMatchingRemoteLibraries())
                 .Given(x => x.GivenASyncProcessor())
-                .Given(x => x.GivenSyncResultPersisted())
                 .When(x => x.WhenACommandActionIsCreated(true))
                 .Then(x => x.ThenCommandShouldBeSuccessful())
                 .Then(x => x.ThenRequestsAreAutoCompleted())
+                .Then(x => x.ThenChangesAreCommited())
                 .BDDfy();
         }
 
@@ -192,11 +195,6 @@ namespace PlexRequests.Sync.UnitTests
             _processorProvider.GetProcessor(Arg.Any<string>()).Returns(_syncProcessor);
         }
 
-        private void GivenSyncResultPersisted()
-        {
-            _plexService.CreateMany(Arg.Do<List<PlexMediaItemRow>>(x => _createdMediaItems = x));
-        }
-
         private void WhenACommandActionIsCreated(bool fullRefresh)
         {
             _commandAction = async () => await _underTest.Synchronise(fullRefresh);
@@ -222,11 +220,6 @@ namespace PlexRequests.Sync.UnitTests
             _plexApi.Received().GetRecentlyAdded(Arg.Any<string>(), Arg.Any<string>(), Arg.Any<string>());
         }
 
-        private void ThenSyncResultsShouldHaveBeenPersisted()
-        {
-            _createdMediaItems.Should().BeEquivalentTo(_syncProcessorResult.NewItems);
-        }
-
         private void ThenNoSynchronisationShouldOccur()
         {
             _syncProcessor.DidNotReceive().Synchronise(Arg.Any<PlexMediaContainer>(), Arg.Any<bool>(),
@@ -237,6 +230,16 @@ namespace PlexRequests.Sync.UnitTests
         {
             _completionService
                 .Received(1).AutoCompleteRequests(Arg.Any<Dictionary<MediaAgent, PlexMediaItemRow>>(), Arg.Any<PlexMediaTypes>());
+        }
+
+        private void ThenChangesAreCommited()
+        {
+            _unitOfWork.Received().CommitAsync();
+        }
+
+        private void ThenChangesAreNotCommited()
+        {
+            _unitOfWork.DidNotReceive().CommitAsync();
         }
     }
 }

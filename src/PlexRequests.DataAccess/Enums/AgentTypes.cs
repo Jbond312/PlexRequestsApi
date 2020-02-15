@@ -2,7 +2,7 @@
 {
     public enum AgentTypes
     {
-        TheMovieDb,
+        TheMovieDb = 1,
         TheTvDb,
         Imdb
     }

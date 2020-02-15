@@ -14,6 +14,7 @@ using PlexRequests.ApiRequests.Requests.Commands;
 using PlexRequests.Core.Exceptions;
 using PlexRequests.Core.Helpers;
 using PlexRequests.Core.Services;
+using PlexRequests.DataAccess;
 using PlexRequests.DataAccess.Dtos;
 using PlexRequests.DataAccess.Enums;
 using PlexRequests.Plex;
@@ -31,6 +32,7 @@ namespace PlexRequests.UnitTests.Models.Requests
         private readonly ITheMovieDbService _theMovieDbService;
         private readonly IMovieRequestService _requestService;
         private readonly IPlexService _plexService;
+        private readonly IUnitOfWork _unitOfWork;
         private readonly IClaimsPrincipalAccessor _claimsPrincipalAccessor;
 
         private readonly Fixture _fixture;
@@ -50,10 +52,11 @@ namespace PlexRequests.UnitTests.Models.Requests
             _theMovieDbService = Substitute.For<ITheMovieDbService>();
             _requestService = Substitute.For<IMovieRequestService>();
             _plexService = Substitute.For<IPlexService>();
+            _unitOfWork = Substitute.For<IUnitOfWork>();
             _claimsPrincipalAccessor = Substitute.For<IClaimsPrincipalAccessor>();
             var logger = Substitute.For<ILogger<CreateRequestCommandHandler>>();
 
-            _underTest = new CreateRequestCommandHandler(_theMovieDbService, _requestService, _plexService, _claimsPrincipalAccessor, logger);
+            _underTest = new CreateRequestCommandHandler(_theMovieDbService, _requestService, _plexService, _unitOfWork, _claimsPrincipalAccessor, logger);
 
             _fixture = new Fixture();
             _fixture.Behaviors.OfType<ThrowingRecursionBehavior>().ToList()
@@ -71,6 +74,7 @@ namespace PlexRequests.UnitTests.Models.Requests
                 .When(x => x.WhenCommandActionIsCreated())
                 .Then(x => x.ThenErrorIsThrown("Request not created", "The Movie has already been requested.",
                     HttpStatusCode.BadRequest))
+                .Then(x => x.ThenChangesAreNotCommitted())
                 .BDDfy();
         }
 
@@ -84,6 +88,7 @@ namespace PlexRequests.UnitTests.Models.Requests
                 .When(x => x.WhenCommandActionIsCreated())
                 .Then(x => x.ThenErrorIsThrown("Request not created", "The Movie is already available in Plex.",
                     HttpStatusCode.BadRequest))
+                .Then(x => x.ThenChangesAreNotCommitted())
                 .BDDfy();
         }
 
@@ -98,6 +103,7 @@ namespace PlexRequests.UnitTests.Models.Requests
                 .When(x => x.WhenCommandActionIsCreated())
                 .Then(x => x.ThenErrorIsThrown("Request not created", "The Movie is already available in Plex.",
                     HttpStatusCode.BadRequest))
+                .Then(x => x.ThenChangesAreNotCommitted())
                 .BDDfy();
         }
 
@@ -113,6 +119,7 @@ namespace PlexRequests.UnitTests.Models.Requests
                 .Given(x => x.GivenUserDetailsFromClaims())
                 .When(x => x.WhenCommandActionIsCreated())
                 .Then(x => x.ThenRequestIsCreated())
+                .Then(x => x.ThenChangesAreCommitted())
                 .BDDfy();
         }
 
@@ -220,6 +227,16 @@ namespace PlexRequests.UnitTests.Models.Requests
                           .WithMessage(message)
                           .Where(x => x.Description == description)
                           .Where(x => x.StatusCode == statusCode);
+        }
+
+        private void ThenChangesAreCommitted()
+        {
+            _unitOfWork.Received(1).CommitAsync();
+        }
+
+        private void ThenChangesAreNotCommitted()
+        {
+            _unitOfWork.DidNotReceive().CommitAsync();
         }
     }
 }

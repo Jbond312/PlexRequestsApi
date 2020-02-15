@@ -6,11 +6,13 @@ using PlexRequests.DataAccess.Enums;
 
 namespace PlexRequests.DataAccess.Dtos
 {
+    [Table("TvRequestSeasons", Schema = "Plex")]
     public class TvRequestSeasonRow : TimestampRow
     {
         public TvRequestSeasonRow()
         {
             TvRequestEpisodes = new List<TvRequestEpisodeRow>();
+            RequestStatus = RequestStatuses.PendingApproval;
         }
 
         [Key]

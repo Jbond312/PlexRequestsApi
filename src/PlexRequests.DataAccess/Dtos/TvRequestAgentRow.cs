@@ -4,6 +4,7 @@ using PlexRequests.DataAccess.Enums;
 
 namespace PlexRequests.DataAccess.Dtos
 {
+    [Table("TvRequestAgents", Schema = "Plex")]
     public class TvRequestAgentRow : TimestampRow
     {
         public TvRequestAgentRow()

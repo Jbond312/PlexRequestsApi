@@ -20,6 +20,7 @@ namespace PlexRequests.Sync
         private readonly IPlexService _plexService;
         private readonly ICompletionService _completionService;
         private readonly IProcessorProvider _processorProvider;
+        private readonly IUnitOfWork _unitOfWork;
         private readonly PlexSettings _plexSettings;
         private readonly ILogger<PlexSync> _logger;
 
@@ -27,6 +28,7 @@ namespace PlexRequests.Sync
             IPlexService plexService,
             ICompletionService completionService,
             IProcessorProvider processorProvider,
+            IUnitOfWork unitOfWork,
             IOptions<PlexSettings> plexSettings,
             ILogger<PlexSync> logger)
         {
@@ -34,6 +36,7 @@ namespace PlexRequests.Sync
             _plexService = plexService;
             _completionService = completionService;
             _processorProvider = processorProvider;
+            _unitOfWork = unitOfWork;
             _plexSettings = plexSettings.Value;
             _logger = logger;
         }
@@ -102,10 +105,14 @@ namespace PlexRequests.Sync
 
             _logger.LogInformation($"Sync Results. Create: {syncResult.NewItems.Count} Update: {syncResult.ExistingItems.Count}");
 
-            await _plexService.CreateMany(syncResult.NewItems);
-            await AutoCompleteRequests(syncResult, syncProcessor.Type);
+            foreach (var newItem in syncResult.NewItems)
+            {
+                libraryToSync.PlexMediaItems.Add(newItem);
+            }
 
-            //TODO When do these newly created items get saved? IUnitOfWork needed?
+            await _unitOfWork.CommitAsync();
+
+            await AutoCompleteRequests(syncResult, syncProcessor.Type);
         }
 
         private async Task AutoCompleteRequests(SyncResult syncResult, PlexMediaTypes syncProcessorType)

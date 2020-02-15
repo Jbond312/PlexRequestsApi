@@ -7,6 +7,7 @@ using PlexRequests.DataAccess.Enums;
 
 namespace PlexRequests.DataAccess.Dtos
 {
+    [Table("TvRequests", Schema = "Plex")]
     public class TvRequestRow : TimestampRow
     {
         public TvRequestRow()
@@ -14,6 +15,7 @@ namespace PlexRequests.DataAccess.Dtos
             TvRequestSeasons = new List<TvRequestSeasonRow>();
             TvRequestAgents = new List<TvRequestAgentRow>();
             TvRequestUsers = new List<TvRequestUserRow>();
+            RequestStatus = RequestStatuses.PendingApproval;
         }
 
         [Key]
@@ -21,7 +23,7 @@ namespace PlexRequests.DataAccess.Dtos
         public int TheMovieDbId { get; set; }
         [ForeignKey("PlexMediaItemId")]
         public virtual PlexMediaItemRow PlexMediaItem { get; set; }
-        public int PlexMediaItemId { get; set; }
+        public int? PlexMediaItemId { get; set; }
         public string Title { get; set; }
         [Column("RequestStatusId")]
         public RequestStatuses RequestStatus { get; set; }

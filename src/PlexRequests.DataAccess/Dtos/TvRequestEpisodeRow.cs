@@ -5,8 +5,14 @@ using PlexRequests.DataAccess.Enums;
 
 namespace PlexRequests.DataAccess.Dtos
 {
+    [Table("TvRequestEpisodes", Schema = "Plex")]
     public class TvRequestEpisodeRow : TimestampRow
     {
+        public TvRequestEpisodeRow()
+        {
+            RequestStatus = RequestStatuses.PendingApproval;
+        }
+
         [Key]
         public int TvRequestEpisodeId { get; set; }
         [ForeignKey("TvRequestSeasonId")]
@@ -17,6 +23,7 @@ namespace PlexRequests.DataAccess.Dtos
         public int PlexEpisodeId { get; set; }
         public string Title { get; set; }
         public int EpisodeIndex { get; set; }
+        [Column("RequestStatusId")]
         public RequestStatuses RequestStatus { get; set; }
         public string ImagePath { get; set; }
         public DateTime? AirDateUtc { get; set; }

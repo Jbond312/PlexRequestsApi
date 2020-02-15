@@ -46,7 +46,7 @@ namespace PlexRequests.ApiRequests.Search.Helpers
                 else
                 {
                     searchModel.RequestStatus = associatedRequest.RequestStatus;
-                    searchModel.PlexMediaUri = associatedRequest.PlexMediaItem.MediaUri;
+                    searchModel.PlexMediaUri = associatedRequest.PlexMediaItem?.MediaUri;
                 }
             }
 

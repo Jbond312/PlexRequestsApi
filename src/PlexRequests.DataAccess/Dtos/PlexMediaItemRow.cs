@@ -9,6 +9,11 @@ namespace PlexRequests.DataAccess.Dtos
     [Table("PlexMediaItems", Schema = "Plex")]
     public class PlexMediaItemRow : TimestampRow
     {
+        public PlexMediaItemRow()
+        {
+            PlexSeasons = new List<PlexSeasonRow>();
+        }
+
         [Key]
         public int PlexMediaItemId { get; set; }
         public Guid Identifier { get; set; }

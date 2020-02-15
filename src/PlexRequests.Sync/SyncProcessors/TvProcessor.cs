@@ -89,32 +89,52 @@ namespace PlexRequests.Sync.SyncProcessors
 
             foreach (var seasonShowItem in seasonShowItems)
             {
-                var plexSeason = new PlexSeasonRow
+                var plexSeason = mediaItem.PlexSeasons.FirstOrDefault(x => x.Season == seasonShowItem.Index);
+
+                if (plexSeason == null)
                 {
-                    MediaItemKey = seasonShowItem.RatingKey,
-                    Title = seasonShowItem.Title,
-                    AgentSourceId = seasonShowItem.AgentSourceId,
-                    AgentType = seasonShowItem.AgentType,
-                    Season = seasonShowItem.Index,
-                    MediaUri = PlexHelper.GenerateMediaItemUri(_plexSettings.PlexMediaItemUriFormat, machineIdentifier, seasonShowItem.RatingKey)
-                };
+                    plexSeason = new PlexSeasonRow
+                    {
+                        Identifier = Guid.NewGuid()
+                    };
+
+                    mediaItem.PlexSeasons.Add(plexSeason);
+                }
+
+                plexSeason.MediaItemKey = seasonShowItem.RatingKey;
+                plexSeason.Title = seasonShowItem.Title;
+                plexSeason.AgentSourceId = seasonShowItem.AgentSourceId;
+                plexSeason.AgentType = seasonShowItem.AgentType;
+                plexSeason.Season = seasonShowItem.Index;
+                plexSeason.MediaUri = PlexHelper.GenerateMediaItemUri(_plexSettings.PlexMediaItemUriFormat, machineIdentifier, seasonShowItem.RatingKey);
 
                 _logger.LogDebug($"Retrieving all episodes for show '{mediaItem.Title}' season '{plexSeason.Season}'");
                 var episodeShowItems = await GetChildShowItems(seasonShowItem.RatingKey, authToken, plexUri);
 
-                plexSeason.PlexEpisodes = episodeShowItems.Select(ep => new PlexEpisodeRow
+                foreach (var episodeShowItem in episodeShowItems)
                 {
-                    MediaItemKey = ep.RatingKey,
-                    Title = ep.Title,
-                    AgentSourceId = ep.AgentSourceId,
-                    AgentType = ep.AgentType,
-                    Episode = ep.Index,
-                    Year = ep.Year,
-                    Resolution = ep.Resolution,
-                    MediaUri = PlexHelper.GenerateMediaItemUri(_plexSettings.PlexMediaItemUriFormat, machineIdentifier, ep.RatingKey)
-                }).ToList();
+                    var plexEpisode = plexSeason.PlexEpisodes.FirstOrDefault(x => x.Episode == episodeShowItem.Index);
 
-                mediaItem.PlexSeasons.Add(plexSeason);
+                    if (plexEpisode == null)
+                    {
+                        plexEpisode = new PlexEpisodeRow
+                        {
+                            Identifier = Guid.NewGuid()
+                        };
+
+                        plexSeason.PlexEpisodes.Add(plexEpisode);
+                    }
+
+                    plexEpisode.Identifier = Guid.NewGuid();
+                    plexEpisode.MediaItemKey = episodeShowItem.RatingKey;
+                    plexEpisode.Title = episodeShowItem.Title;
+                    plexEpisode.AgentSourceId = episodeShowItem.AgentSourceId;
+                    plexEpisode.AgentType = episodeShowItem.AgentType;
+                    plexEpisode.Episode = episodeShowItem.Index;
+                    plexEpisode.Year = episodeShowItem.Year;
+                    plexEpisode.Resolution = episodeShowItem.Resolution;
+                    plexEpisode.MediaUri = PlexHelper.GenerateMediaItemUri(_plexSettings.PlexMediaItemUriFormat, machineIdentifier, episodeShowItem.RatingKey);
+                }
             }
         }
 

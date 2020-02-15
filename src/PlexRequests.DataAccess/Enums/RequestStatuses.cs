@@ -2,7 +2,7 @@ namespace PlexRequests.DataAccess.Enums
 {
     public enum RequestStatuses
     {
-        PendingApproval,
+        PendingApproval = 1,
         Approved,
         PartialApproval,
         Completed,

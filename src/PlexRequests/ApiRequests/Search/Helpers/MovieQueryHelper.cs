@@ -66,7 +66,7 @@ namespace PlexRequests.ApiRequests.Search.Helpers
             else
             {
                 movieDetailModel.RequestStatus = associatedRequest.RequestStatus;
-                movieDetailModel.PlexMediaUri = associatedRequest.PlexMediaItem.MediaUri;
+                movieDetailModel.PlexMediaUri = associatedRequest.PlexMediaItem?.MediaUri;
             }
 
             return movieDetailModel;
