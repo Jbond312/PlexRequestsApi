@@ -36,6 +36,11 @@ namespace PlexRequests
         private static void RegisterDbContext(IServiceCollection services, IConfiguration configuration)
         {
             services.AddTransient<DataAccess.Repositories.IUserRepository, DataAccess.Repositories.UserRepository>();
+            services.AddTransient<DataAccess.Repositories.IPlexServerRepository, DataAccess.Repositories.PlexServerRepository>();
+            services.AddTransient<DataAccess.Repositories.IPlexMediaItemRepository, DataAccess.Repositories.PlexMediaItemRepository>();
+            services.AddTransient<DataAccess.Repositories.IMovieRequestRepository, DataAccess.Repositories.MovieRequestRepository>();
+            services.AddTransient<DataAccess.Repositories.ITvRequestRepository, DataAccess.Repositories.TvRequestRepository>();
+            services.AddTransient<DataAccess.Repositories.IIssuesRepository, DataAccess.Repositories.IssuesRepository>();
             services.AddDbContext<PlexRequestsDataContext>(
                 options =>
                 {

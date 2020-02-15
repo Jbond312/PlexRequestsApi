@@ -1,4 +1,5 @@
 using System;
+using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 using AutoFixture;
@@ -8,9 +9,10 @@ using NSubstitute;
 using PlexRequests.ApiRequests.Requests.Queries;
 using PlexRequests.Core.Helpers;
 using PlexRequests.Core.Services;
+using PlexRequests.DataAccess;
+using PlexRequests.DataAccess.Dtos;
+using PlexRequests.DataAccess.Enums;
 using PlexRequests.Mapping;
-using PlexRequests.Repository.Enums;
-using PlexRequests.Repository.Models;
 using TestStack.BDDfy;
 using Xunit;
 
@@ -25,9 +27,9 @@ namespace PlexRequests.UnitTests.Models.Requests
         private readonly Fixture _fixture;
 
         private GetTvPagedRequestQuery _query;
-        private Paged<TvRequest> _pagedRequest;
+        private Paged<TvRequestRow> _pagedRequest;
         private Func<Task<GetTvPagedRequestQueryResult>> _queryAction;
-        private Guid _currentUserId;
+        private int _currentUserId;
 
         public GetTvPagedRequestQueryHandlerTests()
         {
@@ -40,6 +42,9 @@ namespace PlexRequests.UnitTests.Models.Requests
             _underTest = new GetTvPagedRequestQueryHandler(mapper, _requestService, _claimsAccessor);
 
             _fixture = new Fixture();
+            _fixture.Behaviors.OfType<ThrowingRecursionBehavior>().ToList()
+                .ForEach(b => _fixture.Behaviors.Remove(b));
+            _fixture.Behaviors.Add(new OmitOnRecursionBehavior());
         }
 
         [Fact]
@@ -77,15 +82,15 @@ namespace PlexRequests.UnitTests.Models.Requests
 
         private void GivenAUsersClaimAccessor()
         {
-            _currentUserId = _fixture.Create<Guid>();
+            _currentUserId = _fixture.Create<int>();
             _claimsAccessor.UserId.Returns(_currentUserId);
         }
         
         private void GivenManyRequests()
         {
-            _pagedRequest = _fixture.Create<Paged<TvRequest>>();
+            _pagedRequest = _fixture.Create<Paged<TvRequestRow>>();
             
-            _requestService.GetPaged(Arg.Any<string>(), Arg.Any<RequestStatuses?>(), Arg.Any<Guid?>(),
+            _requestService.GetPaged(Arg.Any<string>(), Arg.Any<RequestStatuses?>(), Arg.Any<int?>(),
                 Arg.Any<int?>(), Arg.Any<int?>()).Returns(_pagedRequest);
         }
 
@@ -105,7 +110,7 @@ namespace PlexRequests.UnitTests.Models.Requests
 
         private void ThenCurrentUsersUserIdWasUsed()
         {
-            _requestService.Received().GetPaged(Arg.Any<string>(), Arg.Any<RequestStatuses?>(), Arg.Is<Guid?>(_currentUserId), Arg.Any<int?>(), Arg.Any<int?>());
+            _requestService.Received().GetPaged(Arg.Any<string>(), Arg.Any<RequestStatuses?>(), Arg.Is<int?>(_currentUserId), Arg.Any<int?>(), Arg.Any<int?>());
         }
     }
 }

@@ -2,12 +2,14 @@
 using System.Threading.Tasks;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
+using PlexRequests.Core.ExtensionMethods;
 using PlexRequests.Core.Services;
 using PlexRequests.Core.Settings;
+using PlexRequests.DataAccess;
+using PlexRequests.DataAccess.Dtos;
+using PlexRequests.DataAccess.Enums;
 using PlexRequests.Plex;
 using PlexRequests.Plex.Models;
-using PlexRequests.Repository.Enums;
-using PlexRequests.Repository.Models;
 using PlexRequests.Sync.SyncProcessors;
 
 namespace PlexRequests.Sync
@@ -46,7 +48,7 @@ namespace PlexRequests.Sync
 
             var plexUrl = plexServer.GetPlexUri(_plexSettings.ConnectLocally);
 
-            var librariesToSync = plexServer.Libraries.Where(x => x.IsEnabled).ToList();
+            var librariesToSync = plexServer.PlexLibraries.Where(x => x.IsEnabled).ToList();
 
             if (!librariesToSync.Any())
             {
@@ -56,7 +58,9 @@ namespace PlexRequests.Sync
 
             if (fullRefresh)
             {
-                await _plexService.DeleteAllMediaItems();
+                //TODO Why are we doing this? It should be a soft delete
+                //What about issues/requests that use this as a FK?
+                _plexService.DeleteAllMediaItems();
             }
 
             var plexLibraryContainer = await _plexApi.GetLibraries(plexServer.AccessToken, plexUrl);
@@ -64,11 +68,11 @@ namespace PlexRequests.Sync
             foreach (var libraryToSync in librariesToSync)
             {
                 var existsAsRemoteLibrary =
-                    plexLibraryContainer.MediaContainer.Directory.Any(x => x.Key == libraryToSync.Key);
+                    plexLibraryContainer.MediaContainer.Directory.Any(x => x.Key == libraryToSync.LibraryKey);
 
                 if (!existsAsRemoteLibrary)
                 {
-                    _logger.LogInformation($"Attempted to sync the local library '{libraryToSync.Type}|{libraryToSync.Key}' but it no longer exists remotely");
+                    _logger.LogInformation($"Attempted to sync the local library '{libraryToSync.Type}|{libraryToSync.LibraryKey}' but it no longer exists remotely");
                     continue;
                 }
 
@@ -76,7 +80,7 @@ namespace PlexRequests.Sync
 
                 if (syncProcessor == null)
                 {
-                    _logger.LogInformation($"Attempted to sync the local library '{libraryToSync.Type}|{libraryToSync.Key}' but the type is not supported");
+                    _logger.LogInformation($"Attempted to sync the local library '{libraryToSync.Type}|{libraryToSync.LibraryKey}' but the type is not supported");
                     return;
                 }
 
@@ -84,23 +88,24 @@ namespace PlexRequests.Sync
             }
         }
 
-        private async Task SynchroniseLibrary(bool fullRefresh, PlexServerLibrary libraryToSync, PlexServer plexServer,
+        private async Task SynchroniseLibrary(bool fullRefresh, PlexLibraryRow libraryToSync, PlexServerRow plexServer,
             string plexUrl, ISyncProcessor syncProcessor)
         {
-            _logger.LogInformation($"Sync processing library type: {libraryToSync.Type}|{libraryToSync.Key}");
+            _logger.LogInformation($"Sync processing library type: {libraryToSync.Type}|{libraryToSync.LibraryKey}");
 
             var libraryContainer =
                 await GetLibraryContainer(libraryToSync, fullRefresh, plexServer.AccessToken, plexUrl);
 
             var syncResult = await syncProcessor.Synchronise(libraryContainer, fullRefresh, plexServer.AccessToken, plexUrl, plexServer.MachineIdentifier);
 
-            _logger.LogInformation($"Sync finished processing library type: {libraryToSync.Type}|{libraryToSync.Key}");
+            _logger.LogInformation($"Sync finished processing library type: {libraryToSync.Type}|{libraryToSync.LibraryKey}");
 
             _logger.LogInformation($"Sync Results. Create: {syncResult.NewItems.Count} Update: {syncResult.ExistingItems.Count}");
 
             await _plexService.CreateMany(syncResult.NewItems);
-            await _plexService.UpdateMany(syncResult.ExistingItems);
             await AutoCompleteRequests(syncResult, syncProcessor.Type);
+
+            //TODO When do these newly created items get saved? IUnitOfWork needed?
         }
 
         private async Task AutoCompleteRequests(SyncResult syncResult, PlexMediaTypes syncProcessorType)
@@ -112,16 +117,16 @@ namespace PlexRequests.Sync
             await _completionService.AutoCompleteRequests(plexKeysByAgentType, syncProcessorType);
         }
 
-        private async Task<PlexMediaContainer> GetLibraryContainer(PlexServerLibrary library, bool fullRefresh, string authToken, string plexUri)
+        private async Task<PlexMediaContainer> GetLibraryContainer(PlexLibraryRow library, bool fullRefresh, string authToken, string plexUri)
         {
             PlexMediaContainer libraryContainer;
             if (fullRefresh)
             {
-                libraryContainer = await _plexApi.GetLibrary(authToken, plexUri, library.Key);
+                libraryContainer = await _plexApi.GetLibrary(authToken, plexUri, library.LibraryKey);
             }
             else
             {
-                libraryContainer = await _plexApi.GetRecentlyAdded(authToken, plexUri, library.Key);
+                libraryContainer = await _plexApi.GetRecentlyAdded(authToken, plexUri, library.LibraryKey);
             }
 
             return libraryContainer;

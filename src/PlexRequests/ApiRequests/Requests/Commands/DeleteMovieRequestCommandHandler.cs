@@ -5,17 +5,18 @@ using MediatR;
 using PlexRequests.Core.Exceptions;
 using PlexRequests.Core.Helpers;
 using PlexRequests.Core.Services;
-using PlexRequests.Repository.Models;
+using PlexRequests.DataAccess.Dtos;
+
 // ReSharper disable ParameterOnlyUsedForPreconditionCheck.Local
 
 namespace PlexRequests.ApiRequests.Requests.Commands
 {
-    public class DeleteRequestCommandHandler : AsyncRequestHandler<DeleteRequestCommand>
+    public class DeleteMovieRequestCommandHandler : AsyncRequestHandler<DeleteMovieRequestCommand>
     {
         private readonly IMovieRequestService _requestService;
         private readonly IClaimsPrincipalAccessor _claimsUserAccessor;
 
-        public DeleteRequestCommandHandler(
+        public DeleteMovieRequestCommandHandler(
             IMovieRequestService requestService,
             IClaimsPrincipalAccessor claimsUserAccessor
             )
@@ -24,7 +25,7 @@ namespace PlexRequests.ApiRequests.Requests.Commands
             _claimsUserAccessor = claimsUserAccessor;
         }
         
-        protected override async Task Handle(DeleteRequestCommand command, CancellationToken cancellationToken)
+        protected override async Task Handle(DeleteMovieRequestCommand command, CancellationToken cancellationToken)
         {
             var request = await ValidateRequestExists(command);
 
@@ -33,16 +34,16 @@ namespace PlexRequests.ApiRequests.Requests.Commands
             await _requestService.DeleteRequest(command.Id);
         }
 
-        private void ValidateUserCanDeleteRequest(MovieRequest request)
+        private void ValidateUserCanDeleteRequest(MovieRequestRow request)
         {
-            if (!request.RequestedByUserId.Equals(_claimsUserAccessor.UserId))
+            if (!request.UserId.Equals(_claimsUserAccessor.UserId))
             {
                 throw new PlexRequestException("Unable to delete request", "Forbidden access to protected resource.",
                     HttpStatusCode.Forbidden);
             }
         }
 
-        private async Task<MovieRequest> ValidateRequestExists(DeleteRequestCommand command)
+        private async Task<MovieRequestRow> ValidateRequestExists(DeleteMovieRequestCommand command)
         {
             var request = await _requestService.GetRequestById(command.Id);
 

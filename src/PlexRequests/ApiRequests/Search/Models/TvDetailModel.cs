@@ -2,7 +2,7 @@
 using System.Collections.Generic;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Converters;
-using PlexRequests.Repository.Enums;
+using PlexRequests.DataAccess.Enums;
 
 namespace PlexRequests.ApiRequests.Search.Models
 {

@@ -36,9 +36,9 @@ namespace PlexRequests.Core.Services
             return await _userRepository.GetUserFromPlexId(plexAccountId);
         }
         
-        public void AddUser(UserRow userRow)
+        public async Task AddUser(UserRow userRow)
         {
-            _userRepository.Add(userRow);
+            await _userRepository.Add(userRow);
         }
         
         public async Task<bool> UserExists(string email)

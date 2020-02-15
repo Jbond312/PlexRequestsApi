@@ -9,7 +9,7 @@ namespace PlexRequests.ApiRequests.Requests.Commands
     public class RejectTvRequestCommand : IRequest
     {
         [JsonIgnore]
-        public Guid RequestId { get; set; }
+        public int RequestId { get; set; }
         [Required]
         [MinLength(1)]
         public string Comment { get; set; }

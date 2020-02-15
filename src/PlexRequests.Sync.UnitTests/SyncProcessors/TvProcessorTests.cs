@@ -9,10 +9,10 @@ using NSubstitute;
 using NSubstitute.ReturnsExtensions;
 using PlexRequests.Core.Helpers;
 using PlexRequests.Core.Settings;
+using PlexRequests.DataAccess.Dtos;
+using PlexRequests.DataAccess.Enums;
 using PlexRequests.Plex;
 using PlexRequests.Plex.Models;
-using PlexRequests.Repository.Enums;
-using PlexRequests.Repository.Models;
 using PlexRequests.Sync.SyncProcessors;
 using TestStack.BDDfy;
 using Xunit;
@@ -30,10 +30,10 @@ namespace PlexRequests.Sync.UnitTests.SyncProcessors
 
         private readonly Fixture _fixture;
 
-        private List<PlexMediaItem> _localMediaItems;
+        private List<PlexMediaItemRow> _localMediaItems;
         private PlexMediaContainer _plexLibraryContainer;
-        private PlexMediaItem _rootPlexMediaItem;
-        private PlexMediaItem _updatedMediaItem;
+        private PlexMediaItemRow _rootPlexMediaItem;
+        private PlexMediaItemRow _updatedMediaItem;
 
         private PlexMediaContainer _showContainer;
         private PlexMediaContainer _seasonMetadata;
@@ -48,6 +48,9 @@ namespace PlexRequests.Sync.UnitTests.SyncProcessors
         public TvProcessorTests()
         {
             _fixture = new Fixture();
+            _fixture.Behaviors.OfType<ThrowingRecursionBehavior>().ToList()
+                .ForEach(b => _fixture.Behaviors.Remove(b));
+            _fixture.Behaviors.Add(new OmitOnRecursionBehavior());
 
             _plexApi = Substitute.For<IPlexApi>();
             _plexService = Substitute.For<IPlexService>();
@@ -152,7 +155,7 @@ namespace PlexRequests.Sync.UnitTests.SyncProcessors
 
         private void GivenLocalMediaItems()
         {
-            _localMediaItems = _fixture.CreateMany<PlexMediaItem>().ToList();
+            _localMediaItems = _fixture.CreateMany<PlexMediaItemRow>().ToList();
             _plexService.GetMediaItems(Arg.Any<PlexMediaTypes>()).Returns(_localMediaItems);
         }
 
@@ -197,17 +200,17 @@ namespace PlexRequests.Sync.UnitTests.SyncProcessors
 
             if (!hasSeasons)
             {
-                _rootPlexMediaItem.Seasons = new List<PlexSeason>();
+                _rootPlexMediaItem.PlexSeasons = new List<PlexSeasonRow>();
             }
 
-            _mediaItemProcessor.GetMediaItem(Arg.Any<int>(), Arg.Any<PlexMediaTypes>(), Arg.Any<List<PlexMediaItem>>(),
+            _mediaItemProcessor.GetMediaItem(Arg.Any<int>(), Arg.Any<PlexMediaTypes>(), Arg.Any<List<PlexMediaItemRow>>(),
                                    Arg.Any<string>(), Arg.Any<string>(), Arg.Any<string>(), Arg.Any<string>())
                                .Returns(mediaItemResult);
         }
 
         private void GivenAMediaItemIsUpdated()
         {
-            _mediaItemProcessor.UpdateResult(Arg.Any<SyncResult>(), Arg.Any<bool>(), Arg.Do<PlexMediaItem>(x => _updatedMediaItem = x));
+            _mediaItemProcessor.UpdateResult(Arg.Any<SyncResult>(), Arg.Any<bool>(), Arg.Do<PlexMediaItemRow>(x => _updatedMediaItem = x));
         }
 
         private void GivenNoChildMediaItems()
@@ -278,42 +281,42 @@ namespace PlexRequests.Sync.UnitTests.SyncProcessors
             foreach (var key in grandParentKeys)
             {
                 _mediaItemProcessor.Received().GetMediaItem(Arg.Is(key), Arg.Any<PlexMediaTypes>(),
-                    Arg.Any<List<PlexMediaItem>>(), Arg.Any<string>(), Arg.Any<string>(), Arg.Any<string>(), Arg.Any<string>());
+                    Arg.Any<List<PlexMediaItemRow>>(), Arg.Any<string>(), Arg.Any<string>(), Arg.Any<string>(), Arg.Any<string>());
             }
         }
 
         private void ThenResultOnlyUpdatedOnce()
         {
-            _mediaItemProcessor.Received(1).UpdateResult(Arg.Any<SyncResult>(), Arg.Any<bool>(), Arg.Any<PlexMediaItem>());
+            _mediaItemProcessor.Received(1).UpdateResult(Arg.Any<SyncResult>(), Arg.Any<bool>(), Arg.Any<PlexMediaItemRow>());
         }
 
         private void ThenProcessedMediaItemWasReturned()
         {
             _mediaItemProcessor.Received().GetMediaItem(Arg.Any<int>(), Arg.Any<PlexMediaTypes>(),
-                Arg.Any<List<PlexMediaItem>>(), Arg.Any<string>(), Arg.Any<string>(), Arg.Any<string>(), Arg.Any<string>());
+                Arg.Any<List<PlexMediaItemRow>>(), Arg.Any<string>(), Arg.Any<string>(), Arg.Any<string>(), Arg.Any<string>());
         }
 
         private void ThenSyncResultWasUpdated()
         {
-            _mediaItemProcessor.Received().UpdateResult(Arg.Any<SyncResult>(), Arg.Any<bool>(), Arg.Any<PlexMediaItem>());
+            _mediaItemProcessor.Received().UpdateResult(Arg.Any<SyncResult>(), Arg.Any<bool>(), Arg.Any<PlexMediaItemRow>());
         }
 
         private void ThenTheSeasonIsCorrect()
         {
             _updatedMediaItem.Should().NotBeNull();
-            _updatedMediaItem.Seasons.Should().NotBeNullOrEmpty();
+            _updatedMediaItem.PlexSeasons.Should().NotBeNullOrEmpty();
 
-            _updatedMediaItem.Seasons.Count.Should().Be(1);
+            _updatedMediaItem.PlexSeasons.Count.Should().Be(1);
 
             var seasonMetadata = _seasonMetadata.MediaContainer.Metadata.First();
 
-            var updatedSeason = _updatedMediaItem.Seasons.First();
-            updatedSeason.Key.Should().Be(_seasonRatingKey);
+            var updatedSeason = _updatedMediaItem.PlexSeasons.First();
+            updatedSeason.MediaItemKey.Should().Be(_seasonRatingKey);
             updatedSeason.Title.Should().Be(seasonMetadata.Title);
             updatedSeason.Season.Should().Be(seasonMetadata.Index);
             updatedSeason.AgentType.Should().Be(_seasonAgentDetails.AgentType);
             updatedSeason.AgentSourceId.Should().Be(_seasonAgentDetails.AgentSourceId);
-            updatedSeason.Episodes.Should().BeEmpty();
+            updatedSeason.PlexEpisodes.Should().BeEmpty();
         }
     }
 }

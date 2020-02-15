@@ -10,9 +10,10 @@ using Microsoft.Extensions.Options;
 using NSubstitute;
 using PlexRequests.ApiRequests.Plex.Commands;
 using PlexRequests.Core.Settings;
+using PlexRequests.DataAccess;
+using PlexRequests.DataAccess.Dtos;
 using PlexRequests.Plex;
 using PlexRequests.Plex.Models;
-using PlexRequests.Repository.Models;
 using TestStack.BDDfy;
 using Xunit;
 
@@ -24,26 +25,30 @@ namespace PlexRequests.UnitTests.Models.Plex
 
         private readonly IPlexApi _plexApi;
         private readonly IPlexService _plexService;
-
+        private IUnitOfWork _unitOfWork;
+        
         private readonly Fixture _fixture;
 
         private SyncLibrariesCommand _command;
-        private PlexServer _updatedServer;
         private Func<Task> _commandAction;
         private PlexMediaContainer _remoteLibraryContainer;
-        private PlexServer _plexServer;
+        private PlexServerRow _plexServer;
 
         public SyncLibrariesCommandHandlerTests()
         {
             _plexApi = Substitute.For<IPlexApi>();
             _plexService = Substitute.For<IPlexService>();
+            _unitOfWork = Substitute.For<IUnitOfWork>();
 
             _fixture = new Fixture();
+            _fixture.Behaviors.OfType<ThrowingRecursionBehavior>().ToList()
+                .ForEach(b => _fixture.Behaviors.Remove(b));
+            _fixture.Behaviors.Add(new OmitOnRecursionBehavior());
 
             var plexSettings = _fixture.Create<PlexSettings>();
             var options = Options.Create(plexSettings);
 
-            _underTest = new SyncLibrariesCommandHandler(_plexApi, _plexService, options);
+            _underTest = new SyncLibrariesCommandHandler(_plexApi, _plexService, _unitOfWork, options);
         }
 
         [Fact]
@@ -52,9 +57,9 @@ namespace PlexRequests.UnitTests.Models.Plex
             this.Given(x => x.GivenACommand())
                 .Given(x => x.GivenAServer())
                 .Given(x => x.GivenRemoteLibraries(false))
-                .Given(x => x.GivenAServerIsUpdated())
                 .When(x => x.WhenACommandActionIsCreated())
                 .Then(x => x.ThenAllLocalLibrariesArchived())
+                .Then(x => x.ThenChangesAreCommitted())
                 .BDDfy();
         }
 
@@ -65,9 +70,9 @@ namespace PlexRequests.UnitTests.Models.Plex
                 .Given(x => x.GivenAServer())
                 .Given(x => x.GivenNoLocalLibraries())
                 .Given(x => x.GivenRemoteLibraries(true))
-                .Given(x => x.GivenAServerIsUpdated())
                 .When(x => x.WhenACommandActionIsCreated())
                 .Then(x => x.ThenAllRemoteLibrariesCreatedLocally())
+                .Then(x => x.ThenChangesAreCommitted())
                 .BDDfy();
         }
 
@@ -78,7 +83,7 @@ namespace PlexRequests.UnitTests.Models.Plex
 
         private void GivenAServer()
         {
-            _plexServer = _fixture.Create<PlexServer>();
+            _plexServer = _fixture.Create<PlexServerRow>();
             _plexService.GetServer().Returns(_plexServer);
         }
 
@@ -96,12 +101,7 @@ namespace PlexRequests.UnitTests.Models.Plex
 
         private void GivenNoLocalLibraries()
         {
-            _plexServer.Libraries = new List<PlexServerLibrary>();
-        }
-
-        private void GivenAServerIsUpdated()
-        {
-            _plexService.Update(Arg.Do<PlexServer>(x => _updatedServer = x));
+            _plexServer.PlexLibraries = new List<PlexLibraryRow>();
         }
 
         private void WhenACommandActionIsCreated()
@@ -113,10 +113,10 @@ namespace PlexRequests.UnitTests.Models.Plex
         {
             _commandAction.Should().NotThrow();
 
-            _updatedServer.Should().NotBeNull();
-            _updatedServer.Should().BeEquivalentTo(_plexServer, options => options.Excluding(x => x.Libraries));
+            _plexServer.Should().NotBeNull();
+            _plexServer.Should().BeEquivalentTo(_plexServer, options => options.Excluding(x => x.PlexLibraries));
 
-            foreach (var library in _updatedServer.Libraries)
+            foreach (var library in _plexServer.PlexLibraries)
             {
                 library.IsArchived.Should().BeTrue();
                 library.IsEnabled.Should().BeFalse();
@@ -127,18 +127,23 @@ namespace PlexRequests.UnitTests.Models.Plex
         {
             _commandAction.Should().NotThrow();
 
-            _updatedServer.Should().NotBeNull();
-            _updatedServer.Should().BeEquivalentTo(_plexServer, options => options.Excluding(x => x.Libraries));
+            _plexServer.Should().NotBeNull();
+            _plexServer.Should().BeEquivalentTo(_plexServer, options => options.Excluding(x => x.PlexLibraries).Excluding(x => x.CreatedUtc));
 
-            var expectedLibraries = _remoteLibraryContainer.MediaContainer.Directory.Select(x => new PlexServerLibrary
+            var expectedLibraries = _remoteLibraryContainer.MediaContainer.Directory.Select(x => new PlexLibraryRow
             {
-                Key = x.Key,
+                LibraryKey = x.Key,
                 Title = x.Title,
                 Type = x.Type,
                 IsEnabled = false
             }).ToList();
 
-            _updatedServer.Libraries.Should().BeEquivalentTo(expectedLibraries);
+            _plexServer.PlexLibraries.Should().BeEquivalentTo(expectedLibraries, options => options.Excluding(x => x.CreatedUtc));
+        }
+
+        private void ThenChangesAreCommitted()
+        {
+            _unitOfWork.Received(1).CommitAsync();
         }
     }
 }

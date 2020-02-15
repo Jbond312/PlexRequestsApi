@@ -4,19 +4,23 @@ using System.Threading.Tasks;
 using MediatR;
 using PlexRequests.Core.Exceptions;
 using PlexRequests.Core.Services;
-using PlexRequests.Repository.Enums;
+using PlexRequests.DataAccess;
+using PlexRequests.DataAccess.Enums;
 
 namespace PlexRequests.ApiRequests.Requests.Commands
 {
     public class ApproveMovieRequestCommandHandler : AsyncRequestHandler<ApproveMovieRequestCommand>
     {
         private readonly IMovieRequestService _requestService;
+        private readonly IUnitOfWork _unitOfWork;
 
         public ApproveMovieRequestCommandHandler(
-            IMovieRequestService requestService
+            IMovieRequestService requestService,
+            IUnitOfWork unitOfWork
             )
         {
             _requestService = requestService;
+            _unitOfWork = unitOfWork;
         }
         
         protected override async Task Handle(ApproveMovieRequestCommand command, CancellationToken cancellationToken)
@@ -28,14 +32,14 @@ namespace PlexRequests.ApiRequests.Requests.Commands
                 throw new PlexRequestException("Invalid request", "No request was found with the given Id", HttpStatusCode.NotFound);
             }
             
-            if (request.Status == RequestStatuses.Completed)
+            if (request.RequestStatus == RequestStatuses.Completed)
             {
                 throw new PlexRequestException("Invalid request", "Request has already been completed");
             }
 
-            request.Status = RequestStatuses.Approved;
-            
-            await _requestService.Update(request);
+            request.RequestStatus = RequestStatuses.Approved;
+
+            await _unitOfWork.CommitAsync();
         }
     }
 }

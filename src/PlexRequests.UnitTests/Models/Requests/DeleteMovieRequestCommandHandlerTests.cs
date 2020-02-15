@@ -1,4 +1,5 @@
 using System;
+using System.Linq;
 using System.Net;
 using System.Threading;
 using System.Threading.Tasks;
@@ -11,32 +12,35 @@ using PlexRequests.ApiRequests.Requests.Commands;
 using PlexRequests.Core.Exceptions;
 using PlexRequests.Core.Helpers;
 using PlexRequests.Core.Services;
-using PlexRequests.Repository.Models;
+using PlexRequests.DataAccess.Dtos;
 using TestStack.BDDfy;
 using Xunit;
 
 namespace PlexRequests.UnitTests.Models.Requests
 {
-    public class DeleteRequestCommandHandlerTests
+    public class DeleteMovieRequestCommandHandlerTests
     {
-        private readonly IRequestHandler<DeleteRequestCommand> _underTest;
+        private readonly IRequestHandler<DeleteMovieRequestCommand> _underTest;
         
-        private DeleteRequestCommand _command;
+        private DeleteMovieRequestCommand _command;
         private readonly IMovieRequestService _requestService;
         private readonly IClaimsPrincipalAccessor _claimsUserAccessor;
 
         private readonly Fixture _fixture;
         private Func<Task> _commandAction;
-        private MovieRequest _request;
+        private MovieRequestRow _request;
 
-        public DeleteRequestCommandHandlerTests()
+        public DeleteMovieRequestCommandHandlerTests()
         {
             _requestService = Substitute.For<IMovieRequestService>();
             _claimsUserAccessor = Substitute.For<IClaimsPrincipalAccessor>();
             
-            _underTest = new DeleteRequestCommandHandler(_requestService, _claimsUserAccessor);
+            _underTest = new DeleteMovieRequestCommandHandler(_requestService, _claimsUserAccessor);
             
             _fixture = new Fixture();
+            _fixture.Behaviors.OfType<ThrowingRecursionBehavior>().ToList()
+                .ForEach(b => _fixture.Behaviors.Remove(b));
+            _fixture.Behaviors.Add(new OmitOnRecursionBehavior());
         }
 
         [Fact]
@@ -73,29 +77,29 @@ namespace PlexRequests.UnitTests.Models.Requests
 
         private void GivenACommand()
         {
-            _command = _fixture.Create<DeleteRequestCommand>();
+            _command = _fixture.Create<DeleteMovieRequestCommand>();
         }
 
         private void GivenNoRequestIsFound()
         {
-            _requestService.GetRequestById(Arg.Any<Guid>()).ReturnsNull();
+            _requestService.GetRequestById(Arg.Any<int>()).ReturnsNull();
         }
 
         private void GivenARequestIsFound()
         {
-            _request = _fixture.Create<MovieRequest>();
+            _request = _fixture.Create<MovieRequestRow>();
             
-            _requestService.GetRequestById(Arg.Any<Guid>()).Returns(_request);
+            _requestService.GetRequestById(Arg.Any<int>()).Returns(_request);
         }
 
         private void GivenRequestUserIsNotCurrentUser()
         {
-            _claimsUserAccessor.UserId.Returns(_fixture.Create<Guid>());
+            _claimsUserAccessor.UserId.Returns(_fixture.Create<int>());
         }
 
         private void GivenRequestUserIsCurrentUser()
         {
-            _claimsUserAccessor.UserId.Returns(_request.RequestedByUserId);
+            _claimsUserAccessor.UserId.Returns(_request.UserId);
         }
         
         private void WhenCommandActionIsCreated()

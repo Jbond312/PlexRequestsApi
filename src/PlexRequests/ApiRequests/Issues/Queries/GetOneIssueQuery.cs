@@ -7,9 +7,9 @@ namespace PlexRequests.ApiRequests.Issues.Queries
     public class GetOneIssueQuery : IRequest<GetOneIssueQueryResult>
     {
         [Required]
-        public Guid Id { get; set; }
+        public int Id { get; set; }
 
-        public GetOneIssueQuery(Guid id)
+        public GetOneIssueQuery(int id)
         {
             Id = id;
         }

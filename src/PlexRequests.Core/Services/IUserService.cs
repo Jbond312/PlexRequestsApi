@@ -11,7 +11,7 @@ namespace PlexRequests.Core.Services
         Task<UserRow> GetUser(int userId);
         Task<UserRow> GetUser(Guid identifier);
         Task<UserRow> GetUserFromPlexId(int plexAccountId);
-        void AddUser(UserRow userRow);
+        Task AddUser(UserRow userRow);
         Task<bool> UserExists(string email);
         Task<bool> IsAdminCreated();
     }

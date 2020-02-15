@@ -1,5 +1,4 @@
 using System;
-using System.Collections.Generic;
 using System.Threading;
 using System.Threading.Tasks;
 using MediatR;
@@ -7,9 +6,9 @@ using Microsoft.Extensions.Logging;
 using PlexRequests.Core.Exceptions;
 using PlexRequests.Core.Helpers;
 using PlexRequests.Core.Services;
+using PlexRequests.DataAccess.Dtos;
+using PlexRequests.DataAccess.Enums;
 using PlexRequests.Plex;
-using PlexRequests.Repository.Enums;
-using PlexRequests.Repository.Models;
 using PlexRequests.TheMovieDb;
 using PlexRequests.TheMovieDb.Models;
 
@@ -56,26 +55,22 @@ namespace PlexRequests.ApiRequests.Requests.Commands
 
         private async Task CreateRequest(CreateMovieRequestCommand request, MovieDetails movieDetail, ExternalIds externalIds)
         {
-            var newRequest = new MovieRequest
+            var newRequest = new MovieRequestRow
             {
-                PrimaryAgent = new MediaAgent(AgentTypes.TheMovieDb, request.TheMovieDbId.ToString()),
-                RequestedByUserId = _claimsPrincipalAccessor.UserId,
-                RequestedByUserName = _claimsPrincipalAccessor.Username,
+                UserId = _claimsPrincipalAccessor.UserId,
                 Title = movieDetail.Title,
-                AirDate = DateTime.Parse(movieDetail.Release_Date),
+                AirDateUtc = DateTime.Parse(movieDetail.Release_Date),
                 ImagePath = movieDetail.Poster_Path,
-                Created = DateTime.UtcNow
             };
+
+            newRequest.MovieRequestAgents.Add(new MovieRequestAgentRow(AgentTypes.TheMovieDb, request.TheMovieDbId.ToString()));
 
             if (!string.IsNullOrEmpty(externalIds.Imdb_Id))
             {
-                newRequest.AdditionalAgents = new List<MediaAgent>
-                {
-                    new MediaAgent(AgentTypes.Imdb, externalIds.Imdb_Id)
-                };
+                newRequest.MovieRequestAgents.Add(new MovieRequestAgentRow(AgentTypes.Imdb, externalIds.Imdb_Id));
             }
 
-            await _requestService.Create(newRequest);
+            await _requestService.Add(newRequest);
         }
 
         private async Task ValidateRequestNotDuplicate(CreateMovieRequestCommand request)
@@ -85,7 +80,7 @@ namespace PlexRequests.ApiRequests.Requests.Commands
 
             if (existingRequest != null)
             {
-                _logger.LogDebug($"Request not created as existing request: {existingRequest.Id}");
+                _logger.LogDebug($"Request not created as existing request: {existingRequest.MovieRequestId}");
                 throw new PlexRequestException("Request not created", "The Movie has already been requested.");
             }
         }
@@ -96,12 +91,12 @@ namespace PlexRequests.ApiRequests.Requests.Commands
 
             if (plexMediaItem != null)
             {
-                _logger.LogDebug($"Request not created as existing Plex item: {plexMediaItem.Id}");
+                _logger.LogDebug($"Request not created as existing Plex item: {plexMediaItem.PlexMediaItemId}");
                 throw new PlexRequestException("Request not created", "The Movie is already available in Plex.");
             }
         }
 
-        private async Task<PlexMediaItem> GetExistingPlexMediaItem(int theMovieDbId, ExternalIds externalIds)
+        private async Task<PlexMediaItemRow> GetExistingPlexMediaItem(int theMovieDbId, ExternalIds externalIds)
         {
             var plexMediaItem = await _plexService.GetExistingMediaItemByAgent(PlexMediaTypes.Movie, AgentTypes.TheMovieDb, theMovieDbId.ToString());
 

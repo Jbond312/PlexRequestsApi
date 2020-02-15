@@ -74,7 +74,7 @@ namespace PlexRequests.ApiRequests.Plex.Commands
                     }
                 };
 
-                _userService.AddUser(user);
+                await _userService.AddUser(user);
             }
         }
 

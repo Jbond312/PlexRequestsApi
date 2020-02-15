@@ -2,7 +2,7 @@ using System;
 using FluentAssertions;
 using Microsoft.Extensions.Logging;
 using PlexRequests.Core.Helpers;
-using PlexRequests.Repository.Enums;
+using PlexRequests.DataAccess.Enums;
 using TestStack.BDDfy;
 using Xunit;
 

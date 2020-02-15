@@ -13,7 +13,6 @@ using PlexRequests.DataAccess;
 using PlexRequests.DataAccess.Dtos;
 using PlexRequests.Plex;
 using PlexRequests.Plex.Models;
-using PlexRequests.Repository.Models;
 using TestStack.BDDfy;
 using Xunit;
 
@@ -84,7 +83,7 @@ namespace PlexRequests.UnitTests.Models.Plex
 
         private void GivenAServer()
         {
-            _plexService.GetServer().Returns(_fixture.Create<PlexServer>());
+            _plexService.GetServer().Returns(_fixture.Create<PlexServerRow>());
         }
 
         private void GivenRemoteFriends(bool hasRemoteFriends)

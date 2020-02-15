@@ -2,27 +2,27 @@
 using System.Linq;
 using System.Threading.Tasks;
 using PlexRequests.Core.Exceptions;
-using PlexRequests.Repository;
-using PlexRequests.Repository.Enums;
-using PlexRequests.Repository.Models;
+using PlexRequests.DataAccess.Dtos;
+using PlexRequests.DataAccess.Enums;
+using PlexRequests.DataAccess.Repositories;
 
 namespace PlexRequests.Plex
 {
     public class PlexService : IPlexService
     {
         private readonly IPlexServerRepository _plexServerRepository;
-        private readonly IPlexMediaRepository _plexMediaRepository;
+        private readonly IPlexMediaItemRepository _plexMediaRepository;
 
         public PlexService(
             IPlexServerRepository plexServerRepository,
-            IPlexMediaRepository plexMediaRepository
+            IPlexMediaItemRepository plexMediaRepository
             )
         {
             _plexServerRepository = plexServerRepository;
             _plexMediaRepository = plexMediaRepository;
         }
 
-        public async Task<PlexServer> GetServer()
+        public async Task<PlexServerRow> GetServer()
         {
             var server = await _plexServerRepository.Get();
 
@@ -34,22 +34,17 @@ namespace PlexRequests.Plex
             return server;
         }
 
-        public async Task<PlexServer> Create(PlexServer server)
+        public async Task AddServer(PlexServerRow server)
         {
-            return await _plexServerRepository.Create(server);
+            await _plexServerRepository.Add(server);
         }
 
-        public async Task Update(PlexServer server)
-        {
-            await _plexServerRepository.Update(server);
-        }
-
-        public async Task<List<PlexMediaItem>> GetMediaItems(PlexMediaTypes mediaType)
+        public async Task<List<PlexMediaItemRow>> GetMediaItems(PlexMediaTypes mediaType)
         {
             return await _plexMediaRepository.GetMany(x => x.MediaType == mediaType);
         }
 
-        public async Task<PlexMediaItem> GetExistingMediaItemByAgent(PlexMediaTypes mediaType, AgentTypes agentType, string agentSourceId)
+        public async Task<PlexMediaItemRow> GetExistingMediaItemByAgent(PlexMediaTypes mediaType, AgentTypes agentType, string agentSourceId)
         {
             return await _plexMediaRepository.GetOne(x =>
                 x.MediaType == mediaType &&
@@ -57,7 +52,7 @@ namespace PlexRequests.Plex
                 x.AgentSourceId == agentSourceId);
         }
 
-        public async Task CreateMany(List<PlexMediaItem> mediaItems)
+        public async Task CreateMany(List<PlexMediaItemRow> mediaItems)
         {
             if (!mediaItems.Any())
             {
@@ -66,17 +61,9 @@ namespace PlexRequests.Plex
             await _plexMediaRepository.CreateMany(mediaItems);
         }
 
-        public async Task UpdateMany(List<PlexMediaItem> mediaItems)
+        public void DeleteAllMediaItems()
         {
-            foreach (var mediaItem in mediaItems)
-            {
-                await _plexMediaRepository.Update(mediaItem);
-            }
-        }
-
-        public async Task DeleteAllMediaItems()
-        {
-            await _plexMediaRepository.DeleteAll();
+            _plexMediaRepository.DeleteAll();
         }
     }
 }

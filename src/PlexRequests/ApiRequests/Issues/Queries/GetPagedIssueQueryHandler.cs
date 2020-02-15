@@ -5,7 +5,7 @@ using AutoMapper;
 using MediatR;
 using PlexRequests.ApiRequests.Issues.Models.ListDetail;
 using PlexRequests.Core.Services;
-using PlexRequests.Repository.Enums;
+using PlexRequests.DataAccess.Enums;
 
 namespace PlexRequests.ApiRequests.Issues.Queries
 {

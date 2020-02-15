@@ -27,7 +27,7 @@ namespace PlexRequests.ApiRequests.Plex.Queries
 
            return new GetManyPlexServerLibraryQueryResult
            {
-               Libraries = _mapper.Map<List<PlexServerLibraryDetailModel>>(server.Libraries)
+               Libraries = _mapper.Map<List<PlexServerLibraryDetailModel>>(server.PlexLibraries)
            };
         }
     }

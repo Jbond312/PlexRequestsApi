@@ -7,10 +7,10 @@ using FluentAssertions;
 using Microsoft.Extensions.Logging;
 using NSubstitute;
 using PlexRequests.Core.Helpers;
+using PlexRequests.DataAccess.Dtos;
+using PlexRequests.DataAccess.Enums;
 using PlexRequests.Plex;
 using PlexRequests.Plex.Models;
-using PlexRequests.Repository.Enums;
-using PlexRequests.Repository.Models;
 using PlexRequests.Sync.SyncProcessors;
 using TestStack.BDDfy;
 using Xunit;
@@ -32,9 +32,9 @@ namespace PlexRequests.Sync.UnitTests.SyncProcessors
         private int _ratingKey;
         private AgentGuidParserResult _agentDetails;
         private PlexMediaTypes _mediaType;
-        private List<PlexMediaItem> _localMedia;
+        private List<PlexMediaItemRow> _localMedia;
         private SyncResult _syncResult;
-        private PlexMediaItem _plexMediaItem;
+        private PlexMediaItemRow _plexMediaItem;
 
         public MediaItemProcessorTests()
         {
@@ -45,6 +45,9 @@ namespace PlexRequests.Sync.UnitTests.SyncProcessors
             _underTest = new MediaItemProcessor(_plexApi, _agentGuidParser, logger);
 
             _fixture = new Fixture();
+            _fixture.Behaviors.OfType<ThrowingRecursionBehavior>().ToList()
+                .ForEach(b => _fixture.Behaviors.Remove(b));
+            _fixture.Behaviors.Add(new OmitOnRecursionBehavior());
         }
 
         [Fact]
@@ -138,13 +141,13 @@ namespace PlexRequests.Sync.UnitTests.SyncProcessors
 
         private void GivenAPlexMediaItem()
         {
-            _plexMediaItem = _fixture.Create<PlexMediaItem>();
+            _plexMediaItem = _fixture.Create<PlexMediaItemRow>();
         }
 
         private void WhenGetMediaItemActionIsCreated(bool isExistingMediaItem)
         {
             _mediaType = PlexMediaTypes.Show;
-            _localMedia = _fixture.CreateMany<PlexMediaItem>().ToList();
+            _localMedia = _fixture.CreateMany<PlexMediaItemRow>().ToList();
             var authToken = _fixture.Create<string>();
             var plexUri = _fixture.Create<string>();
             var machineIdentifier = _fixture.Create<string>();
@@ -153,7 +156,7 @@ namespace PlexRequests.Sync.UnitTests.SyncProcessors
             if (isExistingMediaItem)
             {
                 var matchingMediaItem = _localMedia.First();
-                matchingMediaItem.Key = _ratingKey;
+                matchingMediaItem.MediaItemKey = _ratingKey;
                 matchingMediaItem.MediaType = _mediaType;
             }
 
@@ -177,7 +180,7 @@ namespace PlexRequests.Sync.UnitTests.SyncProcessors
             var metadata = _plexMetadataContainer.MediaContainer.Metadata.First();
 
             result.MediaItem.Should().NotBeNull();
-            result.MediaItem.Key.Should().Be(_ratingKey);
+            result.MediaItem.MediaItemKey.Should().Be(_ratingKey);
             result.MediaItem.MediaType.Should().Be(_mediaType);
             result.MediaItem.Resolution.Should().Be(metadata.Media?.FirstOrDefault()?.VideoResolution);
             result.MediaItem.AgentType.Should().Be(_agentDetails.AgentType);
@@ -190,7 +193,7 @@ namespace PlexRequests.Sync.UnitTests.SyncProcessors
             }
             else
             {
-                var localMediaItem = _localMedia.First(x => x.Key == _ratingKey);
+                var localMediaItem = _localMedia.First(x => x.MediaItemKey == _ratingKey);
 
                 result.MediaItem.Title.Should().Be(localMediaItem.Title);
                 result.MediaItem.Year.Should().Be(localMediaItem.Year);

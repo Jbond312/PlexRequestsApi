@@ -1,21 +1,21 @@
 using System;
 using System.Collections.Generic;
 using System.Threading.Tasks;
-using PlexRequests.Repository.Enums;
-using PlexRequests.Repository.Models;
+using PlexRequests.DataAccess;
+using PlexRequests.DataAccess.Dtos;
+using PlexRequests.DataAccess.Enums;
 
 namespace PlexRequests.Core.Services
 {
     public interface IMovieRequestService
     {
-        Task<MovieRequest> GetRequestById(Guid id);
-        Task<Paged<MovieRequest>> GetPaged(string title, RequestStatuses? status, Guid? userId, int? page,
+        Task<MovieRequestRow> GetRequestById(int id);
+        Task<Paged<MovieRequestRow>> GetPaged(string title, RequestStatuses? status, int? userId, int? page,
             int? pageSize);
-        Task<MovieRequest> GetExistingRequest(AgentTypes agentType, string agentSourceId);
-        Task<List<MovieRequest>> GetIncompleteRequests();
-        Task<Dictionary<int, MovieRequest>> GetRequestsByMovieDbIds(List<int> moviedbIds);
-        Task Create(MovieRequest request);
-        Task Update(MovieRequest request);
-        Task DeleteRequest(Guid id);
+        Task<MovieRequestRow> GetExistingRequest(AgentTypes agentType, string agentSourceId);
+        Task<List<MovieRequestRow>> GetIncompleteRequests();
+        Task<Dictionary<int, MovieRequestRow>> GetRequestsByMovieDbIds(List<int> moviedbIds);
+        Task Add(MovieRequestRow request);
+        Task DeleteRequest(int id);
     }
 }

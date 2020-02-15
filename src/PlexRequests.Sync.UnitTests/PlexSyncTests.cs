@@ -1,17 +1,19 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Linq;
 using AutoFixture;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using NSubstitute;
 using PlexRequests.Plex;
-using PlexRequests.Repository.Models;
 using System.Threading.Tasks;
 using FluentAssertions;
 using PlexRequests.Core.Services;
 using PlexRequests.Core.Settings;
+using PlexRequests.DataAccess;
+using PlexRequests.DataAccess.Dtos;
+using PlexRequests.DataAccess.Enums;
 using PlexRequests.Plex.Models;
-using PlexRequests.Repository.Enums;
 using PlexRequests.Sync.SyncProcessors;
 using TestStack.BDDfy;
 using Xunit;
@@ -29,13 +31,12 @@ namespace PlexRequests.Sync.UnitTests
 
         private readonly Fixture _fixture;
 
-        private PlexServer _plexServer;
+        private PlexServerRow _plexServer;
         private Func<Task> _commandAction;
         private PlexMediaContainer _remoteLibraryContainer;
         private ISyncProcessor _syncProcessor;
         private SyncResult _syncProcessorResult;
-        private List<PlexMediaItem> _createdMediaItems;
-        private List<PlexMediaItem> _updatedMediaItems;
+        private List<PlexMediaItemRow> _createdMediaItems;
 
         public PlexSyncTests()
         {
@@ -47,6 +48,9 @@ namespace PlexRequests.Sync.UnitTests
             var logger = Substitute.For<ILogger<PlexSync>>();
 
             _fixture = new Fixture();
+            _fixture.Behaviors.OfType<ThrowingRecursionBehavior>().ToList()
+                .ForEach(b => _fixture.Behaviors.Remove(b));
+            _fixture.Behaviors.Add(new OmitOnRecursionBehavior());
 
             var plexSettings = _fixture.Create<PlexSettings>();
             var options = Options.Create(plexSettings);
@@ -135,14 +139,14 @@ namespace PlexRequests.Sync.UnitTests
 
         private void GivenAPlexServer()
         {
-            _plexServer = _fixture.Create<PlexServer>();
+            _plexServer = _fixture.Create<PlexServerRow>();
 
             _plexService.GetServer().Returns(_plexServer);
         }
 
         private void GivenAllServerLibrariesAreEnabled()
         {
-            foreach (var library in _plexServer.Libraries)
+            foreach (var library in _plexServer.PlexLibraries)
             {
                 library.IsEnabled = true;
             }
@@ -150,20 +154,20 @@ namespace PlexRequests.Sync.UnitTests
 
         private void GivenASingleEnabledLibrary()
         {
-            var plexLibrary = _fixture.Build<PlexServerLibrary>()
+            var plexLibrary = _fixture.Build<PlexLibraryRow>()
                                       .With(x => x.IsEnabled, true)
                                       .Create();
 
-            _plexServer.Libraries = new List<PlexServerLibrary> { plexLibrary };
+            _plexServer.PlexLibraries = new List<PlexLibraryRow> { plexLibrary };
         }
 
         private void GivenMatchingRemoteLibraries()
         {
             _remoteLibraryContainer = _fixture.Create<PlexMediaContainer>();
 
-            for (var i = 0; i < _plexServer.Libraries.Count; i++)
+            for (var i = 0; i < _plexServer.PlexLibraries.Count; i++)
             {
-                _remoteLibraryContainer.MediaContainer.Directory[i].Key = _plexServer.Libraries[i].Key;
+                _remoteLibraryContainer.MediaContainer.Directory[i].Key = _plexServer.PlexLibraries.ElementAt(i).LibraryKey;
             }
 
             _plexApi.GetLibraries(Arg.Any<string>(), Arg.Any<string>()).Returns(_remoteLibraryContainer);
@@ -190,8 +194,7 @@ namespace PlexRequests.Sync.UnitTests
 
         private void GivenSyncResultPersisted()
         {
-            _plexService.CreateMany(Arg.Do<List<PlexMediaItem>>(x => _createdMediaItems = x));
-            _plexService.UpdateMany(Arg.Do<List<PlexMediaItem>>(x => _updatedMediaItems = x));
+            _plexService.CreateMany(Arg.Do<List<PlexMediaItemRow>>(x => _createdMediaItems = x));
         }
 
         private void WhenACommandActionIsCreated(bool fullRefresh)
@@ -222,7 +225,6 @@ namespace PlexRequests.Sync.UnitTests
         private void ThenSyncResultsShouldHaveBeenPersisted()
         {
             _createdMediaItems.Should().BeEquivalentTo(_syncProcessorResult.NewItems);
-            _updatedMediaItems.Should().BeEquivalentTo(_syncProcessorResult.ExistingItems);
         }
 
         private void ThenNoSynchronisationShouldOccur()
@@ -234,7 +236,7 @@ namespace PlexRequests.Sync.UnitTests
         private void ThenRequestsAreAutoCompleted()
         {
             _completionService
-                .Received(1).AutoCompleteRequests(Arg.Any<Dictionary<MediaAgent, PlexMediaItem>>(), Arg.Any<PlexMediaTypes>());
+                .Received(1).AutoCompleteRequests(Arg.Any<Dictionary<MediaAgent, PlexMediaItemRow>>(), Arg.Any<PlexMediaTypes>());
         }
     }
 }

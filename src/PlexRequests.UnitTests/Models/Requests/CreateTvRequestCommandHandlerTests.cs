@@ -14,10 +14,11 @@ using PlexRequests.ApiRequests.Requests.Models.Create;
 using PlexRequests.Core.Exceptions;
 using PlexRequests.Core.Helpers;
 using PlexRequests.Core.Services;
+using PlexRequests.DataAccess;
+using PlexRequests.DataAccess.Dtos;
+using PlexRequests.DataAccess.Enums;
 using PlexRequests.Mapping;
 using PlexRequests.Plex;
-using PlexRequests.Repository.Enums;
-using PlexRequests.Repository.Models;
 using PlexRequests.TheMovieDb;
 using PlexRequests.TheMovieDb.Models;
 using TestStack.BDDfy;
@@ -32,17 +33,18 @@ namespace PlexRequests.UnitTests.Models.Requests
         private readonly ITvRequestService _requestService;
         private readonly ITheMovieDbService _theMovieDbService;
         private readonly IPlexService _plexService;
+        private IUnitOfWork _unitOfWork;
         private readonly IClaimsPrincipalAccessor _claimsPrincipalAccessor;
 
         private readonly Fixture _fixture;
 
         private Func<Task> _commandAction;
         private CreateTvRequestCommand _command;
-        private List<TvRequest> _requests;
-        private PlexMediaItem _plexMediaItem;
-        private TvRequest _createdRequest;
+        private List<TvRequestRow> _requests;
+        private PlexMediaItemRow _plexMediaItem;
+        private TvRequestRow _createdRequest;
         private string _claimsUsername;
-        private Guid _claimsUserId;
+        private int _claimsUserId;
         private TvDetails _tvDetails;
         private TvSeasonDetails _season;
         private ExternalIds _externalIds;
@@ -52,14 +54,18 @@ namespace PlexRequests.UnitTests.Models.Requests
             _requestService = Substitute.For<ITvRequestService>();
             _theMovieDbService = Substitute.For<ITheMovieDbService>();
             _plexService = Substitute.For<IPlexService>();
+            _unitOfWork = Substitute.For<IUnitOfWork>();
             _claimsPrincipalAccessor = Substitute.For<IClaimsPrincipalAccessor>();
 
             var mapperConfig = new MapperConfiguration(opts => { opts.AddProfile(new RequestProfile()); });
             var mapper = mapperConfig.CreateMapper();
 
-            _underTest = new CreateTvRequestCommandHandler(mapper, _requestService, _theMovieDbService, _plexService, _claimsPrincipalAccessor);
+            _underTest = new CreateTvRequestCommandHandler(mapper, _requestService, _theMovieDbService, _plexService, _unitOfWork, _claimsPrincipalAccessor);
 
             _fixture = new Fixture();
+            _fixture.Behaviors.OfType<ThrowingRecursionBehavior>().ToList()
+                .ForEach(b => _fixture.Behaviors.Remove(b));
+            _fixture.Behaviors.Add(new OmitOnRecursionBehavior());
         }
 
         [Theory]
@@ -144,7 +150,7 @@ namespace PlexRequests.UnitTests.Models.Requests
         }
 
         [Fact]
-        private void Thorws_Error_When_TrackShow_But_Show_Not_In_Production()
+        private void Throws_Error_When_TrackShow_But_Show_Not_In_Production()
         {
             bool inProduction = false;
             this.Given(x => x.GivenACommand())
@@ -157,7 +163,7 @@ namespace PlexRequests.UnitTests.Models.Requests
         }
 
         [Fact]
-        private void Thorws_Error_When_TrackShow_But_Show_Already_Tracked()
+        private void Throws_Error_When_TrackShow_But_Show_Already_Tracked()
         {
             bool inProduction = true;
             this.Given(x => x.GivenACommand())
@@ -186,6 +192,7 @@ namespace PlexRequests.UnitTests.Models.Requests
                 .When(x => x.WhenCommandActionIsCreated())
                 .Then(x => x.ThenRequestIsCreated(_command.Seasons.Count))
                 .Then(x => x.ThenTvSeasonDetailsWereRetrieved(expectedSeasonCount))
+                .Then(x => x.ThenChangesAreCommitted())
                 .BDDfy();
         }
 
@@ -204,6 +211,7 @@ namespace PlexRequests.UnitTests.Models.Requests
                 .Given(x => x.GivenARequestIsCreated())
                 .When(x => x.WhenCommandActionIsCreated())
                 .Then(x => x.ThenRequestIsCreated(expectedSeasonCount))
+                .Then(x => x.ThenChangesAreCommitted())
                 .BDDfy();
         }
 
@@ -222,6 +230,7 @@ namespace PlexRequests.UnitTests.Models.Requests
                 .Given(x => x.GivenARequestIsCreated())
                 .When(x => x.WhenCommandActionIsCreated())
                 .Then(x => x.ThenRequestIsCreated(expectedSeasonCount))
+                .Then(x => x.ThenChangesAreCommitted())
                 .BDDfy();
         }
 
@@ -282,49 +291,51 @@ namespace PlexRequests.UnitTests.Models.Requests
         {
             CreateRequestsFromCommand();
 
-            _requests.First().Seasons.RemoveAt(0);
+            var firstRequest = _requests.First();
+            var elementToRemove = firstRequest.TvRequestSeasons.ElementAt(0);
+            firstRequest.TvRequestSeasons.Remove(elementToRemove);
 
             _requestService.GetExistingRequests(Arg.Any<AgentTypes>(), Arg.Any<string>()).Returns(_requests);
         }
 
         private void GivenShowAlreadyBeingTracked()
         {
-            var existingRequest = _fixture.Build<TvRequest>()
+            var existingRequest = _fixture.Build<TvRequestRow>()
             .With(x => x.Track, true)
             .Create();
 
-            _requestService.GetExistingRequests(Arg.Any<AgentTypes>(), Arg.Any<string>()).Returns(new List<TvRequest> { existingRequest });
+            _requestService.GetExistingRequests(Arg.Any<AgentTypes>(), Arg.Any<string>()).Returns(new List<TvRequestRow> { existingRequest });
         }
 
         private void CreateRequestsFromCommand()
         {
-            var request = _fixture.Create<TvRequest>();
+            var request = _fixture.Create<TvRequestRow>();
 
-            request.Seasons = new List<RequestSeason>();
+            request.TvRequestSeasons = new List<TvRequestSeasonRow>();
             foreach (var season in _command.Seasons)
             {
-                var requestEpisodes = season.Episodes.Select(episode => new RequestEpisode
+                var requestEpisodes = season.Episodes.Select(episode => new TvRequestEpisodeRow
                 {
-                    Index = episode.Index
+                    EpisodeIndex = episode.Index
                 });
 
-                var requestSeason = new RequestSeason
+                var requestSeason = new TvRequestSeasonRow
                 {
-                    Index = season.Index,
-                    Episodes = requestEpisodes.ToList()
+                    SeasonIndex = season.Index,
+                    TvRequestEpisodes = requestEpisodes.ToList()
                 };
 
-                request.Seasons.Add(requestSeason);
+                request.TvRequestSeasons.Add(requestSeason);
             }
 
-            _requests = new List<TvRequest> { request };
+            _requests = new List<TvRequestRow> { request };
         }
 
         private void GivenAllEpisodesAlreadyInPlex()
         {
-            _plexMediaItem = _fixture.Create<PlexMediaItem>();
+            _plexMediaItem = _fixture.Create<PlexMediaItemRow>();
 
-            _plexMediaItem.Seasons = CreatePlexSeasonsFromCommand();
+            _plexMediaItem.PlexSeasons = CreatePlexSeasonsFromCommand();
 
             _plexService
                 .GetExistingMediaItemByAgent(Arg.Any<PlexMediaTypes>(), Arg.Any<AgentTypes>(), Arg.Any<string>())
@@ -333,9 +344,9 @@ namespace PlexRequests.UnitTests.Models.Requests
 
         private void GivenAllEpisodesAlreadyInPlexFromFallbackAgent()
         {
-            _plexMediaItem = _fixture.Create<PlexMediaItem>();
+            _plexMediaItem = _fixture.Create<PlexMediaItemRow>();
 
-            _plexMediaItem.Seasons = CreatePlexSeasonsFromCommand();
+            _plexMediaItem.PlexSeasons = CreatePlexSeasonsFromCommand();
 
             _plexService
                 .GetExistingMediaItemByAgent(Arg.Any<PlexMediaTypes>(), Arg.Any<AgentTypes>(), Arg.Any<string>())
@@ -344,10 +355,11 @@ namespace PlexRequests.UnitTests.Models.Requests
 
         private void GivenOneSeasonNotMatchingPlexContent()
         {
-            _plexMediaItem = _fixture.Create<PlexMediaItem>();
+            _plexMediaItem = _fixture.Create<PlexMediaItemRow>();
 
-            _plexMediaItem.Seasons = CreatePlexSeasonsFromCommand();
-            _plexMediaItem.Seasons.RemoveAt(0);
+            _plexMediaItem.PlexSeasons = CreatePlexSeasonsFromCommand();
+            var elementToRemove = _plexMediaItem.PlexSeasons.ElementAt(0);
+            _plexMediaItem.PlexSeasons.Remove(elementToRemove);
 
             _plexService
                 .GetExistingMediaItemByAgent(Arg.Any<PlexMediaTypes>(), Arg.Any<AgentTypes>(), Arg.Any<string>())
@@ -356,14 +368,14 @@ namespace PlexRequests.UnitTests.Models.Requests
 
         private void GivenNoMatchingRequests()
         {
-            _requests = _fixture.CreateMany<TvRequest>().ToList();
+            _requests = _fixture.CreateMany<TvRequestRow>().ToList();
 
             _requestService.GetExistingRequests(Arg.Any<AgentTypes>(), Arg.Any<string>()).Returns(_requests);
         }
 
         private void GivenNoMatchingPlexContent()
         {
-            _plexMediaItem = _fixture.Create<PlexMediaItem>();
+            _plexMediaItem = _fixture.Create<PlexMediaItemRow>();
 
             _plexService
                 .GetExistingMediaItemByAgent(Arg.Any<PlexMediaTypes>(), Arg.Any<AgentTypes>(), Arg.Any<string>())
@@ -402,13 +414,13 @@ namespace PlexRequests.UnitTests.Models.Requests
         private void GivenARequestIsCreated()
         {
             _createdRequest = null;
-            _requestService.Create(Arg.Do<TvRequest>(x => _createdRequest = x));
+            _requestService.Add(Arg.Do<TvRequestRow>(x => _createdRequest = x));
         }
 
         private void GivenUserDetailsFromClaims()
         {
             _claimsUsername = _fixture.Create<string>();
-            _claimsUserId = _fixture.Create<Guid>();
+            _claimsUserId = _fixture.Create<int>();
             _claimsPrincipalAccessor.Username.Returns(_claimsUsername);
             _claimsPrincipalAccessor.UserId.Returns(_claimsUserId);
         }
@@ -429,34 +441,32 @@ namespace PlexRequests.UnitTests.Models.Requests
         private void ThenRequestIsCreated(int expectedSeasonCount)
         {
             _commandAction.Should().NotThrow();
-            _requestService.Received().Create(Arg.Any<TvRequest>());
+            _requestService.Received().Add(Arg.Any<TvRequestRow>());
 
             _createdRequest.Should().NotBeNull();
-            _createdRequest.Id.Should().Be(Guid.Empty);
-            _createdRequest.Status.Should().Be(RequestStatuses.PendingApproval);
+            _createdRequest.TvRequestId.Should().Be(default(int));
+            _createdRequest.RequestStatus.Should().Be(RequestStatuses.PendingApproval);
             _createdRequest.PrimaryAgent.AgentType.Should().Be(AgentTypes.TheMovieDb);
             _createdRequest.PrimaryAgent.AgentSourceId.Should().Be(_command.TheMovieDbId.ToString());
-            _createdRequest.PlexMediaUri.Should().BeNull();
-            _createdRequest.Seasons.Should().NotBeNull();
-            _createdRequest.Seasons.Count.Should().Be(expectedSeasonCount);
-            _createdRequest.RequestedByUserName.Should().Be(_claimsUsername);
-            _createdRequest.RequestedByUserId.Should().Be(_claimsUserId);
+            _createdRequest.PlexMediaItem.MediaUri.Should().BeNull();
+            _createdRequest.TvRequestSeasons.Should().NotBeNull();
+            _createdRequest.TvRequestSeasons.Count.Should().Be(expectedSeasonCount);
             _createdRequest.Title.Should().Be(_tvDetails.Name);
-            _createdRequest.AirDate.Should().Be(DateTime.Parse(_tvDetails.First_Air_Date));
+            _createdRequest.AirDateUtc.Should().Be(DateTime.Parse(_tvDetails.First_Air_Date));
             _createdRequest.ImagePath.Should().Be(_tvDetails.Poster_Path);
-            _createdRequest.Created.Should().BeCloseTo(DateTime.UtcNow, 500);
+            _createdRequest.CreatedUtc.Should().BeCloseTo(DateTime.UtcNow, 500);
 
             for (var i = 0; i < expectedSeasonCount; i++)
             {
-                _createdRequest.Seasons[i].Should().BeEquivalentTo(_command.Seasons[i]);
+                _createdRequest.TvRequestSeasons.ElementAt(i).Should().BeEquivalentTo(_command.Seasons[i]);
             }
 
-            var expectedAdditionalAgents = new List<MediaAgent>
+            var expectedAdditionalAgents = new List<TvRequestAgentRow>
             {
-                new MediaAgent(AgentTypes.TheTvDb, _externalIds.TvDb_Id)
+                new TvRequestAgentRow(AgentTypes.TheTvDb, _externalIds.TvDb_Id)
             };
 
-            _createdRequest.AdditionalAgents.Should().BeEquivalentTo(expectedAdditionalAgents);
+            _createdRequest.TvRequestAgents.Should().BeEquivalentTo(expectedAdditionalAgents);
         }
 
         private void ThenTvSeasonDetailsWereRetrieved(int expectedSeasonCount)
@@ -464,21 +474,26 @@ namespace PlexRequests.UnitTests.Models.Requests
             _theMovieDbService.Received(expectedSeasonCount).GetTvSeasonDetails(Arg.Any<int>(), Arg.Any<int>());
         }
 
-        private List<PlexSeason> CreatePlexSeasonsFromCommand()
+        private void ThenChangesAreCommitted()
         {
-            var plexSeasons = new List<PlexSeason>();
+            _unitOfWork.Received(1).CommitAsync();
+        }
+
+        private List<PlexSeasonRow> CreatePlexSeasonsFromCommand()
+        {
+            var plexSeasons = new List<PlexSeasonRow>();
 
             foreach (var season in _command.Seasons)
             {
-                var plexEpisodes = season.Episodes.Select(episode => new PlexEpisode
+                var plexEpisodes = season.Episodes.Select(episode => new PlexEpisodeRow
                 {
                     Episode = episode.Index
                 }).ToList();
 
-                plexSeasons.Add(new PlexSeason
+                plexSeasons.Add(new PlexSeasonRow
                 {
                     Season = season.Index,
-                    Episodes = plexEpisodes
+                    PlexEpisodes = plexEpisodes
                 });
             }
 

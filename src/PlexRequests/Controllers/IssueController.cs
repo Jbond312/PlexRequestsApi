@@ -36,12 +36,12 @@ namespace PlexRequests.Controllers
             return NoContent();
         }
 
-        [HttpPut("{id:guid}")]
+        [HttpPut("{id:int}")]
         [SwaggerResponse(204)]
         [SwaggerResponse(400, null, typeof(ApiErrorResponse))]
         [SwaggerResponse(401)]
         [Admin]
-        public async Task<ActionResult> UpdateIssue([FromRoute][Required] Guid id, [FromBody] UpdateIssueCommand command)
+        public async Task<ActionResult> UpdateIssue([FromRoute][Required] int id, [FromBody] UpdateIssueCommand command)
         {
             command.Id = id;
             await _mediator.Send(command);
@@ -49,13 +49,13 @@ namespace PlexRequests.Controllers
             return NoContent();
         }
 
-        [HttpPost("{id:guid}/Comment")]
+        [HttpPost("{id:int}/Comment")]
         [Authorize(Roles = PlexRequestRoles.Commenter)]
         [SwaggerResponse(204)]
         [SwaggerResponse(400, null, typeof(ApiErrorResponse))]
         [SwaggerResponse(401)]
         [SwaggerResponse(424)]
-        public async Task<ActionResult> CreateComment([FromRoute][Required] Guid id, [FromBody] CreateIssueCommentCommand command)
+        public async Task<ActionResult> CreateComment([FromRoute][Required] int id, [FromBody] CreateIssueCommentCommand command)
         {
             command.Id = id;
             await _mediator.Send(command);
@@ -63,12 +63,12 @@ namespace PlexRequests.Controllers
             return NoContent();
         }
 
-        [HttpGet("{id:guid}")]
+        [HttpGet("{id:int}")]
         [SwaggerResponse(200, null, typeof(IssueDetailModel))]
         [SwaggerResponse(400, null, typeof(ApiErrorResponse))]
         [SwaggerResponse(401)]
         [SwaggerResponse(424)]
-        public async Task<ActionResult<IssueDetailModel>> GetIssue([FromRoute][Required] Guid id)
+        public async Task<ActionResult<IssueDetailModel>> GetIssue([FromRoute][Required] int id)
         {
             var query = new GetOneIssueQuery(id);
             var result = await _mediator.Send(query);

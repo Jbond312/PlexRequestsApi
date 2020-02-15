@@ -19,7 +19,6 @@ using PlexRequests.DataAccess;
 using PlexRequests.DataAccess.Dtos;
 using PlexRequests.Plex;
 using PlexRequests.Plex.Models;
-using PlexRequests.Repository.Models;
 using TestStack.BDDfy;
 using Xunit;
 using User = PlexRequests.Plex.Models.User;
@@ -45,7 +44,7 @@ namespace PlexRequests.UnitTests.Models.Auth
         private User _plexUser;
         private UserRow _createdAdminUser;
         private List<Server> _plexServers;
-        private PlexServer _createdServer;
+        private PlexServerRow _createdServer;
         private PlexMediaContainer _plexLibraryContainer;
         private string _createdToken;
         private UserRefreshTokenRow _createdRefreshToken;
@@ -215,7 +214,7 @@ namespace PlexRequests.UnitTests.Models.Auth
 
         private void GivenAServerIsCreated()
         {
-            _plexService.Create(Arg.Do<PlexServer>(x => _createdServer = x));
+            _plexService.AddServer(Arg.Do<PlexServerRow>(x => _createdServer = x));
         }
 
         private void GivenServerLibraries()
@@ -279,17 +278,17 @@ namespace PlexRequests.UnitTests.Models.Auth
 
             if (createdLibraries)
             {
-                var expectedLibraries = _plexLibraryContainer.MediaContainer.Directory.Select(x => new PlexServerLibrary
+                var expectedLibraries = _plexLibraryContainer.MediaContainer.Directory.Select(x => new PlexLibraryRow
                 {
-                    Key = x.Key,
+                    LibraryKey = x.Key,
                     Title = x.Title,
                     Type = x.Type
                 }).ToList();
-                _createdServer.Libraries.Should().BeEquivalentTo(expectedLibraries);
+                _createdServer.PlexLibraries.Should().BeEquivalentTo(expectedLibraries, options => options.Excluding(x => x.CreatedUtc));
             }
             else
             {
-                _createdServer.Libraries.Should().BeEmpty();
+                _createdServer.PlexLibraries.Should().BeEmpty();
             }
         }
 

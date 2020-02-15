@@ -7,6 +7,17 @@ using PlexRequests.DataAccess.Dtos;
 
 namespace PlexRequests.DataAccess.Repositories
 {
+    public interface IUserRepository : IBaseRepository
+    {
+        Task<List<UserRow>> GetAllUsers(bool includeDisabled, bool includeAdmin);
+        Task<UserRow> GetUser(int userId);
+        Task<UserRow> GetUser(string email);
+        Task<UserRow> GetUser(Guid identifier);
+        Task<UserRow> GetUserFromPlexId(int plexAccountId);
+        Task Add(UserRow user);
+        Task<UserRow> GetAdmin();
+    }
+
     public class UserRepository : BaseRepository, IUserRepository
     {
 
@@ -39,9 +50,9 @@ namespace PlexRequests.DataAccess.Repositories
             return await GetUsers().FirstOrDefaultAsync(x => x.PlexAccountId == plexAccountId);
         }
 
-        public void Add(UserRow userRow)
+        public async Task Add(UserRow user)
         {
-            DbContext.Users.Add(userRow);
+            await base.Add(user);
         }
 
         public async Task<UserRow> GetAdmin()

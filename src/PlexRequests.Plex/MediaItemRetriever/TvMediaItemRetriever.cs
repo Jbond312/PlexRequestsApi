@@ -1,6 +1,6 @@
 using System.Threading.Tasks;
-using PlexRequests.Repository.Enums;
-using PlexRequests.Repository.Models;
+using PlexRequests.DataAccess.Dtos;
+using PlexRequests.DataAccess.Enums;
 using PlexRequests.TheMovieDb;
 
 namespace PlexRequests.Plex.MediaItemRetriever
@@ -21,7 +21,7 @@ namespace PlexRequests.Plex.MediaItemRetriever
 
         public PlexMediaTypes MediaType => PlexMediaTypes.Show;
 
-        public async Task<PlexMediaItem> Get(int theMovieDbId)
+        public async Task<PlexMediaItemRow> Get(int theMovieDbId)
         {
             var plexMediaItem = await GetPlexMediaItem(AgentTypes.TheMovieDb, theMovieDbId.ToString());
 
@@ -43,7 +43,7 @@ namespace PlexRequests.Plex.MediaItemRetriever
             return plexMediaItem;
         }
 
-        private async Task<PlexMediaItem> GetPlexMediaItem(AgentTypes agentType, string externalId)
+        private async Task<PlexMediaItemRow> GetPlexMediaItem(AgentTypes agentType, string externalId)
         {
             return await _plexService.GetExistingMediaItemByAgent(PlexMediaTypes.Show, agentType, externalId);
         }

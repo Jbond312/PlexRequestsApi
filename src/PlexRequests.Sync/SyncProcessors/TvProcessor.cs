@@ -5,10 +5,10 @@ using System.Threading.Tasks;
 using Microsoft.Extensions.Logging;
 using PlexRequests.Core.Helpers;
 using PlexRequests.Core.Settings;
+using PlexRequests.DataAccess.Dtos;
+using PlexRequests.DataAccess.Enums;
 using PlexRequests.Plex;
 using PlexRequests.Plex.Models;
-using PlexRequests.Repository.Enums;
-using PlexRequests.Repository.Models;
 
 namespace PlexRequests.Sync.SyncProcessors
 {
@@ -82,39 +82,39 @@ namespace PlexRequests.Sync.SyncProcessors
             return syncResult;
         }
 
-        private async Task GetChildMetadata(PlexMediaItem mediaItem, string authToken, string plexUri, string machineIdentifier)
+        private async Task GetChildMetadata(PlexMediaItemRow mediaItem, string authToken, string plexUri, string machineIdentifier)
         {
             _logger.LogDebug($"Retrieving all seasons for show '{mediaItem.Title}'");
-            var seasonShowItems = await GetChildShowItems(mediaItem.Key, authToken, plexUri);
+            var seasonShowItems = await GetChildShowItems(mediaItem.MediaItemKey, authToken, plexUri);
 
             foreach (var seasonShowItem in seasonShowItems)
             {
-                var plexSeason = new PlexSeason
+                var plexSeason = new PlexSeasonRow
                 {
-                    Key = seasonShowItem.RatingKey,
+                    MediaItemKey = seasonShowItem.RatingKey,
                     Title = seasonShowItem.Title,
                     AgentSourceId = seasonShowItem.AgentSourceId,
                     AgentType = seasonShowItem.AgentType,
                     Season = seasonShowItem.Index,
-                    PlexMediaUri = PlexHelper.GenerateMediaItemUri(_plexSettings.PlexMediaItemUriFormat, machineIdentifier, seasonShowItem.RatingKey)
+                    MediaUri = PlexHelper.GenerateMediaItemUri(_plexSettings.PlexMediaItemUriFormat, machineIdentifier, seasonShowItem.RatingKey)
                 };
 
                 _logger.LogDebug($"Retrieving all episodes for show '{mediaItem.Title}' season '{plexSeason.Season}'");
                 var episodeShowItems = await GetChildShowItems(seasonShowItem.RatingKey, authToken, plexUri);
 
-                plexSeason.Episodes = episodeShowItems.Select(ep => new PlexEpisode
+                plexSeason.PlexEpisodes = episodeShowItems.Select(ep => new PlexEpisodeRow
                 {
-                    Key = ep.RatingKey,
+                    MediaItemKey = ep.RatingKey,
                     Title = ep.Title,
                     AgentSourceId = ep.AgentSourceId,
                     AgentType = ep.AgentType,
                     Episode = ep.Index,
                     Year = ep.Year,
                     Resolution = ep.Resolution,
-                    PlexMediaUri = PlexHelper.GenerateMediaItemUri(_plexSettings.PlexMediaItemUriFormat, machineIdentifier, ep.RatingKey)
+                    MediaUri = PlexHelper.GenerateMediaItemUri(_plexSettings.PlexMediaItemUriFormat, machineIdentifier, ep.RatingKey)
                 }).ToList();
 
-                mediaItem.Seasons.Add(plexSeason);
+                mediaItem.PlexSeasons.Add(plexSeason);
             }
         }
 

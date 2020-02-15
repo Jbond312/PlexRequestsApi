@@ -1,9 +1,9 @@
-using PlexRequests.Repository.Models;
+using PlexRequests.DataAccess.Dtos;
 
 namespace PlexRequests.Core.Helpers
 {
     public interface IRequestHelper
     {
-        void SetAggregatedStatus(TvRequest request);
+        void SetAggregatedStatus(TvRequestRow request);
     }
 }

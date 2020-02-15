@@ -5,18 +5,23 @@ using System.Threading.Tasks;
 using MediatR;
 using PlexRequests.Core.Exceptions;
 using PlexRequests.Core.Services;
-using PlexRequests.Repository.Enums;
-using PlexRequests.Repository.Models;
+using PlexRequests.DataAccess;
+using PlexRequests.DataAccess.Dtos;
+using PlexRequests.DataAccess.Enums;
 
 namespace PlexRequests.ApiRequests.Requests.Commands
 {
     public class RejectTvRequestCommandHandler : AsyncRequestHandler<RejectTvRequestCommand>
     {
         private readonly ITvRequestService _requestService;
+        private readonly IUnitOfWork _unitOfWork;
 
-        public RejectTvRequestCommandHandler(ITvRequestService requestService)
+        public RejectTvRequestCommandHandler(
+            ITvRequestService requestService,
+            IUnitOfWork unitOfWork)
         {
             _requestService = requestService;
+            _unitOfWork = unitOfWork;
         }
 
         protected override async Task Handle(RejectTvRequestCommand command, CancellationToken cancellationToken)
@@ -33,14 +38,14 @@ namespace PlexRequests.ApiRequests.Requests.Commands
                 throw new PlexRequestException("Invalid request", "No request was found with the given Id", HttpStatusCode.NotFound);
             }
 
-            if (request.Status == RequestStatuses.Completed)
+            if (request.RequestStatus == RequestStatuses.Completed)
             {
                 throw new PlexRequestException("Invalid request", "Request has already been completed");
             }
 
             if (request.Track)
             {
-                request.Status = RequestStatuses.Rejected;
+                request.RequestStatus = RequestStatuses.Rejected;
             }
             else
             {
@@ -58,28 +63,28 @@ namespace PlexRequests.ApiRequests.Requests.Commands
 
             request.Comment = command.Comment;
 
-            await _requestService.Update(request);
+            await _unitOfWork.CommitAsync();
         }
 
-        private void PartialReject(TvRequest request, Dictionary<int, List<int>> episodesBySeason)
+        private void PartialReject(TvRequestRow request, Dictionary<int, List<int>> episodesBySeason)
         {
             if (episodesBySeason == null)
             {
                 return;
             }
 
-            foreach (var season in request.Seasons)
+            foreach (var season in request.TvRequestSeasons)
             {
-                if (episodesBySeason.TryGetValue(season.Index, out var requestEpisodes))
+                if (episodesBySeason.TryGetValue(season.SeasonIndex, out var requestEpisodes))
                 {
                     if (requestEpisodes == null)
                     {
                         continue;
                     }
 
-                    foreach (var episode in season.Episodes)
+                    foreach (var episode in season.TvRequestEpisodes)
                     {
-                        if (requestEpisodes.Contains(episode.Index))
+                        if (requestEpisodes.Contains(episode.EpisodeIndex))
                         {
                             RejectEpisode(episode);
                         }
@@ -88,22 +93,22 @@ namespace PlexRequests.ApiRequests.Requests.Commands
             }
         }
 
-        private void RejectAll(TvRequest request)
+        private void RejectAll(TvRequestRow request)
         {
-            foreach (var season in request.Seasons)
+            foreach (var season in request.TvRequestSeasons)
             {
-                foreach (var episode in season.Episodes)
+                foreach (var episode in season.TvRequestEpisodes)
                 {
                     RejectEpisode(episode);
                 }
             }
         }
 
-        private void RejectEpisode(RequestEpisode episode)
+        private void RejectEpisode(TvRequestEpisodeRow episode)
         {
-            if (episode.Status != RequestStatuses.Completed)
+            if (episode.RequestStatus != RequestStatuses.Completed)
             {
-                episode.Status = RequestStatuses.Rejected;
+                episode.RequestStatus = RequestStatuses.Rejected;
             }
         }
     }

@@ -1,17 +1,17 @@
 ﻿using System.Collections.Generic;
-using PlexRequests.Repository.Models;
+using PlexRequests.DataAccess.Dtos;
 
 namespace PlexRequests.Sync
 {
     public class SyncResult
     {
-        public List<PlexMediaItem> NewItems { get; }
-        public List<PlexMediaItem> ExistingItems { get; }
+        public List<PlexMediaItemRow> NewItems { get; }
+        public List<PlexMediaItemRow> ExistingItems { get; }
 
         public SyncResult()
         {
-            NewItems = new List<PlexMediaItem>();
-            ExistingItems = new List<PlexMediaItem>();
+            NewItems = new List<PlexMediaItemRow>();
+            ExistingItems = new List<PlexMediaItemRow>();
         }
     }
 }

@@ -7,7 +7,8 @@ using FluentAssertions;
 using NSubstitute;
 using PlexRequests.Core.Services;
 using PlexRequests.Core.Services.AutoCompletion;
-using PlexRequests.Repository.Models;
+using PlexRequests.DataAccess;
+using PlexRequests.DataAccess.Dtos;
 using TestStack.BDDfy;
 using Xunit;
 
@@ -18,20 +19,25 @@ namespace PlexRequests.Core.UnitTests.Services.AutoCompletion
         private readonly MovieAutoCompletion _underTest;
 
         private readonly IMovieRequestService _requestService;
+        private readonly IUnitOfWork _unitOfWork;
 
         private readonly Fixture _fixture;
 
-        private Dictionary<MediaAgent, PlexMediaItem> _agentsForPlexItems;
-        private List<MovieRequest> _movieRequests;
+        private Dictionary<MediaAgent, PlexMediaItemRow> _agentsForPlexItems;
+        private List<MovieRequestRow> _movieRequests;
         private Func<Task> _commandAction;
 
         public MovieAutoCompletetionTests()
         {
             _fixture = new Fixture();
+            _fixture.Behaviors.OfType<ThrowingRecursionBehavior>().ToList()
+                .ForEach(b => _fixture.Behaviors.Remove(b));
+            _fixture.Behaviors.Add(new OmitOnRecursionBehavior());
 
             _requestService = Substitute.For<IMovieRequestService>();
+            _unitOfWork = Substitute.For<IUnitOfWork>();
 
-            _underTest = new MovieAutoCompletion(_requestService);
+            _underTest = new MovieAutoCompletion(_requestService, _unitOfWork);
         }
 
         [Fact]
@@ -41,7 +47,7 @@ namespace PlexRequests.Core.UnitTests.Services.AutoCompletion
                 .Given(x => x.GivenNoMatchingRequests())
                 .When(x => x.WhenCommandActionIsCreated())
                 .Then(x => x.ThenResponseIsSuccessful())
-                .Then(x => x.ThenNoRequestsWereUpdated())
+                .Then(x => x.ThenChangesAreCommitted())
                 .BDDfy();
         }
 
@@ -52,7 +58,7 @@ namespace PlexRequests.Core.UnitTests.Services.AutoCompletion
                 .Given(x => x.GivenASingleMatchingRequestPrimaryAgent())
                 .When(x => x.WhenCommandActionIsCreated())
                 .Then(x => x.ThenResponseIsSuccessful())
-                .Then(x => x.ThenOneRequestWasUpdated())
+                .Then(x => x.ThenChangesAreCommitted())
                 .BDDfy();
         }
 
@@ -63,44 +69,44 @@ namespace PlexRequests.Core.UnitTests.Services.AutoCompletion
                 .Given(x => x.GivenASingleMatchingRequestSecondaryAgent())
                 .When(x => x.WhenCommandActionIsCreated())
                 .Then(x => x.ThenResponseIsSuccessful())
-                .Then(x => x.ThenOneRequestWasUpdated())
+                .Then(x => x.ThenChangesAreCommitted())
                 .BDDfy();
         }
 
         private void GivenRequestsAgentsForPlexMediaItems()
         {
-            _agentsForPlexItems = _fixture.CreateMany<KeyValuePair<MediaAgent, PlexMediaItem>>()
+            _agentsForPlexItems = _fixture.CreateMany<KeyValuePair<MediaAgent, PlexMediaItemRow>>()
                                           .ToDictionary(x => x.Key, x => x.Value);
         }
 
         private void GivenNoMatchingRequests()
         {
-            _movieRequests = _fixture.CreateMany<MovieRequest>().ToList();
+            _movieRequests = _fixture.CreateMany<MovieRequestRow>().ToList();
 
             _requestService.GetIncompleteRequests().Returns(_movieRequests);
         }
 
         private void GivenASingleMatchingRequestPrimaryAgent()
         {
-            var request = _fixture.Create<MovieRequest>();
+            var request = _fixture.Create<MovieRequestRow>();
 
-            request.PrimaryAgent = GetMatchingAgent();
+            request.MovieRequestAgents.Add(GetMatchingAgent());
 
-            _movieRequests = new List<MovieRequest> {request};
+            _movieRequests = new List<MovieRequestRow> {request};
 
             _requestService.GetIncompleteRequests().Returns(_movieRequests);
         }
 
         private void GivenASingleMatchingRequestSecondaryAgent()
         {
-            var request = _fixture.Create<MovieRequest>();
+            var request = _fixture.Create<MovieRequestRow>();
 
             var firstPlexAgent = _agentsForPlexItems.First().Key;
 
-            var additionalAgent = new MediaAgent(firstPlexAgent.AgentType, firstPlexAgent.AgentSourceId);
-            request.AdditionalAgents = new List<MediaAgent> {additionalAgent};
+            var additionalAgent = new MovieRequestAgentRow(firstPlexAgent.AgentType, firstPlexAgent.AgentSourceId);
+            request.MovieRequestAgents = new List<MovieRequestAgentRow> {additionalAgent};
 
-            _movieRequests = new List<MovieRequest> {request};
+            _movieRequests = new List<MovieRequestRow> {request};
 
             _requestService.GetIncompleteRequests().Returns(_movieRequests);
         }
@@ -115,21 +121,16 @@ namespace PlexRequests.Core.UnitTests.Services.AutoCompletion
             _commandAction.Should().NotThrow();
         }
 
-        private void ThenNoRequestsWereUpdated()
+        private void ThenChangesAreCommitted()
         {
-            _requestService.DidNotReceive().Update(Arg.Any<MovieRequest>());
+            _unitOfWork.Received(1).CommitAsync();
         }
 
-        private void ThenOneRequestWasUpdated()
-        {
-            _requestService.Received().Update(Arg.Any<MovieRequest>());
-        }
-
-        private MediaAgent GetMatchingAgent()
+        private MovieRequestAgentRow GetMatchingAgent()
         {
             var firstPlexAgent = _agentsForPlexItems.First().Key;
 
-            return new MediaAgent(firstPlexAgent.AgentType, firstPlexAgent.AgentSourceId);
+            return new MovieRequestAgentRow(firstPlexAgent.AgentType, firstPlexAgent.AgentSourceId);
         }
     }
 }

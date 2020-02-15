@@ -1,4 +1,5 @@
 using System;
+using System.Linq;
 using System.Net;
 using System.Threading;
 using System.Threading.Tasks;
@@ -10,10 +11,10 @@ using PlexRequests.ApiRequests.Issues.Commands;
 using PlexRequests.Core.Exceptions;
 using PlexRequests.Core.Helpers;
 using PlexRequests.Core.Services;
-using PlexRequests.Repository.Enums;
-using PlexRequests.Repository.Models;
-using PlexRequests.TheMovieDb;
-using PlexRequests.TheMovieDb.Models;
+using PlexRequests.DataAccess;
+using PlexRequests.DataAccess.Dtos;
+using PlexRequests.DataAccess.Enums;
+using PlexRequests.Plex;
 using TestStack.BDDfy;
 using Xunit;
 
@@ -23,30 +24,33 @@ namespace PlexRequests.UnitTests.Models.Issues
     {
         private readonly IRequestHandler<CreateIssueCommand> _underTest;
 
-        private IIssueService _issueService;
-        private ITheMovieDbService _theMovieDbService;
-        private IClaimsPrincipalAccessor _claimsPrincipalAccessor;
+        private readonly IIssueService _issueService;
+        private readonly IPlexService _plexService;
+        private readonly IUnitOfWork _unitOfWork;
+        private readonly IClaimsPrincipalAccessor _claimsPrincipalAccessor;
 
         private readonly Fixture _fixture;
 
         private CreateIssueCommand _command;
         private Func<Task> _commandAction;
-        private MovieDetails _movieDetails;
-        private TvDetails _tvDetails;
-        private Issue _issueCreated;
-        private string _claimsUsername;
-        private Guid _claimsUserId;
+        private IssueRow _issueCreated;
+        private PlexMediaItemRow _plexMediaItem;
+        private int _claimsUserId;
 
 
         public CreateIssueCommandHandlerTests()
         {
             _issueService = Substitute.For<IIssueService>();
-            _theMovieDbService = Substitute.For<ITheMovieDbService>();
+            _plexService = Substitute.For<IPlexService>();
+            _unitOfWork = Substitute.For<IUnitOfWork>();
             _claimsPrincipalAccessor = Substitute.For<IClaimsPrincipalAccessor>();
 
-            _underTest = new CreateIssueCommandHandler(_issueService, _theMovieDbService, _claimsPrincipalAccessor);
+            _underTest = new CreateIssueCommandHandler(_issueService, _plexService, _unitOfWork, _claimsPrincipalAccessor);
 
             _fixture = new Fixture();
+            _fixture.Behaviors.OfType<ThrowingRecursionBehavior>().ToList()
+                .ForEach(b => _fixture.Behaviors.Remove(b));
+            _fixture.Behaviors.Add(new OmitOnRecursionBehavior());
         }
 
         [Theory]
@@ -60,6 +64,7 @@ namespace PlexRequests.UnitTests.Models.Issues
             .Given(x => x.GivenATitle(title))
             .When(x => x.WhenCommandActionIsCreated())
             .Then(x => x.ThenErrorIsThrown("Issue not created", "'Title' must be specified", HttpStatusCode.BadRequest))
+            .Then(x => x.ThenChangesAreNotCommitted())
             .BDDfy();
         }
 
@@ -74,6 +79,7 @@ namespace PlexRequests.UnitTests.Models.Issues
             .Given(x => x.GivenADescription(description))
             .When(x => x.WhenCommandActionIsCreated())
             .Then(x => x.ThenErrorIsThrown("Issue not created", "'Description' must be specified", HttpStatusCode.BadRequest))
+            .Then(x => x.ThenChangesAreNotCommitted())
             .BDDfy();
         }
 
@@ -84,11 +90,12 @@ namespace PlexRequests.UnitTests.Models.Issues
         {
             this.Given(x => x.GivenACommand())
             .Given(x => x.GivenAMediaType(mediaType))
-            .Given(x => x.GivenMediaItemsAreReturned())
+            .Given(x => x.GivenMediaItemIsReturned())
             .Given(x => x.GivenAnIssueIsCreated())
             .Given(x => x.GivenUserDetailsFromClaims())
             .When(x => x.WhenCommandActionIsCreated())
             .Then(x => x.ThenIssueIsCreated())
+            .Then(x => x.ThenChangesAreCommitted())
             .BDDfy();
         }
 
@@ -112,37 +119,23 @@ namespace PlexRequests.UnitTests.Models.Issues
             _command.Description = description;
         }
 
-        private void GivenMediaItemsAreReturned()
+        private void GivenMediaItemIsReturned()
         {
-            if (_command.MediaType == PlexMediaTypes.Movie)
-            {
-                _movieDetails = _fixture.Build<MovieDetails>()
-                                        .With(x => x.Release_Date, "2019-12-25")
-                                        .Create();
+            _plexMediaItem = _fixture.Create<PlexMediaItemRow>();
 
-                _theMovieDbService.GetMovieDetails(Arg.Any<int>()).Returns(_movieDetails);
-            }
-            else
-            {
-                _tvDetails = _fixture.Build<TvDetails>()
-                     .With(x => x.First_Air_Date, "2019-12-25")
-                     .Create();
+            _plexService.GetExistingMediaItemByAgent(Arg.Any<PlexMediaTypes>(), Arg.Any<AgentTypes>(), Arg.Any<string>()).Returns(_plexMediaItem);
 
-                _theMovieDbService.GetTvDetails(Arg.Any<int>()).Returns(_tvDetails);
-            }
         }
 
         private void GivenAnIssueIsCreated()
         {
-            _issueService.Create(Arg.Do<Issue>(x => _issueCreated = x));
+            _issueService.Add(Arg.Do<IssueRow>(x => _issueCreated = x));
         }
 
         private void GivenUserDetailsFromClaims()
         {
-            _claimsUsername = _fixture.Create<string>();
-            _claimsUserId = _fixture.Create<Guid>();
+            _claimsUserId = _fixture.Create<int>();
 
-            _claimsPrincipalAccessor.Username.Returns(_claimsUsername);
             _claimsPrincipalAccessor.UserId.Returns(_claimsUserId);
         }
 
@@ -164,36 +157,23 @@ namespace PlexRequests.UnitTests.Models.Issues
             _commandAction.Should().NotThrow();
 
             _issueCreated.Should().NotBeNull();
-            _issueCreated.Id.Should().Be(Guid.Empty);
-            _issueCreated.MediaType.Should().Be(_command.MediaType);
-            _issueCreated.MediaAgent.Should().Be(new MediaAgent(AgentTypes.TheMovieDb, _command.TheMovieDbId.ToString()));
+            _issueCreated.IssueId.Should().Be(default);
+            _issueCreated.PlexMediaItem.Should().BeEquivalentTo(_plexMediaItem);
             _issueCreated.Title.Should().Be(_command.Title);
             _issueCreated.Description.Should().Be(_command.Description);
-            _issueCreated.Status.Should().Be(IssueStatuses.Pending);
-            _issueCreated.RequestedByUserId.Should().Be(_claimsUserId);
-            _issueCreated.RequestedByUserName.Should().Be(_claimsUsername);
-            _issueCreated.Created.Should().BeCloseTo(DateTime.UtcNow, 500);
-            _issueCreated.Comments.Should().BeEmpty();
+            _issueCreated.IssueStatus.Should().Be(IssueStatuses.Pending);
+            _issueCreated.UserId.Should().Be(_claimsUserId);
+            _issueCreated.IssueComments.Should().BeEmpty();
+        }
 
-            string mediaItemName;
-            string imagePath;
-            DateTime airDate;
-            if (_command.MediaType == PlexMediaTypes.Movie)
-            {
-                mediaItemName = _movieDetails.Title;
-                imagePath = _movieDetails.Poster_Path;
-                airDate = DateTime.Parse(_movieDetails.Release_Date);
-            }
-            else
-            {
-                mediaItemName = _tvDetails.Name;
-                imagePath = _tvDetails.Poster_Path;
-                airDate = DateTime.Parse(_tvDetails.First_Air_Date);
-            }
+        private void ThenChangesAreCommitted()
+        {
+            _unitOfWork.Received(1).CommitAsync();
+        }
 
-            _issueCreated.MediaItemName.Should().Be(mediaItemName);
-            _issueCreated.ImagePath.Should().Be(imagePath);
-            _issueCreated.AirDate.Should().Be(airDate);
+        private void ThenChangesAreNotCommitted()
+        {
+            _unitOfWork.DidNotReceive().CommitAsync();
         }
     }
 }

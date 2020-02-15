@@ -3,10 +3,10 @@ using System.Linq;
 using System.Threading.Tasks;
 using Microsoft.Extensions.Logging;
 using PlexRequests.Core.Helpers;
+using PlexRequests.DataAccess.Dtos;
+using PlexRequests.DataAccess.Enums;
 using PlexRequests.Plex;
 using PlexRequests.Plex.Models;
-using PlexRequests.Repository.Enums;
-using PlexRequests.Repository.Models;
 
 namespace PlexRequests.Sync.SyncProcessors
 {
@@ -27,7 +27,7 @@ namespace PlexRequests.Sync.SyncProcessors
             _logger = logger;
         }
 
-        public async Task<MediaItemResult> GetMediaItem(int ratingKey, PlexMediaTypes mediaType, List<PlexMediaItem> localMedia, string authToken, string plexUri, string machineIdentifier, string plexUriFormat)
+        public async Task<MediaItemResult> GetMediaItem(int ratingKey, PlexMediaTypes mediaType, List<PlexMediaItemRow> localMedia, string authToken, string plexUri, string machineIdentifier, string plexUriFormat)
         {
             var metadata = await TryGetPlexMetadata(ratingKey, authToken, plexUri);
 
@@ -36,13 +36,13 @@ namespace PlexRequests.Sync.SyncProcessors
                 return null;
             }
 
-            var mediaItem = localMedia.FirstOrDefault(x => x.Key == ratingKey);
+            var mediaItem = localMedia.FirstOrDefault(x => x.MediaItemKey == ratingKey);
             var isNewItem = false;
             if (mediaItem == null)
             {
-                mediaItem = new PlexMediaItem
+                mediaItem = new PlexMediaItemRow
                 {
-                    Key = ratingKey,
+                    MediaItemKey = ratingKey,
                     MediaType = mediaType,
                     Title = metadata.Title,
                     Year = metadata.Year
@@ -62,12 +62,12 @@ namespace PlexRequests.Sync.SyncProcessors
             mediaItem.AgentType = agentResult.AgentType;
             mediaItem.AgentSourceId = agentResult.AgentSourceId;
 
-            mediaItem.PlexMediaUri = PlexHelper.GenerateMediaItemUri(plexUriFormat, machineIdentifier, ratingKey);
+            mediaItem.MediaUri = PlexHelper.GenerateMediaItemUri(plexUriFormat, machineIdentifier, ratingKey);
 
             return new MediaItemResult(isNewItem, mediaItem);
         }
 
-        public void UpdateResult(SyncResult syncResult, bool isNew, PlexMediaItem mediaItem)
+        public void UpdateResult(SyncResult syncResult, bool isNew, PlexMediaItemRow mediaItem)
         {
             if (isNew)
             {

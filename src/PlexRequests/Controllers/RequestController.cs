@@ -1,4 +1,3 @@
-using System;
 using System.ComponentModel.DataAnnotations;
 using System.Threading.Tasks;
 using MediatR;
@@ -33,13 +32,13 @@ namespace PlexRequests.Controllers
             return NoContent();
         }
 
-        [HttpPost("Movie/{id:guid}/Approve")]
+        [HttpPost("Movie/{id:int}/Approve")]
         [Admin]
         [SwaggerResponse(204)]
         [SwaggerResponse(400, null, typeof(ApiErrorResponse))]
         [SwaggerResponse(401)]
         [SwaggerResponse(404)]
-        public async Task<ActionResult> ApproveMovieRequest([FromRoute] Guid id)
+        public async Task<ActionResult> ApproveMovieRequest([FromRoute] int id)
         {
             var command = new ApproveMovieRequestCommand(id);
 
@@ -48,13 +47,13 @@ namespace PlexRequests.Controllers
             return NoContent();
         }
 
-        [HttpPost("Movie/{id:guid}/Reject")]
+        [HttpPost("Movie/{id:int}/Reject")]
         [Admin]
         [SwaggerResponse(204)]
         [SwaggerResponse(400, null, typeof(ApiErrorResponse))]
         [SwaggerResponse(401)]
         [SwaggerResponse(404)]
-        public async Task<ActionResult> RejectMovieRequest([FromRoute] Guid id, [FromBody] RejectMovieRequestCommand command)
+        public async Task<ActionResult> RejectMovieRequest([FromRoute] int id, [FromBody] RejectMovieRequestCommand command)
         {
             command.RequestId = id;
 
@@ -74,13 +73,13 @@ namespace PlexRequests.Controllers
             return NoContent();
         }
 
-        [HttpPost("Tv/{id:guid}/Approve")]
+        [HttpPost("Tv/{id:int}/Approve")]
         [Admin]
         [SwaggerResponse(204)]
         [SwaggerResponse(400, null, typeof(ApiErrorResponse))]
         [SwaggerResponse(401)]
         [SwaggerResponse(404)]
-        public async Task<ActionResult> ApproveTvRequest([FromRoute] Guid id, [FromBody] ApproveTvRequestCommand command)
+        public async Task<ActionResult> ApproveTvRequest([FromRoute] int id, [FromBody] ApproveTvRequestCommand command)
         {
             command.RequestId = id;
 
@@ -89,13 +88,13 @@ namespace PlexRequests.Controllers
             return NoContent();
         }
 
-        [HttpPost("Tv/{id:guid}/Reject")]
+        [HttpPost("Tv/{id:int}/Reject")]
         [Admin]
         [SwaggerResponse(204)]
         [SwaggerResponse(400, null, typeof(ApiErrorResponse))]
         [SwaggerResponse(401)]
         [SwaggerResponse(404)]
-        public async Task<ActionResult> RejectTvRequest([FromRoute] Guid id, [FromBody] RejectTvRequestCommand command)
+        public async Task<ActionResult> RejectTvRequest([FromRoute] int id, [FromBody] RejectTvRequestCommand command)
         {
             command.RequestId = id;
 
@@ -104,15 +103,15 @@ namespace PlexRequests.Controllers
             return NoContent();
         }
 
-        [HttpDelete("{id:guid}")]
+        [HttpDelete("Movie/{id:int}")]
         [SwaggerResponse(204)]
         [SwaggerResponse(400, null, typeof(ApiErrorResponse))]
         [SwaggerResponse(401)]
         [SwaggerResponse(403)]
         [SwaggerResponse(404)]
-        public async Task<ActionResult> DeleteRequest([FromRoute][Required] Guid id)
+        public async Task<ActionResult> DeleteMovieRequest([FromRoute][Required] int id)
         {
-            var command = new DeleteRequestCommand(id);
+            var command = new DeleteMovieRequestCommand(id);
 
             await _mediator.Send(command);
 
@@ -139,6 +138,21 @@ namespace PlexRequests.Controllers
             var response = await _mediator.Send(query);
 
             return Ok(response);
+        }
+
+        [HttpDelete("Tv/{id:int}")]
+        [SwaggerResponse(204)]
+        [SwaggerResponse(400, null, typeof(ApiErrorResponse))]
+        [SwaggerResponse(401)]
+        [SwaggerResponse(403)]
+        [SwaggerResponse(404)]
+        public async Task<ActionResult> DeleteTvRequest([FromRoute][Required] int id)
+        {
+            var command = new DeleteTvRequestCommand(id);
+
+            await _mediator.Send(command);
+
+            return NoContent();
         }
     }
 }

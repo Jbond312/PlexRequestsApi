@@ -12,8 +12,9 @@ using NSubstitute.ReturnsExtensions;
 using PlexRequests.ApiRequests.Requests.Commands;
 using PlexRequests.Core.Exceptions;
 using PlexRequests.Core.Services;
-using PlexRequests.Repository.Enums;
-using PlexRequests.Repository.Models;
+using PlexRequests.DataAccess;
+using PlexRequests.DataAccess.Dtos;
+using PlexRequests.DataAccess.Enums;
 using TestStack.BDDfy;
 using Xunit;
 
@@ -23,21 +24,25 @@ namespace PlexRequests.UnitTests.Models.Requests
     {
         private readonly IRequestHandler<RejectTvRequestCommand> _underTest;
         private readonly ITvRequestService _requestService;
-
+        private readonly IUnitOfWork _unitOfWork;
+        
         private readonly Fixture _fixture;
 
         private RejectTvRequestCommand _command;
         private Func<Task> _commandAction;
-        private TvRequest _updatedRequest;
-        private TvRequest _request;
+        private TvRequestRow _request;
 
         public RejectTvRequestCommandHandlerTests()
         {
             _fixture = new Fixture();
+            _fixture.Behaviors.OfType<ThrowingRecursionBehavior>().ToList()
+                .ForEach(b => _fixture.Behaviors.Remove(b));
+            _fixture.Behaviors.Add(new OmitOnRecursionBehavior());
 
             _requestService = Substitute.For<ITvRequestService>();
+            _unitOfWork = Substitute.For<IUnitOfWork>();
 
-            _underTest = new RejectTvRequestCommandHandler(_requestService);
+            _underTest = new RejectTvRequestCommandHandler(_requestService, _unitOfWork);
         }
 
         [Fact]
@@ -48,6 +53,7 @@ namespace PlexRequests.UnitTests.Models.Requests
                 .Given(x => x.GivenNoRequestFound())
                 .When(x => x.WhenACommandActionIsCreated())
                 .Then(x => x.ThenAnErrorIsThrown("Invalid request", "No request was found with the given Id", HttpStatusCode.NotFound))
+                .Then(x => x.ThenChangesAreNotCommitted())
                 .BDDfy();
         }
 
@@ -63,6 +69,7 @@ namespace PlexRequests.UnitTests.Models.Requests
                 .Given(x => x.GivenNoRequestFound())
                 .When(x => x.WhenACommandActionIsCreated())
                 .Then(x => x.ThenAnErrorIsThrown("Invalid request", "A comment must be specified when rejecting a request", HttpStatusCode.BadRequest))
+                .Then(x => x.ThenChangesAreNotCommitted())
                 .BDDfy();
         }
 
@@ -75,6 +82,7 @@ namespace PlexRequests.UnitTests.Models.Requests
                 .Given(x => x.GivenOverallRequestStatusIs(RequestStatuses.Completed))
                 .When(x => x.WhenACommandActionIsCreated())
                 .Then(x => x.ThenAnErrorIsThrown("Invalid request", "Request has already been completed", HttpStatusCode.BadRequest))
+                .Then(x => x.ThenChangesAreNotCommitted())
                 .BDDfy();
         }
 
@@ -87,6 +95,7 @@ namespace PlexRequests.UnitTests.Models.Requests
                 .Given(x => x.GivenARequestIsFound())
                 .When(x => x.WhenACommandActionIsCreated())
                 .Then(x => x.ThenCommandIsSuccessful())
+                .Then(x => x.ThenChangesAreCommitted())
                 .BDDfy();
         }
 
@@ -99,6 +108,7 @@ namespace PlexRequests.UnitTests.Models.Requests
                 .Given(x => x.GivenARequestIsFound())
                 .When(x => x.WhenACommandActionIsCreated())
                 .Then(x => x.ThenCommandIsSuccessful())
+                .Then(x => x.ThenChangesAreCommitted())
                 .BDDfy();
         }
 
@@ -108,10 +118,10 @@ namespace PlexRequests.UnitTests.Models.Requests
             const bool rejectAll = true;
             this.Given(x => x.GivenACommand(rejectAll))
                 .Given(x => x.GivenARequestIsFound())
-                .Given(x => x.GivenARequestIsUpdated())
                 .When(x => x.WhenACommandActionIsCreated())
                 .Then(x => x.ThenCommandIsSuccessful())
                 .Then(x => x.ThenAllSeasonEpisodesAreRejected())
+                .Then(x => x.ThenChangesAreCommitted())
                 .BDDfy();
         }
 
@@ -122,10 +132,10 @@ namespace PlexRequests.UnitTests.Models.Requests
 
             this.Given(x => x.GivenACommand(rejectAll))
                 .Given(x => x.GivenARequestIsFoundWithACompletedEpisode())
-                .Given(x => x.GivenARequestIsUpdated())
                 .When(x => x.WhenACommandActionIsCreated())
                 .Then(x => x.ThenCommandIsSuccessful())
                 .Then(x => x.ThenCompletedEpisodeNotAltered())
+                .Then(x => x.ThenChangesAreCommitted())
                 .BDDfy();
         }
 
@@ -136,10 +146,10 @@ namespace PlexRequests.UnitTests.Models.Requests
 
             this.Given(x => x.GivenACommand(rejectAll))
                 .Given(x => x.GivenARequestIsFound())
-                .Given(x => x.GivenARequestIsUpdated())
                 .When(x => x.WhenACommandActionIsCreated())
                 .Then(x => x.ThenCommandIsSuccessful())
                 .Then(x => x.ThenAggregateIsCorrect())
+                .Then(x => x.ThenChangesAreCommitted())
                 .BDDfy();
         }
 
@@ -150,11 +160,11 @@ namespace PlexRequests.UnitTests.Models.Requests
 
             this.Given(x => x.GivenACommand(rejectAll))
                 .Given(x => x.GivenARequestIsFound())
-                .Given(x => x.GivenARequestIsUpdated())
                 .Given(x => x.GivenOneMatchingEpisodeInCommand())
                 .When(x => x.WhenACommandActionIsCreated())
                 .Then(x => x.ThenCommandIsSuccessful())
                 .Then(x => x.ThenOnlyMatchingEpisodeRejected())
+                .Then(x => x.ThenChangesAreCommitted())
                 .BDDfy();
         }
 
@@ -166,10 +176,10 @@ namespace PlexRequests.UnitTests.Models.Requests
             this.Given(x => x.GivenACommand(rejectAll))
             .Given(x => x.GivenARequestIsFound())
             .Given(x => x.GivenRequestIsTrackedShow())
-            .Given(x => x.GivenARequestIsUpdated())
             .When(x => x.WhenACommandActionIsCreated())
             .Then(x => x.ThenCommandIsSuccessful())
             .Then(x => x.ThenTrackedShowIsRejected())
+            .Then(x => x.ThenChangesAreCommitted())
             .BDDfy();
         }
 
@@ -201,19 +211,19 @@ namespace PlexRequests.UnitTests.Models.Requests
 
         private void GivenNoRequestFound()
         {
-            _requestService.GetRequestById(Arg.Any<Guid>()).ReturnsNull();
+            _requestService.GetRequestById(Arg.Any<int>()).ReturnsNull();
         }
 
         private void GivenARequestIsFound()
         {
-            _request = _fixture.Build<TvRequest>()
-                                  .With(x => x.Status, RequestStatuses.PendingApproval)
+            _request = _fixture.Build<TvRequestRow>()
+                                  .With(x => x.RequestStatus, RequestStatuses.PendingApproval)
                                   .With(x => x.Track, false)
                                   .Create();
 
             SetEpisodeStatus(_request, RequestStatuses.PendingApproval);
 
-            _requestService.GetRequestById(Arg.Any<Guid>()).Returns(_request);
+            _requestService.GetRequestById(Arg.Any<int>()).Returns(_request);
         }
 
         private void GivenRequestIsTrackedShow()
@@ -223,36 +233,32 @@ namespace PlexRequests.UnitTests.Models.Requests
 
         private void GivenARequestIsFoundWithACompletedEpisode()
         {
-            _request = _fixture.Build<TvRequest>()
-                                  .With(x => x.Status, RequestStatuses.PendingApproval)
+            _request = _fixture.Build<TvRequestRow>()
+                                  .With(x => x.RequestStatus, RequestStatuses.PendingApproval)
                                   .Create();
 
             SetEpisodeStatus(_request, RequestStatuses.PendingApproval);
 
-            _request.Seasons[0].Episodes[0].Status = RequestStatuses.Completed;
+            _request.TvRequestSeasons.ElementAt(0).TvRequestEpisodes.ElementAt(0).RequestStatus = RequestStatuses.Completed;
 
-            _requestService.GetRequestById(Arg.Any<Guid>()).Returns(_request);
+            _requestService.GetRequestById(Arg.Any<int>()).Returns(_request);
         }
 
-        private void GivenARequestIsUpdated()
-        {
-            _requestService.Update(Arg.Do<TvRequest>(x => _updatedRequest = x));
-        }
 
         private void GivenOneMatchingEpisodeInCommand()
         {
-            var firstRequestSeason = _request.Seasons[0];
-            var firstRequestEpisode = firstRequestSeason.Episodes[0];
+            var firstRequestSeason = _request.TvRequestSeasons.ElementAt(0);
+            var firstRequestEpisode = firstRequestSeason.TvRequestEpisodes.ElementAt(0);
 
             _command.EpisodesBySeason = new Dictionary<int, List<int>>
             {
-                [firstRequestSeason.Index] = new List<int> { firstRequestEpisode.Index }
+                [firstRequestSeason.SeasonIndex] = new List<int> { firstRequestEpisode.EpisodeIndex }
             };
         }
 
         private void GivenOverallRequestStatusIs(RequestStatuses status)
         {
-            _request.Status = status;
+            _request.RequestStatus = status;
         }
 
         private void WhenACommandActionIsCreated()
@@ -275,28 +281,28 @@ namespace PlexRequests.UnitTests.Models.Requests
 
         private void ThenAllSeasonEpisodesAreRejected()
         {
-            _updatedRequest.Should().NotBeNull();
-            _updatedRequest.Seasons.SelectMany(x => x.Episodes).All(x => x.Status == RequestStatuses.Rejected).Should().BeTrue();
+            _request.Should().NotBeNull();
+            _request.TvRequestSeasons.SelectMany(x => x.TvRequestEpisodes).All(x => x.RequestStatus == RequestStatuses.Rejected).Should().BeTrue();
         }
 
         private void ThenTrackedShowIsRejected()
         {
-            _updatedRequest.Should().NotBeNull();
-            _updatedRequest.Status.Should().Be(RequestStatuses.Rejected);
+            _request.Should().NotBeNull();
+            _request.RequestStatus.Should().Be(RequestStatuses.Rejected);
         }
 
         private void ThenCompletedEpisodeNotAltered()
         {
-            _updatedRequest.Should().NotBeNull();
-            var hasOneCompletedEpisode = _updatedRequest
-                                         .Seasons.SelectMany(x => x.Episodes)
-                                         .Count(x => x.Status == RequestStatuses.Completed);
+            _request.Should().NotBeNull();
+            var hasOneCompletedEpisode = _request
+                                         .TvRequestSeasons.SelectMany(x => x.TvRequestEpisodes)
+                                         .Count(x => x.RequestStatus == RequestStatuses.Completed);
             hasOneCompletedEpisode.Should().Be(1);
         }
 
         private void ThenAggregateIsCorrect()
         {
-            _requestService.Received().SetAggregatedStatus(Arg.Any<TvRequest>());
+            _requestService.Received().SetAggregatedStatus(Arg.Any<TvRequestRow>());
         }
 
         private void ThenOnlyMatchingEpisodeRejected()
@@ -304,25 +310,35 @@ namespace PlexRequests.UnitTests.Models.Requests
             var updatedSeason = _command.EpisodesBySeason.First().Key;
             var updatedEpisode = _command.EpisodesBySeason.First().Value[0];
 
-            var rejectedEpisodes = _updatedRequest.Seasons.SelectMany(x => x.Episodes)
-                                                  .Where(x => x.Status == RequestStatuses.Rejected);
+            var rejectedEpisodes = _request.TvRequestSeasons.SelectMany(x => x.TvRequestEpisodes)
+                                                  .Where(x => x.RequestStatus == RequestStatuses.Rejected);
 
             rejectedEpisodes.Count().Should().Be(1);
 
-            var season = _updatedRequest.Seasons.First(x => x.Index == updatedSeason);
+            var season = _request.TvRequestSeasons.First(x => x.SeasonIndex == updatedSeason);
 
-            var episode = season.Episodes.FirstOrDefault(x => x.Index == updatedEpisode);
+            var episode = season.TvRequestEpisodes.FirstOrDefault(x => x.EpisodeIndex == updatedEpisode);
 
             episode.Should().NotBeNull();
         }
 
-        private static void SetEpisodeStatus(TvRequest request, RequestStatuses status)
+        private void ThenChangesAreCommitted()
         {
-            foreach (var season in request.Seasons)
+            _unitOfWork.Received(1).CommitAsync();
+        }
+
+        private void ThenChangesAreNotCommitted()
+        {
+            _unitOfWork.DidNotReceive().CommitAsync();
+        }
+
+        private static void SetEpisodeStatus(TvRequestRow request, RequestStatuses status)
+        {
+            foreach (var season in request.TvRequestSeasons)
             {
-                foreach (var episode in season.Episodes)
+                foreach (var episode in season.TvRequestEpisodes)
                 {
-                    episode.Status = status;
+                    episode.RequestStatus = status;
                 }
             }
         }

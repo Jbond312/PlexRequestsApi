@@ -8,13 +8,13 @@ using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using PlexRequests.Core.Auth;
 using PlexRequests.Core.Exceptions;
+using PlexRequests.Core.ExtensionMethods;
 using PlexRequests.Core.Services;
 using PlexRequests.Core.Settings;
 using PlexRequests.DataAccess;
 using PlexRequests.DataAccess.Dtos;
 using PlexRequests.Plex;
 using PlexRequests.Plex.Models;
-using PlexRequests.Repository.Models;
 
 namespace PlexRequests.ApiRequests.Auth.Commands
 {
@@ -67,7 +67,7 @@ namespace PlexRequests.ApiRequests.Auth.Commands
 
             var refreshToken = _tokenService.CreateRefreshToken();
             
-            var adminUser = AddAdminUser(plexUser, refreshToken);
+            var adminUser = await AddAdminUser(plexUser, refreshToken);
 
             await CreateAdminServer(plexUser);
 
@@ -101,7 +101,7 @@ namespace PlexRequests.ApiRequests.Auth.Commands
             }
         }
 
-        private UserRow AddAdminUser(PlexRequests.Plex.Models.User plexUser, UserRefreshTokenRow refreshToken)
+        private async Task<UserRow> AddAdminUser(PlexRequests.Plex.Models.User plexUser, UserRefreshTokenRow refreshToken)
         {
             var adminUser = new UserRow
             {
@@ -129,7 +129,7 @@ namespace PlexRequests.ApiRequests.Auth.Commands
             };
 
             _logger.LogInformation("Creating Admin account");
-            _userService.AddUser(adminUser);
+            await _userService.AddUser(adminUser);
             return adminUser;
         }
 
@@ -145,7 +145,7 @@ namespace PlexRequests.ApiRequests.Auth.Commands
         private async Task CreateAdminServer(Server adminServer, PlexRequests.Plex.Models.User plexUser)
         {
             _logger.LogInformation("Found a PlexServer owned by the Admin account");
-            var plexServer = new PlexServer
+            var plexServer = new PlexServerRow
             {
                 AccessToken = adminServer.AccessToken,
                 Name = adminServer.Name,
@@ -155,7 +155,7 @@ namespace PlexRequests.ApiRequests.Auth.Commands
                 ExternalIp = adminServer.Address,
                 ExternalPort = Convert.ToInt32(adminServer.Port),
                 Scheme = adminServer.Scheme,
-                Libraries = new List<PlexServerLibrary>()
+                PlexLibraries = new List<PlexLibraryRow>()
             };
 
             _logger.LogInformation("Getting available libraries on PlexServer");
@@ -170,16 +170,16 @@ namespace PlexRequests.ApiRequests.Auth.Commands
                 _logger.LogInformation(
                     $"Identified '{directories.Count}' libraries on the PlexServer");
 
-                plexServer.Libraries = directories.Select(x =>
-                    new PlexServerLibrary
+                plexServer.PlexLibraries = directories.Select(x =>
+                    new PlexLibraryRow
                     {
-                        Key = x.Key,
+                        LibraryKey = x.Key,
                         Title = x.Title,
                         Type = x.Type
                     }).ToList();
             }
 
-            await _plexService.Create(plexServer);
+            await _plexService.AddServer(plexServer);
         }
     }
 }

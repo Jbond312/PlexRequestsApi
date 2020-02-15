@@ -1,14 +1,13 @@
-using System;
-using System.Collections.Generic;
 using System.Threading;
 using System.Threading.Tasks;
 using MediatR;
 using PlexRequests.Core.Exceptions;
 using PlexRequests.Core.Helpers;
 using PlexRequests.Core.Services;
-using PlexRequests.Repository.Enums;
-using PlexRequests.Repository.Models;
-using PlexRequests.TheMovieDb;
+using PlexRequests.DataAccess;
+using PlexRequests.DataAccess.Dtos;
+using PlexRequests.DataAccess.Enums;
+using PlexRequests.Plex;
 // ReSharper disable ParameterOnlyUsedForPreconditionCheck.Local
 
 namespace PlexRequests.ApiRequests.Issues.Commands
@@ -16,16 +15,19 @@ namespace PlexRequests.ApiRequests.Issues.Commands
     public class CreateIssueCommandHandler : AsyncRequestHandler<CreateIssueCommand>
     {
         private readonly IIssueService _issueService;
-        private readonly ITheMovieDbService _theMovieDbService;
+        private readonly IPlexService _plexService;
+        private readonly IUnitOfWork _unitOfWork;
         private readonly IClaimsPrincipalAccessor _claimsPrincipalAccessor;
 
         public CreateIssueCommandHandler(
             IIssueService issueService,
-            ITheMovieDbService theMovieDbService,
+            IPlexService plexService,
+            IUnitOfWork unitOfWork,
             IClaimsPrincipalAccessor claimsPrincipalAccessor)
         {
             _issueService = issueService;
-            _theMovieDbService = theMovieDbService;
+            _plexService = plexService;
+            _unitOfWork = unitOfWork;
             _claimsPrincipalAccessor = claimsPrincipalAccessor;
         }
 
@@ -33,30 +35,32 @@ namespace PlexRequests.ApiRequests.Issues.Commands
         {
             ValidateCommand(command);
 
-            var mediaDetails = await GetMediaDetails(command.TheMovieDbId, command.MediaType);
+            var plexMediaItem = await GetPlexMediaItem(command.TheMovieDbId, command.MediaType);
 
-            await CreateIssue(command, mediaDetails);
+            CreateIssue(command, plexMediaItem);
+
+            await _unitOfWork.CommitAsync();
         }
 
-        private async Task CreateIssue(CreateIssueCommand command, (MediaAgent mediaAgent, string name, string imagePath, DateTime airDate) mediaDetails)
+        private async Task<PlexMediaItemRow> GetPlexMediaItem(int theMovieDbId, PlexMediaTypes mediaType)
         {
-            var issue = new Issue
+            var plexMediaItem = await _plexService.GetExistingMediaItemByAgent(mediaType, AgentTypes.TheMovieDb, theMovieDbId.ToString());
+
+            return plexMediaItem;
+        }
+
+        private void CreateIssue(CreateIssueCommand command, PlexMediaItemRow plexMediaItem)
+        {
+            var issue = new IssueRow
             {
-                MediaItemName = mediaDetails.name,
+                PlexMediaItem = plexMediaItem,
                 Title = command.Title,
                 Description = command.Description,
-                MediaType = command.MediaType,
-                MediaAgent = mediaDetails.mediaAgent,
-                Status = IssueStatuses.Pending,
-                RequestedByUserId = _claimsPrincipalAccessor.UserId,
-                RequestedByUserName = _claimsPrincipalAccessor.Username,
-                ImagePath = mediaDetails.imagePath,
-                AirDate = mediaDetails.airDate,
-                Created = DateTime.UtcNow,
-                Comments = new List<IssueComment>()
+                IssueStatus = IssueStatuses.Pending,
+                UserId = _claimsPrincipalAccessor.UserId,
             };
 
-            await _issueService.Create(issue);
+            _issueService.Add(issue);
         }
 
         private void ValidateCommand(CreateIssueCommand command)
@@ -70,31 +74,6 @@ namespace PlexRequests.ApiRequests.Issues.Commands
             {
                 throw new PlexRequestException("Issue not created", "'Description' must be specified");
             }
-        }
-
-        private async Task<(MediaAgent mediaAgent, string name, string imagePath, DateTime airDate)> GetMediaDetails(int theMovieDbId, PlexMediaTypes mediaType)
-        {
-            string name;
-            string imagePath;
-            DateTime airDate;
-            if (mediaType == PlexMediaTypes.Show)
-            {
-                var show = await _theMovieDbService.GetTvDetails(theMovieDbId);
-                name = show.Name;
-                imagePath = show.Poster_Path;
-                airDate = DateTime.Parse(show.First_Air_Date);
-            }
-            else
-            {
-                var movie = await _theMovieDbService.GetMovieDetails(theMovieDbId);
-                name = movie.Title;
-                imagePath = movie.Poster_Path;
-                airDate = DateTime.Parse(movie.Release_Date);
-            }
-
-            var mediaAgent = new MediaAgent(AgentTypes.TheMovieDb, theMovieDbId.ToString());
-
-            return (mediaAgent, name, imagePath, airDate);
         }
     }
 }

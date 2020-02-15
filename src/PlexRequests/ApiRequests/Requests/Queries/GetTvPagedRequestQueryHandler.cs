@@ -27,14 +27,14 @@ namespace PlexRequests.ApiRequests.Requests.Queries
 
         public async Task<GetTvPagedRequestQueryResult> Handle(GetTvPagedRequestQuery request, CancellationToken cancellationToken)
         {
-            Guid? userGuid = null;
+            int? userId = null;
 
             if (request.IncludeCurrentUsersOnly != null && request.IncludeCurrentUsersOnly.Value)
             {
-                userGuid = _claimsAccessor.UserId;
+                userId = _claimsAccessor.UserId;
             }
             
-            var pagedResponse = await _requestService.GetPaged(request.Title, request.Status, userGuid, request.Page, request.PageSize);
+            var pagedResponse = await _requestService.GetPaged(request.Title, request.Status, userId, request.Page, request.PageSize);
 
             var requestViewModels = _mapper.Map<List<TvRequestDetailModel>>(pagedResponse.Items);
 
