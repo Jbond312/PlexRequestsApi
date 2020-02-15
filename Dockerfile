@@ -5,7 +5,6 @@ WORKDIR /app
 COPY src/*.sln .
 COPY src/PlexRequests/*.csproj ./PlexRequests/
 COPY src/PlexRequests.Core/*.csproj ./PlexRequests.Core/
-COPY src/PlexRequests.Repository/*.csproj ./PlexRequests.Repository/
 COPY src/PlexRequests.Api/*.csproj ./PlexRequests.Api/
 COPY src/PlexRequests.Plex/*.csproj ./PlexRequests.Plex/
 COPY src/PlexRequests.TheMovieDb/*.csproj ./PlexRequests.TheMovieDb/
