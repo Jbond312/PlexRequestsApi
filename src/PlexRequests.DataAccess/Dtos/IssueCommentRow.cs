@@ -1,9 +1,11 @@
-﻿using System.ComponentModel.DataAnnotations.Schema;
+﻿using System.ComponentModel.DataAnnotations;
+using System.ComponentModel.DataAnnotations.Schema;
 
 namespace PlexRequests.DataAccess.Dtos
 {
     public class IssueCommentRow : TimestampRow
     {
+        [Key]
         public int IssueCommentId { get; set; }
         [ForeignKey("IssueId")]
         public virtual IssueRow Issue { get; set; }
