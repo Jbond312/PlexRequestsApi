@@ -71,16 +71,15 @@ namespace PlexRequests.ApiRequests.Auth.Commands
 
             await CreateAdminServer(plexUser);
 
+            adminUser.LastLoginUtc = DateTime.UtcNow;
+
+            await _unitOfWork.CommitAsync();
+            
             var result = new UserLoginCommandResult
             {
                 AccessToken = _tokenService.CreateToken(adminUser),
                 RefreshToken = refreshToken.Token
             };
-
-            adminUser.LastLoginUtc = DateTime.UtcNow;
-
-            await _unitOfWork.CommitAsync();
-
             return result;
         }
 
