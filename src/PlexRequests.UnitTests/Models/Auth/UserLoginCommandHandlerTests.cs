@@ -7,6 +7,7 @@ using AutoFixture;
 using FluentAssertions;
 using Microsoft.Extensions.Logging;
 using NSubstitute;
+using NSubstitute.ExceptionExtensions;
 using NSubstitute.ReturnsExtensions;
 using PlexRequests.ApiRequests.Auth.Commands;
 using PlexRequests.Core.Exceptions;
@@ -56,7 +57,7 @@ namespace PlexRequests.UnitTests.Models.Auth
         private void Throws_Error_When_Invalid_PlexCredentials()
         {
             this.Given(x => x.GivenACommand())
-                .Given(x => x.GivenInvalidPlexCredentials())
+                .Given(x => x.GivenInvalidPlexCredentialsThrowsException())
                 .When(x => x.WhenACommandActionIsCreated())
                 .Then(x => x.ThenAnErrorIsThrown("Invalid Plex Credentials", "Unable to login to Plex with the given credentials", HttpStatusCode.BadRequest))
                 .BDDfy();
@@ -127,10 +128,11 @@ namespace PlexRequests.UnitTests.Models.Auth
             _command = _fixture.Create<UserLoginCommand>();
         }
 
-        private void GivenInvalidPlexCredentials()
+        private void GivenInvalidPlexCredentialsThrowsException()
         {
-            _plexApi.SignIn(Arg.Any<string>(), Arg.Any<string>()).ReturnsNull();
+            _plexApi.SignIn(Arg.Any<string>(), Arg.Any<string>()).Throws(new PlexRequestException("", "", HttpStatusCode.FailedDependency));
         }
+
 
         private void GivenValidPlexCredentials()
         {

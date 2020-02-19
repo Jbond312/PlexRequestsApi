@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Net;
 using System.Threading;
 using System.Threading.Tasks;
 using MediatR;
@@ -35,11 +36,13 @@ namespace PlexRequests.ApiRequests.Auth.Commands
         {
             _logger.LogDebug("Attempting Plex SignIn");
 
-            var plexUser = await _plexApi.SignIn(request.Username, request.Password);
-
-            if (plexUser == null)
+            PlexRequests.Plex.Models.User plexUser;
+            try
             {
-                _logger.LogDebug("Invalid PlexCredentials");
+                plexUser = await _plexApi.SignIn(request.Username, request.Password);
+            }
+            catch (PlexRequestException)
+            {
                 throw new PlexRequestException("Invalid Plex Credentials", "Unable to login to Plex with the given credentials");
             }
 

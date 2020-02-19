@@ -27,7 +27,19 @@ namespace PlexRequests.DataAccess.Repositories
 
         public async Task<List<UserRow>> GetAllUsers(bool includeDisabled, bool includeAdmin)
         {
-            return await GetUsers().ToListAsync();
+            var users = GetUsers();
+
+            if (!includeDisabled)
+            {
+                users = users.Where(x => !x.IsDisabled);
+            }
+
+            if (!includeAdmin)
+            {
+                users = users.Where(x => !x.IsAdmin);
+            }
+
+            return await users.ToListAsync();
         }
 
         public async Task<UserRow> GetUser(int userId)

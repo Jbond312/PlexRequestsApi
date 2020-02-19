@@ -5,7 +5,7 @@ namespace PlexRequests.Core.Exceptions
 {
     public class PlexRequestException : Exception
     {
-        public HttpStatusCode StatusCode { get; }
+        public HttpStatusCode StatusCode { get; set; }
         public string Description { get; }
         public object LoggableObject { get; }
 
