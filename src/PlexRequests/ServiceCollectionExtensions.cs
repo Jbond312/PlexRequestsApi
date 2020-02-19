@@ -27,13 +27,13 @@ namespace PlexRequests
 {
     public static class ServiceCollectionExtensions
     {
-        public static void RegisterDependencies(this IServiceCollection services, IConfiguration configuration, IWebHostEnvironment environment)
+        public static void RegisterDependencies(this IServiceCollection services, IConfiguration configuration)
         {
             RegisterServices(services);
-            RegisterDbContext(services, configuration, environment);
+            RegisterDbContext(services, configuration);
         }
 
-        private static void RegisterDbContext(IServiceCollection services, IConfiguration configuration, IWebHostEnvironment environment)
+        private static void RegisterDbContext(IServiceCollection services, IConfiguration configuration)
         {
             services.AddTransient<DataAccess.Repositories.IUserRepository, DataAccess.Repositories.UserRepository>();
             services.AddTransient<DataAccess.Repositories.IPlexServerRepository, DataAccess.Repositories.PlexServerRepository>();
@@ -42,12 +42,10 @@ namespace PlexRequests
             services.AddTransient<DataAccess.Repositories.ITvRequestRepository, DataAccess.Repositories.TvRequestRepository>();
             services.AddTransient<DataAccess.Repositories.IIssuesRepository, DataAccess.Repositories.IssuesRepository>();
 
-            var connectionString = environment.IsProduction() ? configuration["PlexRequestsDataContext"] : configuration.GetConnectionString("PlexRequestsDataContext");
-
             services.AddDbContext<PlexRequestsDataContext>(
                 options =>
                 {
-                    options.UseSqlServer(connectionString);
+                    options.UseSqlServer(configuration.GetConnectionString("PlexRequestsDataContext"));
                 });
             services.AddTransient<IUnitOfWork, UnitOfWork>();
         }

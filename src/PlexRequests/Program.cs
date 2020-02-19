@@ -25,7 +25,7 @@ namespace PlexRequests
                         builder
                             .AddJsonFile("appsettings.json", true, true)
                             .AddJsonFile($"appsettings.{env}.json", optional: true, reloadOnChange: true)
-                            .AddEnvironmentVariables("SQLAZURECONNSTR_")
+                            .AddEnvironmentVariables()
                             .AddEnvironmentVariables("APPSETTING_")
                             .Build();
                     });
