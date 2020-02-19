@@ -18,8 +18,8 @@ namespace PlexRequests.TheMovieDb
         private readonly IApiService _apiService;
 
         public TheMovieDbApi(
-            IApiService apiService, 
-            IOptions<TheMovieDbSettings> settings)
+            IApiService apiService,
+            IOptionsSnapshot<TheMovieDbSettings> settings)
         {
             _apiService = apiService;
             _baseUri = settings.Value.BaseUri;

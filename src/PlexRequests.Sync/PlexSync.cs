@@ -29,7 +29,7 @@ namespace PlexRequests.Sync
             ICompletionService completionService,
             IProcessorProvider processorProvider,
             IUnitOfWork unitOfWork,
-            IOptions<PlexSettings> plexSettings,
+            IOptionsSnapshot<PlexSettings> plexSettings,
             ILogger<PlexSync> logger)
         {
             _plexApi = plexApi;

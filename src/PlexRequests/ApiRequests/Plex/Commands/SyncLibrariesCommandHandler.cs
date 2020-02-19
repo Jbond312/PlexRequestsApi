@@ -23,7 +23,7 @@ namespace PlexRequests.ApiRequests.Plex.Commands
             IPlexApi plexApi,
             IPlexService plexService,
             IUnitOfWork unitOfWork,
-            IOptions<PlexSettings> plexSettings)
+            IOptionsSnapshot<PlexSettings> plexSettings)
         {
             _plexApi = plexApi;
             _plexService = plexService;

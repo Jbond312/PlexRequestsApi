@@ -46,7 +46,8 @@ namespace PlexRequests.UnitTests.Models.Plex
             _fixture.Behaviors.Add(new OmitOnRecursionBehavior());
 
             var plexSettings = _fixture.Create<PlexSettings>();
-            var options = Options.Create(plexSettings);
+            var options = Substitute.For<IOptionsSnapshot<PlexSettings>>();
+            options.Value.Returns(plexSettings);
 
             _underTest = new SyncLibrariesCommandHandler(_plexApi, _plexService, _unitOfWork, options);
         }

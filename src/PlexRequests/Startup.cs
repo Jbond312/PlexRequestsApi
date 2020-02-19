@@ -99,7 +99,7 @@ namespace PlexRequests
 
             var authSettings = Configuration.GetSection(nameof(AuthenticationSettings)).Get<AuthenticationSettings>();
 
-            services.RegisterDependencies(Configuration);
+            services.RegisterDependencies(Configuration, Environment);
             services.ConfigureJwtAuthentication(authSettings, Environment.IsProduction());
         }
 

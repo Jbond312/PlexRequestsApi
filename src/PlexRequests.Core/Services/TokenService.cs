@@ -21,7 +21,7 @@ namespace PlexRequests.Core.Services
         private readonly AuthenticationSettings _authSettings;
 
         public TokenService(
-            IOptions<AuthenticationSettings> authSettings,
+            IOptionsSnapshot<AuthenticationSettings> authSettings,
             ILogger<TokenService> logger)
         {
             _logger = logger;

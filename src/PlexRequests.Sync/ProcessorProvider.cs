@@ -19,7 +19,7 @@ namespace PlexRequests.Sync
             IPlexService plexService,
             IMediaItemProcessor mediaItemProcessor,
             IAgentGuidParser agentGuidParser,
-            IOptions<PlexSettings> plexSettings,
+            IOptionsSnapshot<PlexSettings> plexSettings,
             ILoggerFactory loggerFactory
             )
         {

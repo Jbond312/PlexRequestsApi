@@ -19,7 +19,7 @@ namespace PlexRequests.Plex
 
         public PlexApi(
             IApiService apiService,
-            IOptions<PlexRequestsSettings> settings)
+            IOptionsSnapshot<PlexRequestsSettings> settings)
         {
             _apiService = apiService;
             _settings = settings.Value;

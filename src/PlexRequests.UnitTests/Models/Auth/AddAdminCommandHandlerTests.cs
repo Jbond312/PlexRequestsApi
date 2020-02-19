@@ -35,7 +35,7 @@ namespace PlexRequests.UnitTests.Models.Auth
         private readonly IPlexService _plexService;
         private readonly IUnitOfWork _unitOfWork;
         private readonly IPlexApi _plexApi;
-        private readonly IOptions<PlexSettings> _plexSettings;
+        private readonly IOptionsSnapshot<PlexSettings> _plexSettings;
 
         private readonly Fixture _fixture;
 
@@ -65,7 +65,8 @@ namespace PlexRequests.UnitTests.Models.Auth
             _fixture.Behaviors.Add(new OmitOnRecursionBehavior(1));
 
             var settings = _fixture.Create<PlexSettings>();
-            _plexSettings = Options.Create(settings);
+            _plexSettings = Substitute.For<IOptionsSnapshot<PlexSettings>>();
+            _plexSettings.Value.Returns(settings);
 
             _underTest = new AddAdminCommandHandler(_userService, _plexService, _tokenService, _unitOfWork, _plexApi, _plexSettings, logger);
         }

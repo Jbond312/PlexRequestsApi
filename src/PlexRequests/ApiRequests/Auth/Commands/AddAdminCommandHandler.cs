@@ -34,7 +34,7 @@ namespace PlexRequests.ApiRequests.Auth.Commands
             ITokenService tokenService,
             IUnitOfWork unitOfWork,
             IPlexApi plexApi,
-            IOptions<PlexSettings> plexSettings,
+            IOptionsSnapshot<PlexSettings> plexSettings,
             ILogger<AddAdminCommandHandler> logger
             )
         {

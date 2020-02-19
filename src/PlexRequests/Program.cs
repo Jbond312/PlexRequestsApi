@@ -1,6 +1,7 @@
-﻿using Microsoft.AspNetCore.Hosting;
+﻿using System;
+using Microsoft.AspNetCore.Hosting;
+using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Hosting;
-using Microsoft.Extensions.Logging;
 
 namespace PlexRequests
 {
@@ -13,10 +14,20 @@ namespace PlexRequests
 
         public static IHostBuilder CreateHostBuilder(string[] args) =>
             Host.CreateDefaultBuilder(args)
-                //.ConfigureLogging((context, logging) => { logging.ClearProviders(); })
                 .ConfigureWebHostDefaults(webBuilder =>
                 {
                     webBuilder.UseStartup<Startup>();
-                });
+                })
+                .ConfigureAppConfiguration(
+                    builder =>
+                    {
+                        var env = Environment.GetEnvironmentVariable("ASPNETCORE_ENVIRONMENT");
+                        builder
+                            .AddJsonFile("appsettings.json", true, true)
+                            .AddJsonFile($"appsettings.{env}.json", optional: true, reloadOnChange: true)
+                            .AddEnvironmentVariables("SQLAZURECONNSTR_")
+                            .AddEnvironmentVariables("APPSETTING_")
+                            .Build();
+                    });
     }
 }

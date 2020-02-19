@@ -1,8 +1,7 @@
-﻿using System;
+﻿using System.Threading.Tasks;
+using MediatR;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.Extensions.Options;
-using PlexRequests.ApiRequests.Users.Queries;
-using PlexRequests.Core.Settings;
+using PlexRequests.ApiRequests.Health.Queries;
 using Swashbuckle.AspNetCore.Annotations;
 
 namespace PlexRequests.Controllers
@@ -10,26 +9,21 @@ namespace PlexRequests.Controllers
     [Route("api/[controller]")]
     public class HealthController : Controller
     {
-        private readonly PlexRequestsSettings _settings;
+        private readonly IMediator _mediator;
 
-        public HealthController(IOptions<PlexRequestsSettings> plexRequestOptions)
+        public HealthController(
+            IMediator mediator
+        )
         {
-            _settings = plexRequestOptions.Value;
+            _mediator = mediator;
         }
 
         [HttpGet]
         [Route("")]
         [SwaggerResponse(200)]
-        public ActionResult HealthCheck([FromQuery] GetManyUserQuery query)
+        public async Task<ActionResult<GetHealthQueryResult>> HealthCheck()
         {
-            var data = new
-            {
-                _settings.Version,
-                _settings.ApplicationName,
-                Time = DateTime.UtcNow
-            };
-
-            return Ok(data);
+            return await _mediator.Send(new GetHealthQuery());
         }
     }
 }

@@ -4,10 +4,12 @@ using System.Security.Claims;
 using System.Text;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Http;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Hosting;
 using Microsoft.IdentityModel.Tokens;
 using PlexRequests.Api;
 using PlexRequests.ApiRequests.Search.Helpers;
@@ -25,13 +27,13 @@ namespace PlexRequests
 {
     public static class ServiceCollectionExtensions
     {
-        public static void RegisterDependencies(this IServiceCollection services, IConfiguration configuration)
+        public static void RegisterDependencies(this IServiceCollection services, IConfiguration configuration, IWebHostEnvironment environment)
         {
             RegisterServices(services);
-            RegisterDbContext(services, configuration);
+            RegisterDbContext(services, configuration, environment);
         }
 
-        private static void RegisterDbContext(IServiceCollection services, IConfiguration configuration)
+        private static void RegisterDbContext(IServiceCollection services, IConfiguration configuration, IWebHostEnvironment environment)
         {
             services.AddTransient<DataAccess.Repositories.IUserRepository, DataAccess.Repositories.UserRepository>();
             services.AddTransient<DataAccess.Repositories.IPlexServerRepository, DataAccess.Repositories.PlexServerRepository>();
@@ -39,10 +41,13 @@ namespace PlexRequests
             services.AddTransient<DataAccess.Repositories.IMovieRequestRepository, DataAccess.Repositories.MovieRequestRepository>();
             services.AddTransient<DataAccess.Repositories.ITvRequestRepository, DataAccess.Repositories.TvRequestRepository>();
             services.AddTransient<DataAccess.Repositories.IIssuesRepository, DataAccess.Repositories.IssuesRepository>();
+
+            var connectionString = environment.IsProduction() ? configuration["PlexRequestsDataContext"] : configuration.GetConnectionString("PlexRequestsDataContext");
+
             services.AddDbContext<PlexRequestsDataContext>(
                 options =>
                 {
-                    options.UseSqlServer(configuration.GetConnectionString("PlexRequestsDataContext"));
+                    options.UseSqlServer(connectionString);
                 });
             services.AddTransient<IUnitOfWork, UnitOfWork>();
         }
