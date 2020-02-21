@@ -101,6 +101,12 @@ namespace PlexRequests
 
             services.RegisterDependencies(Configuration);
             services.ConfigureJwtAuthentication(authSettings, Environment.IsProduction());
+
+            if (Environment.IsProduction())
+            {
+                services.AddApplicationInsightsTelemetry(Configuration["APPINSIGHTS_INSTRUMENTATIONKEY"]);
+            }
+
         }
 
         private void ConfigureLogging()
