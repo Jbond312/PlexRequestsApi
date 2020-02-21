@@ -15,8 +15,6 @@ using Newtonsoft.Json.Serialization;
 using PlexRequests.Core.Settings;
 using PlexRequests.Filters;
 using PlexRequests.Middleware;
-using Serilog;
-using Serilog.Events;
 
 namespace PlexRequests
 {
@@ -83,9 +81,7 @@ namespace PlexRequests
                 });
                 options.EnableAnnotations();
             });
-
-            ConfigureLogging();
-
+            
             services.AddMemoryCache();
 
             var assemblies = AppDomain.CurrentDomain.GetAssemblies();
@@ -109,25 +105,6 @@ namespace PlexRequests
 
         }
 
-        private void ConfigureLogging()
-        {
-            var loggerConfiguration = new LoggerConfiguration()
-                .MinimumLevel.Debug()
-                .WriteTo.Console();
-
-            if (Environment.IsProduction())
-            {
-                loggerConfiguration.MinimumLevel.Information();
-                loggerConfiguration.MinimumLevel.Override("Microsoft", LogEventLevel.Information);
-            }
-            else
-            {
-                loggerConfiguration.MinimumLevel.Debug();
-            }
-
-            Log.Logger = loggerConfiguration.CreateLogger();
-        }
-
         // This method gets called by the runtime. Use this method to configure the HTTP request pipeline.
         public void Configure(IApplicationBuilder app, IWebHostEnvironment env, ILoggerFactory loggerFactory)
         {
@@ -140,8 +117,6 @@ namespace PlexRequests
                 // The default HSTS value is 30 days. You may want to change this for production scenarios, see https://aka.ms/aspnetcore-hsts.
                 app.UseHsts();
             }
-
-            loggerFactory.AddSerilog();
 
             app.UseMiddleware<ExceptionMiddleware>();
 
