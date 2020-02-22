@@ -4,7 +4,6 @@ using System.Linq;
 using System.Net;
 using System.Threading;
 using System.Threading.Tasks;
-using AutoFixture;
 using FluentAssertions;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
@@ -19,6 +18,10 @@ using PlexRequests.DataAccess;
 using PlexRequests.DataAccess.Dtos;
 using PlexRequests.Plex;
 using PlexRequests.Plex.Models;
+using PlexRequests.UnitTests.Builders;
+using PlexRequests.UnitTests.Builders.DataAccess;
+using PlexRequests.UnitTests.Builders.Plex;
+using PlexRequests.UnitTests.Builders.Settings;
 using TestStack.BDDfy;
 using Xunit;
 using User = PlexRequests.Plex.Models.User;
@@ -36,8 +39,6 @@ namespace PlexRequests.UnitTests.Models.Auth
         private readonly IUnitOfWork _unitOfWork;
         private readonly IPlexApi _plexApi;
         private readonly IOptionsSnapshot<PlexSettings> _plexSettings;
-
-        private readonly Fixture _fixture;
 
         private AddAdminCommand _command;
         private Func<Task<UserLoginCommandResult>> _commandAction;
@@ -58,13 +59,7 @@ namespace PlexRequests.UnitTests.Models.Auth
             _unitOfWork = Substitute.For<IUnitOfWork>();
             var logger = Substitute.For<ILogger<AddAdminCommandHandler>>();
 
-            _fixture = new Fixture();
-            _fixture.Behaviors.OfType<ThrowingRecursionBehavior>()
-                .ToList()
-                .ForEach(b => _fixture.Behaviors.Remove(b));
-            _fixture.Behaviors.Add(new OmitOnRecursionBehavior(1));
-
-            var settings = _fixture.Create<PlexSettings>();
+            var settings = new PlexSettingsBuilder().Build();
             _plexSettings = Substitute.For<IOptionsSnapshot<PlexSettings>>();
             _plexSettings.Value.Returns(settings);
 
@@ -172,7 +167,11 @@ namespace PlexRequests.UnitTests.Models.Auth
 
         private void GivenACommand()
         {
-            _command = _fixture.Create<AddAdminCommand>();
+            _command = new AddAdminCommand
+            {
+                Username = "test@test.com",
+                Password = "password"
+            };
         }
 
         private void GivenAnAdminAccount(bool alreadyExists)
@@ -192,7 +191,7 @@ namespace PlexRequests.UnitTests.Models.Auth
 
         private void GivenValidPlexCredentials()
         {
-            _plexUser = _fixture.Create<User>();
+            _plexUser = new Builders.Plex.UserBuilder().Build();
             _plexApi.SignIn(Arg.Any<string>(), Arg.Any<string>()).Returns(_plexUser);
         }
 
@@ -203,11 +202,11 @@ namespace PlexRequests.UnitTests.Models.Auth
 
         private void GivenAPlexServerWasFound()
         {
-            _plexServers = _fixture.CreateMany<Server>().ToList();
+            _plexServers = new ServerBuilder().CreateMany();
 
             var firstServer = _plexServers.First();
             firstServer.Owned = "1";
-            firstServer.Port = _fixture.Create<int>().ToString();
+            firstServer.Port = new Random().Next(1, int.MaxValue).ToString();
             firstServer.LocalAddresses = $"{LocalIp},{LocalIp}1,{LocalIp}2";
 
             _plexApi.GetServers(Arg.Any<string>()).Returns(_plexServers);
@@ -220,21 +219,21 @@ namespace PlexRequests.UnitTests.Models.Auth
 
         private void GivenServerLibraries()
         {
-            _plexLibraryContainer = _fixture.Create<PlexMediaContainer>();
+            _plexLibraryContainer = new PlexMediaContainerBuilder().WithMetadata().Build();
 
             _plexApi.GetLibraries(Arg.Any<string>(), Arg.Any<string>()).Returns(_plexLibraryContainer);
         }
 
         private void GivenATokenIsReturned()
         {
-            _createdToken = _fixture.Create<string>();
+            _createdToken = Guid.NewGuid().ToString();
 
             _tokenService.CreateToken(Arg.Any<UserRow>()).Returns(_createdToken);
         }
 
         private void GivenARefreshTokenIsReturned()
         {
-            _createdRefreshToken = _fixture.Create<UserRefreshTokenRow>();
+            _createdRefreshToken = new UserRefreshTokenRowBuilder().Build();
 
             _tokenService.CreateRefreshToken().Returns(_createdRefreshToken);
         }

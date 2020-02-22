@@ -44,7 +44,7 @@ namespace PlexRequests
                 })
                 .AddApiExplorer()
                 .AddDataAnnotations();
-
+            
             services.AddSwaggerGen(options =>
             {
                 options.SwaggerDoc("v1", new OpenApiInfo

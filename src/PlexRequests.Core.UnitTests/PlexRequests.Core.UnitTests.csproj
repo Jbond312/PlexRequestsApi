@@ -14,5 +14,6 @@
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\PlexRequests.Core\PlexRequests.Core.csproj" />
+    <ProjectReference Include="..\PlexRequests.UnitTests.Builders\PlexRequests.UnitTests.Builders.csproj" />
   </ItemGroup>
 </Project>

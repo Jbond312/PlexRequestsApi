@@ -1,9 +1,7 @@
 ﻿using System;
-using System.Linq;
 using System.Net;
 using System.Threading;
 using System.Threading.Tasks;
-using AutoFixture;
 using FluentAssertions;
 using Microsoft.Extensions.Logging;
 using NSubstitute;
@@ -15,7 +13,8 @@ using PlexRequests.Core.Services;
 using PlexRequests.DataAccess;
 using PlexRequests.DataAccess.Dtos;
 using PlexRequests.Plex;
-using PlexRequests.Plex.Models;
+using PlexRequests.UnitTests.Builders.DataAccess;
+using PlexRequests.UnitTests.Builders.Plex;
 using TestStack.BDDfy;
 using Xunit;
 
@@ -29,7 +28,6 @@ namespace PlexRequests.UnitTests.Models.Auth
         private readonly IUnitOfWork _unitOfWork;
         private readonly IPlexApi _plexApi;
 
-        private readonly Fixture _fixture;
         private UserLoginCommand _command;
         private UserRow _matchingDbUser;
         private string _createdToken;
@@ -45,12 +43,6 @@ namespace PlexRequests.UnitTests.Models.Auth
             var logger = Substitute.For<ILogger<UserLoginCommandHandler>>();
 
             _underTest = new UserLoginCommandHandler(_userService, _tokenService, _unitOfWork, _plexApi, logger);
-
-            _fixture = new Fixture();
-            _fixture.Behaviors.OfType<ThrowingRecursionBehavior>()
-                .ToList()
-                .ForEach(b => _fixture.Behaviors.Remove(b));
-            _fixture.Behaviors.Add(new OmitOnRecursionBehavior(1));
         }
 
         [Fact]
@@ -125,7 +117,11 @@ namespace PlexRequests.UnitTests.Models.Auth
 
         private void GivenACommand()
         {
-            _command = _fixture.Create<UserLoginCommand>();
+            _command = new UserLoginCommand
+            {
+                Username = "username",
+                Password = "password"
+            };
         }
 
         private void GivenInvalidPlexCredentialsThrowsException()
@@ -136,7 +132,8 @@ namespace PlexRequests.UnitTests.Models.Auth
 
         private void GivenValidPlexCredentials()
         {
-            _plexApi.SignIn(Arg.Any<string>(), Arg.Any<string>()).Returns(_fixture.Create<User>());
+            var plexUser = new UserBuilder().Build();
+            _plexApi.SignIn(Arg.Any<string>(), Arg.Any<string>()).Returns(plexUser);
         }
 
         private void GivenNoMatchingUser()
@@ -146,9 +143,7 @@ namespace PlexRequests.UnitTests.Models.Auth
 
         private void GivenAMatchingUser(bool isDisabled)
         {
-            _matchingDbUser = _fixture.Build<UserRow>()
-                                      .With(x => x.IsDisabled, isDisabled)
-                                      .Create();
+            _matchingDbUser = new UserRowBuilder().WithIsDisabled(isDisabled).Build();
 
             _userService.GetUserFromPlexId(Arg.Any<int>()).Returns(_matchingDbUser);
         }
@@ -156,14 +151,14 @@ namespace PlexRequests.UnitTests.Models.Auth
 
         private void GivenATokenIsCreated()
         {
-            _createdToken = _fixture.Create<string>();
+            _createdToken = Guid.NewGuid().ToString();
 
             _tokenService.CreateToken(Arg.Any<UserRow>()).Returns(_createdToken);
         }
 
         private void GivenARefreshTokenIsCreated()
         {
-            _createdRefreshToken = _fixture.Create<UserRefreshTokenRow>();
+            _createdRefreshToken = new UserRefreshTokenRowBuilder().Build();
 
             _tokenService.CreateRefreshToken().Returns(_createdRefreshToken);
         }

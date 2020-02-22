@@ -3,7 +3,6 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
-using AutoFixture;
 using FluentAssertions;
 using MediatR;
 using Microsoft.Extensions.Options;
@@ -14,6 +13,9 @@ using PlexRequests.DataAccess;
 using PlexRequests.DataAccess.Dtos;
 using PlexRequests.Plex;
 using PlexRequests.Plex.Models;
+using PlexRequests.UnitTests.Builders.DataAccess;
+using PlexRequests.UnitTests.Builders.Plex;
+using PlexRequests.UnitTests.Builders.Settings;
 using TestStack.BDDfy;
 using Xunit;
 
@@ -25,10 +27,8 @@ namespace PlexRequests.UnitTests.Models.Plex
 
         private readonly IPlexApi _plexApi;
         private readonly IPlexService _plexService;
-        private IUnitOfWork _unitOfWork;
+        private readonly IUnitOfWork _unitOfWork;
         
-        private readonly Fixture _fixture;
-
         private SyncLibrariesCommand _command;
         private Func<Task> _commandAction;
         private PlexMediaContainer _remoteLibraryContainer;
@@ -40,12 +40,7 @@ namespace PlexRequests.UnitTests.Models.Plex
             _plexService = Substitute.For<IPlexService>();
             _unitOfWork = Substitute.For<IUnitOfWork>();
 
-            _fixture = new Fixture();
-            _fixture.Behaviors.OfType<ThrowingRecursionBehavior>().ToList()
-                .ForEach(b => _fixture.Behaviors.Remove(b));
-            _fixture.Behaviors.Add(new OmitOnRecursionBehavior());
-
-            var plexSettings = _fixture.Create<PlexSettings>();
+            var plexSettings = new PlexSettingsBuilder().Build();
             var options = Substitute.For<IOptionsSnapshot<PlexSettings>>();
             options.Value.Returns(plexSettings);
 
@@ -79,18 +74,18 @@ namespace PlexRequests.UnitTests.Models.Plex
 
         private void GivenACommand()
         {
-            _command = _fixture.Create<SyncLibrariesCommand>();
+            _command = new SyncLibrariesCommand();
         }
 
         private void GivenAServer()
         {
-            _plexServer = _fixture.Create<PlexServerRow>();
+            _plexServer = new PlexServerRowBuilder().Build();
             _plexService.GetServer().Returns(_plexServer);
         }
 
         private void GivenRemoteLibraries(bool hasRemoteLibraries)
         {
-            _remoteLibraryContainer = _fixture.Create<PlexMediaContainer>();
+            _remoteLibraryContainer = new PlexMediaContainerBuilder().WithMetadata().WithDirectories().Build();
 
             if (!hasRemoteLibraries)
             {
