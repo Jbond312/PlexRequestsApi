@@ -2,13 +2,15 @@
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
-using AutoFixture;
 using FluentAssertions;
 using NSubstitute;
 using PlexRequests.Core.Services;
 using PlexRequests.Core.Services.AutoCompletion;
 using PlexRequests.DataAccess;
 using PlexRequests.DataAccess.Dtos;
+using PlexRequests.DataAccess.Enums;
+using PlexRequests.UnitTests.Builders;
+using PlexRequests.UnitTests.Builders.DataAccess;
 using TestStack.BDDfy;
 using Xunit;
 
@@ -21,19 +23,12 @@ namespace PlexRequests.Core.UnitTests.Services.AutoCompletion
         private readonly IMovieRequestService _requestService;
         private readonly IUnitOfWork _unitOfWork;
 
-        private readonly Fixture _fixture;
-
-        private Dictionary<MediaAgent, PlexMediaItemRow> _agentsForPlexItems;
+        private readonly Dictionary<MediaAgent, PlexMediaItemRow> _agentsForPlexItems = new Dictionary<MediaAgent, PlexMediaItemRow>();
         private List<MovieRequestRow> _movieRequests;
         private Func<Task> _commandAction;
 
         public MovieAutoCompletetionTests()
         {
-            _fixture = new Fixture();
-            _fixture.Behaviors.OfType<ThrowingRecursionBehavior>().ToList()
-                .ForEach(b => _fixture.Behaviors.Remove(b));
-            _fixture.Behaviors.Add(new OmitOnRecursionBehavior());
-
             _requestService = Substitute.For<IMovieRequestService>();
             _unitOfWork = Substitute.For<IUnitOfWork>();
 
@@ -75,20 +70,31 @@ namespace PlexRequests.Core.UnitTests.Services.AutoCompletion
 
         private void GivenRequestsAgentsForPlexMediaItems()
         {
-            _agentsForPlexItems = _fixture.CreateMany<KeyValuePair<MediaAgent, PlexMediaItemRow>>()
-                                          .ToDictionary(x => x.Key, x => x.Value);
+            var mediaAgents = new List<MediaAgent>
+            {
+                new MediaAgentBuilder().WithAgentType(AgentTypes.Imdb).Build(),
+                new MediaAgentBuilder().WithAgentType(AgentTypes.TheTvDb).Build(),
+                new MediaAgentBuilder().WithAgentType(AgentTypes.TheMovieDb).Build()
+            };
+
+            var plexMediaItemRows = new MoviePlexMediaItemRowBuilder().CreateMany();
+
+            for (var i = 0; i < mediaAgents.Count; i++)
+            {
+                _agentsForPlexItems.Add(mediaAgents[i], plexMediaItemRows[i]);
+            }
         }
 
         private void GivenNoMatchingRequests()
         {
-            _movieRequests = _fixture.CreateMany<MovieRequestRow>().ToList();
+            _movieRequests = new MovieRequestRowBuilder().CreateMany();
 
             _requestService.GetIncompleteRequests().Returns(_movieRequests);
         }
 
         private void GivenASingleMatchingRequestPrimaryAgent()
         {
-            var request = _fixture.Create<MovieRequestRow>();
+            var request = new MovieRequestRowBuilder().Build();
 
             request.MovieRequestAgents.Add(GetMatchingAgent());
 
@@ -99,7 +105,7 @@ namespace PlexRequests.Core.UnitTests.Services.AutoCompletion
 
         private void GivenASingleMatchingRequestSecondaryAgent()
         {
-            var request = _fixture.Create<MovieRequestRow>();
+            var request = new MovieRequestRowBuilder().Build();
 
             var firstPlexAgent = _agentsForPlexItems.First().Key;
 

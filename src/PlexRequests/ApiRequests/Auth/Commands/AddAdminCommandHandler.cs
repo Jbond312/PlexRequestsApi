@@ -83,7 +83,7 @@ namespace PlexRequests.ApiRequests.Auth.Commands
             return result;
         }
 
-        private async Task CreateAdminServer(PlexRequests.Plex.Models.User plexUser)
+        private async Task CreateAdminServer(User plexUser)
         {
             _logger.LogDebug("Getting PlexServers");
             var servers = await _plexApi.GetServers(plexUser.AuthToken);
@@ -100,7 +100,7 @@ namespace PlexRequests.ApiRequests.Auth.Commands
             }
         }
 
-        private async Task<UserRow> AddAdminUser(PlexRequests.Plex.Models.User plexUser, UserRefreshTokenRow refreshToken)
+        private async Task<UserRow> AddAdminUser(User plexUser, UserRefreshTokenRow refreshToken)
         {
             var adminUser = new UserRow
             {
@@ -141,7 +141,7 @@ namespace PlexRequests.ApiRequests.Auth.Commands
             }
         }
 
-        private async Task CreateAdminServer(Server adminServer, PlexRequests.Plex.Models.User plexUser)
+        private async Task CreateAdminServer(Server adminServer, User plexUser)
         {
             _logger.LogInformation("Found a PlexServer owned by the Admin account");
             var plexServer = new PlexServerRow

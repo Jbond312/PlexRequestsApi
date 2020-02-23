@@ -191,7 +191,7 @@ namespace PlexRequests.UnitTests.Models.Auth
 
         private void GivenValidPlexCredentials()
         {
-            _plexUser = new Builders.Plex.UserBuilder().Build();
+            _plexUser = new UserBuilder().Build();
             _plexApi.SignIn(Arg.Any<string>(), Arg.Any<string>()).Returns(_plexUser);
         }
 

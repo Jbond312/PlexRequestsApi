@@ -10,6 +10,7 @@ namespace PlexRequests.DataAccess.Dtos
     {
         public IssueRow()
         {
+            // ReSharper disable once VirtualMemberCallInConstructor
             IssueComments = new List<IssueCommentRow>();
             IssueStatus = IssueStatuses.Pending;
         }

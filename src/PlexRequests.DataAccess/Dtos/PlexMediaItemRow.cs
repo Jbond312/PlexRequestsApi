@@ -11,6 +11,7 @@ namespace PlexRequests.DataAccess.Dtos
     {
         public PlexMediaItemRow()
         {
+            // ReSharper disable once VirtualMemberCallInConstructor
             PlexSeasons = new List<PlexSeasonRow>();
         }
 

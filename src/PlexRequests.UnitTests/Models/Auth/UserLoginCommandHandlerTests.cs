@@ -186,6 +186,7 @@ namespace PlexRequests.UnitTests.Models.Auth
 
             _matchingDbUser.LastLoginUtc.Should().NotBeNull();
 
+            // ReSharper disable once PossibleInvalidOperationException
             var loginDiff = (_matchingDbUser.LastLoginUtc.Value - now).Milliseconds;
 
             loginDiff.Should().BeLessOrEqualTo(500);

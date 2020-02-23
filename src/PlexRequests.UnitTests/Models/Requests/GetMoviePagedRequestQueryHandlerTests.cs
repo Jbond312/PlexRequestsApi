@@ -1,8 +1,6 @@
 using System;
-using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
-using AutoFixture;
 using AutoMapper;
 using FluentAssertions;
 using NSubstitute;
@@ -13,6 +11,8 @@ using PlexRequests.DataAccess;
 using PlexRequests.DataAccess.Dtos;
 using PlexRequests.DataAccess.Enums;
 using PlexRequests.Mapping;
+using PlexRequests.UnitTests.Builders;
+using PlexRequests.UnitTests.Builders.DataAccess;
 using TestStack.BDDfy;
 using Xunit;
 
@@ -23,8 +23,6 @@ namespace PlexRequests.UnitTests.Models.Requests
         private readonly GetMoviePagedRequestQueryHandler _underTest;
         private readonly IMovieRequestService _requestService;
         private readonly IClaimsPrincipalAccessor _claimsAccessor;
-
-        private readonly Fixture _fixture;
 
         private GetMoviePagedRequestQuery _query;
         private Paged<MovieRequestRow> _pagedRequest;
@@ -40,11 +38,6 @@ namespace PlexRequests.UnitTests.Models.Requests
             _claimsAccessor = Substitute.For<IClaimsPrincipalAccessor>();
             
             _underTest = new GetMoviePagedRequestQueryHandler(mapper, _requestService, _claimsAccessor);
-
-            _fixture = new Fixture();
-            _fixture.Behaviors.OfType<ThrowingRecursionBehavior>().ToList()
-                .ForEach(b => _fixture.Behaviors.Remove(b));
-            _fixture.Behaviors.Add(new OmitOnRecursionBehavior());
         }
 
         [Fact]
@@ -72,7 +65,7 @@ namespace PlexRequests.UnitTests.Models.Requests
 
         private void GivenAQuery()
         {
-            _query = _fixture.Create<GetMoviePagedRequestQuery>();
+            _query = new GetMoviePagedRequestQuery();
         }
 
         private void GivenCurrentUsersRequestsOnly()
@@ -82,13 +75,13 @@ namespace PlexRequests.UnitTests.Models.Requests
 
         private void GivenAUsersClaimAccessor()
         {
-            _currentUserId = _fixture.Create<int>();
+            _currentUserId = new Random().Next(1, int.MaxValue);
             _claimsAccessor.UserId.Returns(_currentUserId);
         }
         
         private void GivenManyRequests()
         {
-            _pagedRequest = _fixture.Create<Paged<MovieRequestRow>>();
+            _pagedRequest = new MovieRequestRowBuilder().CreatePaged();
             
             _requestService.GetPaged(Arg.Any<string>(), Arg.Any<RequestStatuses?>(), Arg.Any<int?>(),
                 Arg.Any<int?>(), Arg.Any<int?>()).Returns(_pagedRequest);

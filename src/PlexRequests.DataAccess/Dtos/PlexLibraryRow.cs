@@ -9,6 +9,7 @@ namespace PlexRequests.DataAccess.Dtos
     {
         public PlexLibraryRow()
         {
+            // ReSharper disable once VirtualMemberCallInConstructor
             PlexMediaItems = new List<PlexMediaItemRow>();
         }
 

@@ -1,5 +1,3 @@
-using System;
-
 namespace PlexRequests.Core.Helpers
 {
     public interface IClaimsPrincipalAccessor

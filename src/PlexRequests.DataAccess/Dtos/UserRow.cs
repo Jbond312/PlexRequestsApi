@@ -10,7 +10,9 @@ namespace PlexRequests.DataAccess.Dtos
     {
         public UserRow()
         {
+            // ReSharper disable once VirtualMemberCallInConstructor
             UserRoles = new List<UserRoleRow>();
+            // ReSharper disable once VirtualMemberCallInConstructor
             UserRefreshTokens = new List<UserRefreshTokenRow>();
         }
 

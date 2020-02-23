@@ -1,10 +1,10 @@
 using System;
 using System.Linq;
-using AutoFixture;
 using FluentAssertions;
 using PlexRequests.Core.Helpers;
 using PlexRequests.DataAccess.Dtos;
 using PlexRequests.DataAccess.Enums;
+using PlexRequests.UnitTests.Builders.DataAccess;
 using TestStack.BDDfy;
 using Xunit;
 
@@ -14,18 +14,11 @@ namespace PlexRequests.Core.UnitTests.Helpers
     {
         private readonly RequestHelper _underTest;
 
-        private readonly Fixture _fixture;
-
         private TvRequestRow _request;
         private Action _commandAction;
 
         public RequestHelperTests()
         {
-            _fixture = new Fixture();
-            _fixture.Behaviors.OfType<ThrowingRecursionBehavior>().ToList()
-                .ForEach(b => _fixture.Behaviors.Remove(b));
-            _fixture.Behaviors.Add(new OmitOnRecursionBehavior());
-
             _underTest = new RequestHelper();
         }
 
@@ -99,18 +92,13 @@ namespace PlexRequests.Core.UnitTests.Helpers
 
         private void GivenAllRequestEpisodesOfStatus(RequestStatuses status)
         {
-            _request = _fixture.Build<TvRequestRow>()
-            .With(x => x.Track, false)
-            .Create();
-
+            _request = new TvRequestRowBuilder().WithTrack(false).Build();
             SetEpisodeStatuses(status);
         }
 
         private void GivenOneEpisodeOfStatus(RequestStatuses status, RequestStatuses allOtherEpisodeStatus)
         {
-            _request = _fixture.Build<TvRequestRow>()
-            .With(x => x.Track, false)
-            .Create();
+            _request = new TvRequestRowBuilder().WithTrack(false).Build();
 
             SetEpisodeStatuses(allOtherEpisodeStatus);
 
@@ -119,10 +107,7 @@ namespace PlexRequests.Core.UnitTests.Helpers
 
         private void GivenTrackedRequest(RequestStatuses status)
         {
-            _request = _fixture.Build<TvRequestRow>()
-            .With(x => x.Track, true)
-            .With(x => x.RequestStatus, status)
-            .Create();
+            _request = new TvRequestRowBuilder().WithTrack(true).WithRequestStatus(status).Build();
         }
 
         private void WhenACommandActionIsCreated()

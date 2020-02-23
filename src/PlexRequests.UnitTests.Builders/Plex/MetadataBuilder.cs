@@ -20,14 +20,14 @@ namespace PlexRequests.UnitTests.Builders.Plex
 
         public MetadataBuilder()
         {
-            _ratingKey = Guid.NewGuid().ToString();
+            _ratingKey = new Random().Next(1, int.MaxValue).ToString();
             _key = Guid.NewGuid().ToString();
             _guid = Guid.NewGuid().ToString();
             _type = Guid.NewGuid().ToString();
             _title = Guid.NewGuid().ToString();
             _year = DateTime.UtcNow.Year;
             _index = 1;
-            _grandParentRatingKey = Guid.NewGuid().ToString();
+            _grandParentRatingKey = new Random().Next(1, int.MaxValue).ToString();
             _mediums = new List<MediumBuilder>();
             _collections = new List<CollectionBuilder>();
         }

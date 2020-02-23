@@ -1,9 +1,7 @@
 using System;
-using System.Linq;
 using System.Net;
 using System.Threading;
 using System.Threading.Tasks;
-using AutoFixture;
 using FluentAssertions;
 using MediatR;
 using NSubstitute;
@@ -15,6 +13,7 @@ using PlexRequests.DataAccess;
 using PlexRequests.DataAccess.Dtos;
 using PlexRequests.DataAccess.Enums;
 using PlexRequests.Plex;
+using PlexRequests.UnitTests.Builders.DataAccess;
 using TestStack.BDDfy;
 using Xunit;
 
@@ -28,8 +27,6 @@ namespace PlexRequests.UnitTests.Models.Issues
         private readonly IPlexService _plexService;
         private readonly IUnitOfWork _unitOfWork;
         private readonly IClaimsPrincipalAccessor _claimsPrincipalAccessor;
-
-        private readonly Fixture _fixture;
 
         private CreateIssueCommand _command;
         private Func<Task> _commandAction;
@@ -46,11 +43,6 @@ namespace PlexRequests.UnitTests.Models.Issues
             _claimsPrincipalAccessor = Substitute.For<IClaimsPrincipalAccessor>();
 
             _underTest = new CreateIssueCommandHandler(_issueService, _plexService, _unitOfWork, _claimsPrincipalAccessor);
-
-            _fixture = new Fixture();
-            _fixture.Behaviors.OfType<ThrowingRecursionBehavior>().ToList()
-                .ForEach(b => _fixture.Behaviors.Remove(b));
-            _fixture.Behaviors.Add(new OmitOnRecursionBehavior());
         }
 
         [Theory]
@@ -101,7 +93,13 @@ namespace PlexRequests.UnitTests.Models.Issues
 
         private void GivenACommand()
         {
-            _command = _fixture.Create<CreateIssueCommand>();
+            _command = new CreateIssueCommand
+            {
+                Title = Guid.NewGuid().ToString(),
+                Description = Guid.NewGuid().ToString(),
+                MediaType = PlexMediaTypes.Movie,
+                TheMovieDbId = new Random().Next(1, int.MaxValue)
+            };
         }
 
         private void GivenAMediaType(PlexMediaTypes mediaType)
@@ -121,8 +119,7 @@ namespace PlexRequests.UnitTests.Models.Issues
 
         private void GivenMediaItemIsReturned()
         {
-            _plexMediaItem = _fixture.Create<PlexMediaItemRow>();
-
+            _plexMediaItem = new MoviePlexMediaItemRowBuilder().Build();
             _plexService.GetExistingMediaItemByAgent(Arg.Any<PlexMediaTypes>(), Arg.Any<AgentTypes>(), Arg.Any<string>()).Returns(_plexMediaItem);
 
         }
@@ -134,7 +131,7 @@ namespace PlexRequests.UnitTests.Models.Issues
 
         private void GivenUserDetailsFromClaims()
         {
-            _claimsUserId = _fixture.Create<int>();
+            _claimsUserId = new Random().Next(1, int.MaxValue);
 
             _claimsPrincipalAccessor.UserId.Returns(_claimsUserId);
         }

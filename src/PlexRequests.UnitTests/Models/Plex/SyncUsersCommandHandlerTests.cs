@@ -97,7 +97,7 @@ namespace PlexRequests.UnitTests.Models.Plex
 
             if (hasLocalUsers)
             {
-                _localUsers = new Builders.DataAccess.UserRowBuilder().WithIsAdmin(false).CreateMany();
+                _localUsers = new UserRowBuilder().WithIsAdmin(false).CreateMany();
             }
 
             _userService.GetAllUsers().Returns(_localUsers);

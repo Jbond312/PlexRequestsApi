@@ -16,6 +16,9 @@ namespace PlexRequests.UnitTests.Builders.Plex
             _key = Guid.NewGuid().ToString();
             _metadatas = new List<MetadataBuilder>();
             _directories = new List<DirectoryBuilder>();
+
+            WithMetadata();
+            WithDirectories();
         }
 
         public PlexMediaContainerBuilder WithKey(string key)

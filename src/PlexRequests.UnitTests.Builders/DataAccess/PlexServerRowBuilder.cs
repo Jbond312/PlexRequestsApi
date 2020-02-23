@@ -32,6 +32,8 @@ namespace PlexRequests.UnitTests.Builders.DataAccess
             _externalIp = "81.155.67.122";
             _externalPort = 34000;
             _libraries = new List<PlexLibraryRowBuilder>();
+
+            WithLibrary(new PlexLibraryRowBuilder().WithIsEnabled(true));
         }
 
         public PlexServerRowBuilder WithName(string name)

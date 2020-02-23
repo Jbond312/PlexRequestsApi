@@ -94,6 +94,7 @@ namespace PlexRequests.UnitTests.Models.Plex
                 var matchingLibrary = _server.PlexLibraries.FirstOrDefault(x => x.LibraryKey == actualLibrary.Key);
 
                 matchingLibrary.Should().NotBeNull();
+                // ReSharper disable once PossibleNullReferenceException
                 actualLibrary.IsArchived.Should().Be(matchingLibrary.IsArchived);
                 actualLibrary.IsEnabled.Should().Be(matchingLibrary.IsEnabled);
                 actualLibrary.Title.Should().Be(matchingLibrary.Title);

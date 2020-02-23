@@ -10,6 +10,7 @@ namespace PlexRequests.DataAccess.Dtos
     {
         public PlexServerRow()
         {
+            // ReSharper disable once VirtualMemberCallInConstructor
             PlexLibraries = new List<PlexLibraryRow>();
         }
 

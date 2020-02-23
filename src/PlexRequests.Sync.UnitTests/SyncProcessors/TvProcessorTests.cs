@@ -2,18 +2,20 @@
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
-using AutoFixture;
 using FluentAssertions;
 using Microsoft.Extensions.Logging;
 using NSubstitute;
 using NSubstitute.ReturnsExtensions;
 using PlexRequests.Core.Helpers;
-using PlexRequests.Core.Settings;
 using PlexRequests.DataAccess.Dtos;
 using PlexRequests.DataAccess.Enums;
 using PlexRequests.Plex;
 using PlexRequests.Plex.Models;
 using PlexRequests.Sync.SyncProcessors;
+using PlexRequests.UnitTests.Builders;
+using PlexRequests.UnitTests.Builders.DataAccess;
+using PlexRequests.UnitTests.Builders.Plex;
+using PlexRequests.UnitTests.Builders.Settings;
 using TestStack.BDDfy;
 using Xunit;
 
@@ -27,8 +29,6 @@ namespace PlexRequests.Sync.UnitTests.SyncProcessors
         private readonly IPlexService _plexService;
         private readonly IMediaItemProcessor _mediaItemProcessor;
         private readonly IAgentGuidParser _agentGuidParser;
-
-        private readonly Fixture _fixture;
 
         private List<PlexMediaItemRow> _localMediaItems;
         private PlexMediaContainer _plexLibraryContainer;
@@ -47,11 +47,6 @@ namespace PlexRequests.Sync.UnitTests.SyncProcessors
 
         public TvProcessorTests()
         {
-            _fixture = new Fixture();
-            _fixture.Behaviors.OfType<ThrowingRecursionBehavior>().ToList()
-                .ForEach(b => _fixture.Behaviors.Remove(b));
-            _fixture.Behaviors.Add(new OmitOnRecursionBehavior());
-
             _plexApi = Substitute.For<IPlexApi>();
             _plexService = Substitute.For<IPlexService>();
             _mediaItemProcessor = Substitute.For<IMediaItemProcessor>();
@@ -59,7 +54,7 @@ namespace PlexRequests.Sync.UnitTests.SyncProcessors
             var loggerFactory = Substitute.For<ILoggerFactory>();
             loggerFactory.CreateLogger<TvProcessor>().Returns(Substitute.For<ILogger>());
 
-            var plexSettings = _fixture.Create<PlexSettings>();
+            var plexSettings = new PlexSettingsBuilder().Build();
 
             _underTest = new TvProcessor(_plexApi, _plexService, _mediaItemProcessor, plexSettings, _agentGuidParser, loggerFactory);
         }
@@ -121,9 +116,9 @@ namespace PlexRequests.Sync.UnitTests.SyncProcessors
         [Fact]
         private void Seasons_Are_Retrieved_From_Show_RatingKey()
         {
-            _seasonRatingKey = _fixture.Create<int>();
+            _seasonRatingKey = new Random().Next(1, int.MaxValue);
             _rootPlexMediaItemHasSeason = false;
-            _seasonAgentDetails = _fixture.Create<AgentGuidParserResult>();
+            _seasonAgentDetails = new AgentGuidParserResult(AgentTypes.TheMovieDb, Guid.NewGuid().ToString());
 
             this.Given(x => x.GivenLocalMediaItems())
                 .Given(x => x.GivenASingleLibraryMetadata())
@@ -155,26 +150,26 @@ namespace PlexRequests.Sync.UnitTests.SyncProcessors
 
         private void GivenLocalMediaItems()
         {
-            _localMediaItems = _fixture.CreateMany<PlexMediaItemRow>().ToList();
+            _localMediaItems = new TvPlexMediaItemRowBuilder().CreateMany();
             _plexService.GetMediaItems(Arg.Any<PlexMediaTypes>()).Returns(_localMediaItems);
         }
 
         private void GivenALibraryContainer()
         {
-            _plexLibraryContainer = _fixture.Create<PlexMediaContainer>();
+            _plexLibraryContainer = new PlexMediaContainerBuilder().Build();
 
             foreach (var metadata in _plexLibraryContainer.MediaContainer.Metadata)
             {
-                metadata.RatingKey = _fixture.Create<int>().ToString();
-                metadata.GrandParentRatingKey = _fixture.Create<int>().ToString();
+                metadata.RatingKey = new Random().Next(1, int.MaxValue).ToString();
+                metadata.GrandParentRatingKey = new Random().Next(1, int.MaxValue).ToString();
             }
         }
 
         private void GivenALibraryContainerWithOnlyOneUniqueKey()
         {
-            _plexLibraryContainer = _fixture.Create<PlexMediaContainer>();
+            _plexLibraryContainer = new PlexMediaContainerBuilder().Build();
 
-            var ratingKey = _fixture.Create<int>().ToString();
+            var ratingKey = new Random().Next(1, int.MaxValue).ToString();
 
             foreach (var metadata in _plexLibraryContainer.MediaContainer.Metadata)
             {
@@ -185,17 +180,14 @@ namespace PlexRequests.Sync.UnitTests.SyncProcessors
 
         private void GivenASingleLibraryMetadata()
         {
-            _plexLibraryContainer = _fixture.Create<PlexMediaContainer>();
-            _plexLibraryContainer.MediaContainer.Metadata = _fixture.Build<Metadata>()
-                                                                    .With(x => x.RatingKey, _fixture.Create<int>().ToString)
-                                                                    .With(x => x.GrandParentRatingKey, _fixture.Create<int>().ToString)
-                                                                    .CreateMany(1)
-                                                                    .ToList();
+            _plexLibraryContainer = new PlexMediaContainerBuilder().Build();
+
+            _plexLibraryContainer.MediaContainer.Metadata = new MetadataBuilder().CreateMany(1);
         }
 
         private void GivenAProcessedMediaItem(bool hasSeasons = true)
         {
-            var mediaItemResult = _fixture.Create<MediaItemResult>();
+            var mediaItemResult = new MediaItemResult(true, new TvPlexMediaItemRowBuilder().Build());
             _rootPlexMediaItem = mediaItemResult.MediaItem;
 
             if (!hasSeasons)
@@ -222,13 +214,10 @@ namespace PlexRequests.Sync.UnitTests.SyncProcessors
         {
             if (container == null)
             {
-                container = _fixture.Create<PlexMediaContainer>();
+                container = new PlexMediaContainerBuilder().Build();
             }
 
-            container.MediaContainer.Metadata = _fixture.Build<Metadata>()
-                                                                    .With(x => x.RatingKey, seasonRatingKey.ToString)
-                                                                    .CreateMany(1)
-                                                                    .ToList();
+            container.MediaContainer.Metadata = new MetadataBuilder().WithRatingKey(seasonRatingKey.ToString()).CreateMany(1);
 
             _plexApi.GetChildrenMetadata(Arg.Any<string>(), Arg.Any<string>(), Arg.Any<int>()).Returns(container);
         }
@@ -237,7 +226,7 @@ namespace PlexRequests.Sync.UnitTests.SyncProcessors
         {
             if (metadata == null)
             {
-                metadata = _fixture.Create<PlexMediaContainer>();
+                metadata = new PlexMediaContainerBuilder().Build();
             }
 
             _plexApi.GetMetadata(Arg.Any<string>(), Arg.Any<string>(), Arg.Is(seasonRatingKey)).Returns(metadata);
@@ -256,9 +245,9 @@ namespace PlexRequests.Sync.UnitTests.SyncProcessors
 
         private void WhenAnActionIsCreated(bool fullRefresh)
         {
-            var authToken = _fixture.Create<string>();
-            var plexUri = _fixture.Create<string>();
-            var machineIdentifier = _fixture.Create<string>();
+            var authToken = Guid.NewGuid().ToString();
+            var plexUri = Guid.NewGuid().ToString();
+            var machineIdentifier = Guid.NewGuid().ToString();
 
             _commandAction = async () =>
                 await _underTest.Synchronise(_plexLibraryContainer, fullRefresh, authToken, plexUri, machineIdentifier);

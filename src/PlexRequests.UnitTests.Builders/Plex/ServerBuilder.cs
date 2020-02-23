@@ -20,7 +20,7 @@ namespace PlexRequests.UnitTests.Builders.Plex
             _name = Guid.NewGuid().ToString();
             _address = "111.222.333.444";
             _port = new Random().Next(1, int.MaxValue).ToString();
-            _scheme = Guid.NewGuid().ToString();;
+            _scheme = Guid.NewGuid().ToString();
             _localAddress = "192.168.0.1";
             _machineIdentifier = Guid.NewGuid().ToString();
             _owned = "0";
