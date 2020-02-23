@@ -42,6 +42,7 @@ namespace PlexRequests.ApiRequests.Auth.Commands
             }
             catch (PlexRequestException)
             {
+                _logger.LogInformation("Unable to login to Plex with the given credentials");
                 throw new PlexRequestException("Invalid Plex Credentials", "Unable to login to Plex with the given credentials");
             }
 
@@ -53,7 +54,7 @@ namespace PlexRequests.ApiRequests.Auth.Commands
 
             if (plexRequestsUser == null || plexRequestsUser.IsDisabled)
             {
-                _logger.LogInformation("Attempted login by unknown user.");
+                _logger.LogInformation($"Successful login from a Plex account that was either not found within our users list or has been disabled [IsDisabled={plexRequestsUser?.IsDisabled}]");
                 throw new PlexRequestException("Unrecognised user", "The user is not recognised or has been disabled.");
             }
 

@@ -1,4 +1,5 @@
 ﻿using System.Collections.Generic;
+using System.Diagnostics;
 using System.IO;
 using System.Net;
 using System.Net.Http;
@@ -27,34 +28,42 @@ namespace PlexRequests.Api
 
         public async Task InvokeApiAsync(ApiRequest request)
         {
-            using (var httpRequestMessage = CreateHttpRequestMessage(request))
-            {
-                var httpResponse =await _httpClient.SendAsync(httpRequestMessage);
+            using var httpRequestMessage = CreateHttpRequestMessage(request);
 
-                if (!httpResponse.IsSuccessStatusCode)
-                {
-                    await LogApiUnsuccessful(request, httpResponse);
-                }
+            var stopWatch = new Stopwatch();
+            stopWatch.Start();
+
+            _logger.LogDebug($"Calling External Api: {httpRequestMessage.RequestUri}");
+            var httpResponse = await _httpClient.SendAsync(httpRequestMessage);
+            _logger.LogDebug($"Finishing called External Api. Total time: {stopWatch.Elapsed.Milliseconds}ms");
+            
+            if (!httpResponse.IsSuccessStatusCode)
+            {
+                await LogApiUnsuccessful(request, httpResponse);
             }
         }
 
         public async Task<T> InvokeApiAsync<T>(ApiRequest request)
         {
-            using (var httpRequestMessage = CreateHttpRequestMessage(request))
+            using var httpRequestMessage = CreateHttpRequestMessage(request);
+
+            var stopWatch = new Stopwatch();
+            stopWatch.Start();
+
+            _logger.LogDebug($"Calling External Api: {httpRequestMessage.RequestUri}");
+            var httpResponse = await _httpClient.SendAsync(httpRequestMessage);
+            _logger.LogDebug($"Finishing called External Api. Total time: {stopWatch.Elapsed.Milliseconds}ms");
+            
+            if (!httpResponse.IsSuccessStatusCode)
             {
-                var httpResponse = await _httpClient.SendAsync(httpRequestMessage);
-
-                if (!httpResponse.IsSuccessStatusCode)
-                {
-                    await LogApiUnsuccessful(request, httpResponse);
-                }
-
-                var contentResponse = await httpResponse.Content.ReadAsStringAsync();
-
-                var response = DeserialiseResponse<T>(httpResponse, contentResponse);
-
-                return response;
+                await LogApiUnsuccessful(request, httpResponse);
             }
+
+            var contentResponse = await httpResponse.Content.ReadAsStringAsync();
+
+            var response = DeserialiseResponse<T>(httpResponse, contentResponse);
+
+            return response;
         }
 
         private static T DeserialiseResponse<T>(HttpResponseMessage httpResponse, string contentResponse)

@@ -53,6 +53,8 @@ namespace PlexRequests.ApiRequests.Auth.Commands
                 _logger.LogDebug("Refresh token has either expired or does not match the users current refresh token");
                 throw CreateInvalidTokenException();
             }
+
+            _logger.LogDebug("Refresh token is valid, re-creating tokens for user.");
             
             var accessToken = _tokenService.CreateToken(user);
             var refreshToken = _tokenService.CreateRefreshToken();

@@ -96,12 +96,13 @@ namespace PlexRequests.Core.Services
             }
             catch (SecurityTokenException securityTokenException)
             {
-                _logger.LogDebug(securityTokenException.ToString());
+                _logger.LogDebug($"Unable to validate token: {securityTokenException}");
                 return null;
             }
 
             if (!(securityToken is JwtSecurityToken jwtSecurityToken) || !jwtSecurityToken.Header.Alg.Equals(SecurityAlgorithms.HmacSha256, StringComparison.InvariantCultureIgnoreCase))
             {
+                _logger.LogDebug("Unable to identify principal. Security token algorithms do not match.");
                 return null;
             }
 
