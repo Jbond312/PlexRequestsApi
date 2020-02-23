@@ -14,11 +14,8 @@ namespace PlexRequests.Core.Services
 {
     public class TokenService : ITokenService
     {
-        private readonly ILogger<TokenService> _logger;
-        private const int AccessTokenLifespanMinutes = 120;
-        private const int RefreshTokenLifespanDays = 1;
-
         private readonly AuthenticationSettings _authSettings;
+        private readonly ILogger<TokenService> _logger;
 
         public TokenService(
             IOptionsSnapshot<AuthenticationSettings> authSettings,
@@ -44,7 +41,7 @@ namespace PlexRequests.Core.Services
                 claims.Add(new Claim(ClaimTypes.Role, userRole.Role));
             }
 
-            var expiry = DateTime.UtcNow.AddMinutes(AccessTokenLifespanMinutes);
+            var expiry = DateTime.UtcNow.AddMinutes(_authSettings.TokenExpirationMinutes);
             //Remove milliseconds from the time as it gets stripped when the token is serialised
             expiry = expiry.AddMilliseconds(-expiry.Millisecond);
             var tokenDescriptor = new SecurityTokenDescriptor
@@ -52,8 +49,8 @@ namespace PlexRequests.Core.Services
                 Subject = new ClaimsIdentity(claims),
                 Expires = expiry,
                 SigningCredentials = new SigningCredentials(new SymmetricSecurityKey(secretKey), SecurityAlgorithms.HmacSha256Signature),
-                Audience = "PlexRequests",
-                Issuer = "PlexRequests"
+                Audience = _authSettings.Audience,
+                Issuer = _authSettings.Issuer
             };
 
             user.InvalidateTokensBeforeUtc = expiry;
@@ -71,7 +68,7 @@ namespace PlexRequests.Core.Services
             return new UserRefreshTokenRow
             {
                 Token = refreshToken,
-                ExpiresUtc = DateTime.UtcNow.AddDays(RefreshTokenLifespanDays)
+                ExpiresUtc = DateTime.UtcNow.AddDays(_authSettings.RefreshTokenExpirationDays)
             };
         }
 
@@ -84,8 +81,8 @@ namespace PlexRequests.Core.Services
                 RequireExpirationTime = true,
                 ValidateIssuer = true,
                 ValidateAudience = true,
-                ValidIssuer = "PlexRequests",
-                ValidAudience = "PlexRequests",
+                ValidIssuer = _authSettings.Issuer,
+                ValidAudience = _authSettings.Audience,
                 ValidateLifetime = false,
                 ClockSkew = TimeSpan.Zero
             };
