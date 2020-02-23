@@ -1,11 +1,18 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
-    <TargetFramework>netcoreapp2.2</TargetFramework>
+    <TargetFramework>netcoreapp3.0</TargetFramework>
   </PropertyGroup>
-
   <ItemGroup>
-    <ProjectReference Include="..\PlexRequests.Plex\PlexRequests.Plex.csproj" />
-    <ProjectReference Include="..\PlexRequests.Store\PlexRequests.Store.csproj" />
+    <PackageReference Include="Microsoft.Extensions.Caching.Abstractions" Version="3.0.0" />
+    <PackageReference Include="Microsoft.Extensions.Options" Version="3.0.0" />
+    <PackageReference Include="System.IdentityModel.Tokens.Jwt" Version="5.5.0" />
+    <PackageReference Include="Microsoft.Extensions.Logging.Abstractions" Version="3.0.0" />
   </ItemGroup>
-
+  <ItemGroup>
+    <ProjectReference Include="..\PlexRequests.DataAccess\PlexRequests.DataAccess.csproj" />
+    <ProjectReference Include="..\PlexRequests.Models\PlexRequests.Models.csproj" />  
+  </ItemGroup>
+   <ItemGroup>
+    <FrameworkReference Include="Microsoft.AspNetCore.App" />
+  </ItemGroup>
 </Project>

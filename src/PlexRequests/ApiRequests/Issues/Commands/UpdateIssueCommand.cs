@@ -1,0 +1,17 @@
+using System.ComponentModel.DataAnnotations;
+using MediatR;
+using Newtonsoft.Json;
+using PlexRequests.DataAccess.Enums;
+
+namespace PlexRequests.ApiRequests.Issues.Commands
+{
+    public class UpdateIssueCommand : IRequest
+    {
+        [JsonIgnore]
+        public int Id { get; set; }
+        [Required]
+        public IssueStatuses Status { get; set; }
+        [MinLength(1)]
+        public string Outcome { get; set; }
+    }
+}
