@@ -1,4 +1,8 @@
-﻿using Microsoft.EntityFrameworkCore;
+﻿using System;
+using System.Linq;
+using System.Threading;
+using System.Threading.Tasks;
+using Microsoft.EntityFrameworkCore;
 using PlexRequests.DataAccess.Dtos;
 
 namespace PlexRequests.DataAccess
@@ -13,6 +17,26 @@ namespace PlexRequests.DataAccess
         {
             optionsBuilder.UseLazyLoadingProxies();
             base.OnConfiguring(optionsBuilder);
+        }
+
+        public override Task<int> SaveChangesAsync(CancellationToken cancellationToken = new CancellationToken())
+        {
+            var createdOrModifiedEntities = ChangeTracker.Entries()
+                .Where(x => x.Entity is TimestampRow
+                            && (x.State == EntityState.Modified || x.State == EntityState.Added));
+
+            foreach(var entityEntry in createdOrModifiedEntities)
+            {
+                var timeStampEntity = ((TimestampRow)entityEntry.Entity);
+                timeStampEntity.UpdatedUtc = DateTime.UtcNow;
+
+                if (entityEntry.State == EntityState.Added)
+                {
+                    timeStampEntity.CreatedUtc = DateTime.UtcNow;
+                }
+            }
+
+            return base.SaveChangesAsync(cancellationToken);
         }
 
         public DbSet<UserRow> Users { get; set; }
