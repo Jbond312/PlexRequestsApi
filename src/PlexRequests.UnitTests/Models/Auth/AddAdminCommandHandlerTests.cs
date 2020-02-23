@@ -9,9 +9,9 @@ using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using NSubstitute;
 using NSubstitute.ReturnsExtensions;
+using PlexRequests.ApiRequests;
 using PlexRequests.ApiRequests.Auth.Commands;
 using PlexRequests.Core.Auth;
-using PlexRequests.Core.Exceptions;
 using PlexRequests.Core.Services;
 using PlexRequests.Core.Settings;
 using PlexRequests.DataAccess;
@@ -41,7 +41,7 @@ namespace PlexRequests.UnitTests.Models.Auth
         private readonly IOptionsSnapshot<PlexSettings> _plexSettings;
 
         private AddAdminCommand _command;
-        private Func<Task<UserLoginCommandResult>> _commandAction;
+        private Func<Task<ValidationContext<UserLoginCommandResult>>> _commandAction;
         private User _plexUser;
         private UserRow _createdAdminUser;
         private List<Server> _plexServers;
@@ -72,8 +72,7 @@ namespace PlexRequests.UnitTests.Models.Auth
             this.Given(x => x.GivenACommand())
                 .Given(x => x.GivenAnAdminAccount(true))
                 .When(x => x.WhenACommandActionIsCreated())
-                .Then(x => x.ThenAnErrorIsThrown("Unable to add Plex Admin",
-                    "An Admin account has already been created", HttpStatusCode.BadRequest))
+                .Then(x => x.ThenAnErrorIsThrown("Unable to add Plex Admin", "An Admin account has already been created"))
                 .Then(x => x.ThenChangesAreNotCommitted())
                 .BDDfy();
         }
@@ -85,8 +84,7 @@ namespace PlexRequests.UnitTests.Models.Auth
                 .Given(x => x.GivenAnAdminAccount(false))
                 .Given(x => x.GivenInvalidPlexCredentials())
                 .When(x => x.WhenACommandActionIsCreated())
-                .Then(x => x.ThenAnErrorIsThrown("Invalid PlexCredentials",
-                    "The Login credentials for Plex were invalid.", HttpStatusCode.BadRequest))
+                .Then(x => x.ThenAnErrorIsThrown("Invalid PlexCredentials", "The Login credentials for Plex were invalid"))
                 .Then(x => x.ThenChangesAreNotCommitted())
                 .BDDfy();
         }
@@ -227,7 +225,7 @@ namespace PlexRequests.UnitTests.Models.Auth
         private void GivenATokenIsReturned()
         {
             _createdToken = Guid.NewGuid().ToString();
-
+            
             _tokenService.CreateToken(Arg.Any<UserRow>()).Returns(_createdToken);
         }
 
@@ -238,12 +236,12 @@ namespace PlexRequests.UnitTests.Models.Auth
             _tokenService.CreateRefreshToken().Returns(_createdRefreshToken);
         }
 
-        private void ThenAnErrorIsThrown(string message, string description, HttpStatusCode httpStatusCode)
+        private async Task ThenAnErrorIsThrown(string message, string description)
         {
-            _commandAction.Should().Throw<PlexRequestException>()
-                          .WithMessage(message)
-                          .Where(x => x.Description == description)
-                          .Where(x => x.StatusCode == httpStatusCode);
+            var result = await _commandAction();
+            result.IsSuccessful.Should().BeFalse();
+            var matchingError = result.ValidationErrors.FirstOrDefault(x => x.Message == message && x.Description == description);
+            matchingError.Should().NotBeNull();
         }
 
         private void ThenAnAdminUserWasCreated()
@@ -297,7 +295,7 @@ namespace PlexRequests.UnitTests.Models.Auth
             var response = await _commandAction();
 
             response.Should().NotBeNull();
-            response.AccessToken.Should().Be(_createdToken);
+            response.Data.AccessToken.Should().Be(_createdToken);
         }
 
         private async Task ThenCommandReturnsRefreshToken()
@@ -305,7 +303,7 @@ namespace PlexRequests.UnitTests.Models.Auth
             var response = await _commandAction();
 
             response.Should().NotBeNull();
-            response.RefreshToken.Should().Be(_createdRefreshToken.Token);
+            response.Data.RefreshToken.Should().Be(_createdRefreshToken.Token);
         }
 
         private void ThenChangesAreCommitted()

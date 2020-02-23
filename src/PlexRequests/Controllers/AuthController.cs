@@ -56,6 +56,11 @@ namespace PlexRequests.Controllers
         {
             var result = await _mediator.Send(command);
 
+            if (!result.IsSuccessful)
+            {
+                return BadRequest(result.ValidationErrors[0].Message);
+            }
+
             return Ok(result);
         }
     }
