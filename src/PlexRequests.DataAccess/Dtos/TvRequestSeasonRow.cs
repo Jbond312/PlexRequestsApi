@@ -11,6 +11,7 @@ namespace PlexRequests.DataAccess.Dtos
     {
         public TvRequestSeasonRow()
         {
+            // ReSharper disable once VirtualMemberCallInConstructor
             TvRequestEpisodes = new List<TvRequestEpisodeRow>();
             RequestStatus = RequestStatuses.PendingApproval;
         }

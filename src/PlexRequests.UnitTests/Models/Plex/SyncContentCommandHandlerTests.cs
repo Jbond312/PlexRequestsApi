@@ -1,7 +1,6 @@
 ﻿using System;
 using System.Threading;
 using System.Threading.Tasks;
-using AutoFixture;
 using FluentAssertions;
 using MediatR;
 using NSubstitute;
@@ -18,8 +17,6 @@ namespace PlexRequests.UnitTests.Models.Plex
 
         private readonly IPlexSync _plexSync;
 
-        private readonly Fixture _fixture;
-        
         private SyncContentCommand _command;
         private Func<Task> _commandAction;
 
@@ -28,8 +25,6 @@ namespace PlexRequests.UnitTests.Models.Plex
             _plexSync = Substitute.For<IPlexSync>();
 
             _underTest = new SyncContentCommandHandler(_plexSync);
-
-            _fixture = new Fixture();
         }
 
         [Fact]
@@ -43,7 +38,7 @@ namespace PlexRequests.UnitTests.Models.Plex
 
         private void GivenACommand()
         {
-            _command = _fixture.Create<SyncContentCommand>();
+            _command = new SyncContentCommand(false);
         }
 
         private void WhenACommandActionIsCreated()

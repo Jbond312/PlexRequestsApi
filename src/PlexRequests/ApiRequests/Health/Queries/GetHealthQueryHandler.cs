@@ -20,7 +20,7 @@ namespace PlexRequests.ApiRequests.Health.Queries
 
         public async Task<GetHealthQueryResult> Handle(GetHealthQuery request, CancellationToken cancellationToken)
         {
-            return new GetHealthQueryResult
+            var result = new GetHealthQueryResult
             {
                 Data = new HealthModel
                 {
@@ -29,6 +29,8 @@ namespace PlexRequests.ApiRequests.Health.Queries
                     TimeStamp = DateTime.UtcNow
                 }
             };
+
+            return await Task.FromResult(result);
         }
     }
 }

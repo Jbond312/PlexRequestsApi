@@ -24,7 +24,7 @@ namespace PlexRequests.Mapping
                 .ForMember(x => x.PlexMediaUri, x => x.MapFrom(y => y.PlexSeason.MediaUri));
             CreateMap<TvRequestEpisodeRow, TvRequestEpisodeDetailModel>()
                 .ForMember(x => x.AirDate, x => x.MapFrom(y => y.AirDateUtc))
-                .ForMember(x => x.PlexMediaUri, x => x.MapFrom(y => y.PlexEpisode.MediaUri)); ;
+                .ForMember(x => x.PlexMediaUri, x => x.MapFrom(y => y.PlexEpisode.MediaUri));
             CreateMap<TvRequestSeasonCreateModel, TvRequestSeasonRow>()
                 .ForMember(x => x.SeasonIndex, x => x.MapFrom(y => y.Index));
             CreateMap<TvRequestEpisodeCreateModel, TvRequestEpisodeRow>()

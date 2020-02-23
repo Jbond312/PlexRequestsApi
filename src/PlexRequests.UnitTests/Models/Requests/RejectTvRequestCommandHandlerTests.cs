@@ -4,7 +4,6 @@ using System.Linq;
 using System.Net;
 using System.Threading;
 using System.Threading.Tasks;
-using AutoFixture;
 using FluentAssertions;
 using MediatR;
 using NSubstitute;
@@ -15,6 +14,7 @@ using PlexRequests.Core.Services;
 using PlexRequests.DataAccess;
 using PlexRequests.DataAccess.Dtos;
 using PlexRequests.DataAccess.Enums;
+using PlexRequests.UnitTests.Builders.DataAccess;
 using TestStack.BDDfy;
 using Xunit;
 
@@ -26,19 +26,12 @@ namespace PlexRequests.UnitTests.Models.Requests
         private readonly ITvRequestService _requestService;
         private readonly IUnitOfWork _unitOfWork;
         
-        private readonly Fixture _fixture;
-
         private RejectTvRequestCommand _command;
         private Func<Task> _commandAction;
         private TvRequestRow _request;
 
         public RejectTvRequestCommandHandlerTests()
         {
-            _fixture = new Fixture();
-            _fixture.Behaviors.OfType<ThrowingRecursionBehavior>().ToList()
-                .ForEach(b => _fixture.Behaviors.Remove(b));
-            _fixture.Behaviors.Add(new OmitOnRecursionBehavior());
-
             _requestService = Substitute.For<ITvRequestService>();
             _unitOfWork = Substitute.For<IUnitOfWork>();
 
@@ -185,9 +178,17 @@ namespace PlexRequests.UnitTests.Models.Requests
 
         private void GivenACommand(bool rejectAll)
         {
-            _command = _fixture.Build<RejectTvRequestCommand>()
-                               .With(x => x.RejectAll, rejectAll)
-                               .Create();
+            _command = new RejectTvRequestCommand
+            {
+                RequestId = 1,
+                Comment = Guid.NewGuid().ToString(),
+                RejectAll = rejectAll,
+                EpisodesBySeason = new Dictionary<int, List<int>>
+                {
+                    [1] = new List<int>{1, 2, 3},
+                    [2] = new List<int>{1, 2, 3, 4}
+                }
+            };
         }
 
         private void GivenASpecificComment(string comment)
@@ -216,11 +217,8 @@ namespace PlexRequests.UnitTests.Models.Requests
 
         private void GivenARequestIsFound()
         {
-            _request = _fixture.Build<TvRequestRow>()
-                                  .With(x => x.RequestStatus, RequestStatuses.PendingApproval)
-                                  .With(x => x.Track, false)
-                                  .Create();
-
+            _request = new TvRequestRowBuilder().WithRequestStatus(RequestStatuses.PendingApproval).WithTrack(false).Build();
+            
             SetEpisodeStatus(_request, RequestStatuses.PendingApproval);
 
             _requestService.GetRequestById(Arg.Any<int>()).Returns(_request);
@@ -233,9 +231,7 @@ namespace PlexRequests.UnitTests.Models.Requests
 
         private void GivenARequestIsFoundWithACompletedEpisode()
         {
-            _request = _fixture.Build<TvRequestRow>()
-                                  .With(x => x.RequestStatus, RequestStatuses.PendingApproval)
-                                  .Create();
+            _request = new TvRequestRowBuilder().WithRequestStatus(RequestStatuses.PendingApproval).WithTrack(false).Build();
 
             SetEpisodeStatus(_request, RequestStatuses.PendingApproval);
 

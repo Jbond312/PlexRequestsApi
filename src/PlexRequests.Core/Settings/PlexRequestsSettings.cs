@@ -1,8 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Text;
-
-namespace PlexRequests.Core.Settings
+﻿namespace PlexRequests.Core.Settings
 {
     public class PlexRequestsSettings
     {

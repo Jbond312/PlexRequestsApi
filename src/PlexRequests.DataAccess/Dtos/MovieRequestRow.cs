@@ -12,6 +12,7 @@ namespace PlexRequests.DataAccess.Dtos
     {
         public MovieRequestRow()
         {
+            // ReSharper disable once VirtualMemberCallInConstructor
             MovieRequestAgents = new List<MovieRequestAgentRow>();
             RequestStatus = RequestStatuses.PendingApproval;
         }

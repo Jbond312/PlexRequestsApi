@@ -1,9 +1,11 @@
-﻿using FluentMigrator;
+﻿using System.Diagnostics.CodeAnalysis;
+using FluentMigrator;
 using FluentMigrator.SqlServer;
 
 namespace PlexRequests.DatabaseMigration.Migrations
 {
     [Migration(0)]
+    [SuppressMessage("ReSharper", "InconsistentNaming")]
     public class Create_Enum_Tables : Migration
     {
         public override void Up()

@@ -1,9 +1,7 @@
 using System;
-using System.Linq;
 using System.Net;
 using System.Threading;
 using System.Threading.Tasks;
-using AutoFixture;
 using FluentAssertions;
 using MediatR;
 using NSubstitute;
@@ -14,6 +12,7 @@ using PlexRequests.Core.Services;
 using PlexRequests.DataAccess;
 using PlexRequests.DataAccess.Dtos;
 using PlexRequests.DataAccess.Enums;
+using PlexRequests.UnitTests.Builders.DataAccess;
 using TestStack.BDDfy;
 using Xunit;
 
@@ -25,19 +24,12 @@ namespace PlexRequests.UnitTests.Models.Requests
         private readonly IMovieRequestService _requestService;
         private readonly IUnitOfWork _unitOfWork;
 
-        private readonly Fixture _fixture;
-
         private RejectMovieRequestCommand _command;
         private Func<Task> _commandAction;
         private MovieRequestRow _request;
 
         public RejectMovieRequestCommandHandlerTests()
         {
-            _fixture = new Fixture();
-            _fixture.Behaviors.OfType<ThrowingRecursionBehavior>().ToList()
-                .ForEach(b => _fixture.Behaviors.Remove(b));
-            _fixture.Behaviors.Add(new OmitOnRecursionBehavior());
-
             _requestService = Substitute.For<IMovieRequestService>();
             _unitOfWork = Substitute.For<IUnitOfWork>();
             
@@ -74,7 +66,7 @@ namespace PlexRequests.UnitTests.Models.Requests
             this.Given(x => x.GivenACommandWithComment(comment))
                 .Given(x => x.GivenARequestWithStatus(RequestStatuses.Approved))
                 .When(x => x.WhenCommandActionIsCreated())
-                .Then(x => x.ThenAnErrorIsThrown("Invalid comment", "A comment must be specified when rejecting a request", HttpStatusCode.BadRequest))
+                .Then(x => x.ThenAnErrorIsThrown("Invalid request", "A comment must be specified when rejecting a request", HttpStatusCode.BadRequest))
                 .Then(x => x.ThenChangesAreNotCommitted())
                 .BDDfy();
         }
@@ -92,14 +84,12 @@ namespace PlexRequests.UnitTests.Models.Requests
 
         private void GivenACommand()
         {
-            _command = _fixture.Create<RejectMovieRequestCommand>();
+            _command = new RejectMovieRequestCommand(1, Guid.NewGuid().ToString());
         }
         
         private void GivenACommandWithComment(string comment)
         {
-            _command = _fixture.Build<RejectMovieRequestCommand>()
-                               .With(x => x.Comment, comment)
-                               .Create();
+            _command = new RejectMovieRequestCommand(1, comment);
         }
 
         private void GivenNoRequestFound()
@@ -109,10 +99,7 @@ namespace PlexRequests.UnitTests.Models.Requests
 
         private void GivenARequestWithStatus(RequestStatuses status)
         {
-            _request = _fixture.Build<MovieRequestRow>()
-                               .With(x => x.RequestStatus, status)
-                               .Create();
-
+            _request = new MovieRequestRowBuilder().WithRequestStatus(status).Build();
             _requestService.GetRequestById(Arg.Any<int>()).Returns(_request);
         }
 

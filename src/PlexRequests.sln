@@ -31,6 +31,8 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "PlexRequests.DatabaseMigrat
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "PlexRequests.Models", "PlexRequests.Models\PlexRequests.Models.csproj", "{C6C7BA34-2BD2-49D3-A849-F2839FE1AFC9}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "PlexRequests.UnitTests.Builders", "PlexRequests.UnitTests.Builders\PlexRequests.UnitTests.Builders.csproj", "{7A43AB1D-7D20-461C-B6D2-A39AB002EA8E}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -85,6 +87,10 @@ Global
 		{C6C7BA34-2BD2-49D3-A849-F2839FE1AFC9}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{C6C7BA34-2BD2-49D3-A849-F2839FE1AFC9}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{C6C7BA34-2BD2-49D3-A849-F2839FE1AFC9}.Release|Any CPU.Build.0 = Release|Any CPU
+		{7A43AB1D-7D20-461C-B6D2-A39AB002EA8E}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{7A43AB1D-7D20-461C-B6D2-A39AB002EA8E}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{7A43AB1D-7D20-461C-B6D2-A39AB002EA8E}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{7A43AB1D-7D20-461C-B6D2-A39AB002EA8E}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
@@ -93,6 +99,7 @@ Global
 		{E0DB8659-82D3-4793-8E29-859BA0CD3969} = {505A8AFF-9ACF-41FC-B27A-2D010822163F}
 		{DD85AFDA-8E96-4E88-98EF-4E00E1B4637A} = {505A8AFF-9ACF-41FC-B27A-2D010822163F}
 		{16DB3073-1841-4380-866B-A38A75224944} = {505A8AFF-9ACF-41FC-B27A-2D010822163F}
+		{7A43AB1D-7D20-461C-B6D2-A39AB002EA8E} = {505A8AFF-9ACF-41FC-B27A-2D010822163F}
 	EndGlobalSection
 	GlobalSection(ExtensibilityGlobals) = postSolution
 		SolutionGuid = {184D93EF-A8B8-4FA2-8CE6-833D27DC8E53}

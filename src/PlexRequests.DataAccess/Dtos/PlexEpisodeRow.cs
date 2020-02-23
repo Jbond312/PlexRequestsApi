@@ -11,6 +11,7 @@ namespace PlexRequests.DataAccess.Dtos
     {
         public PlexEpisodeRow()
         {
+            // ReSharper disable once VirtualMemberCallInConstructor
             TvRequestEpisodes = new List<TvRequestEpisodeRow>();
         }
 

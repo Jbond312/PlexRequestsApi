@@ -4,7 +4,6 @@ using System.Linq;
 using System.Net;
 using System.Threading;
 using System.Threading.Tasks;
-using AutoFixture;
 using FluentAssertions;
 using MediatR;
 using Microsoft.Extensions.Logging;
@@ -20,6 +19,8 @@ using PlexRequests.DataAccess.Enums;
 using PlexRequests.Plex;
 using PlexRequests.TheMovieDb;
 using PlexRequests.TheMovieDb.Models;
+using PlexRequests.UnitTests.Builders.DataAccess;
+using PlexRequests.UnitTests.Builders.Plex;
 using TestStack.BDDfy;
 using Xunit;
 
@@ -34,8 +35,6 @@ namespace PlexRequests.UnitTests.Models.Requests
         private readonly IPlexService _plexService;
         private readonly IUnitOfWork _unitOfWork;
         private readonly IClaimsPrincipalAccessor _claimsPrincipalAccessor;
-
-        private readonly Fixture _fixture;
 
         private CreateMovieRequestCommand _command;
         private MovieRequestRow _request;
@@ -57,11 +56,6 @@ namespace PlexRequests.UnitTests.Models.Requests
             var logger = Substitute.For<ILogger<CreateRequestCommandHandler>>();
 
             _underTest = new CreateRequestCommandHandler(_theMovieDbService, _requestService, _plexService, _unitOfWork, _claimsPrincipalAccessor, logger);
-
-            _fixture = new Fixture();
-            _fixture.Behaviors.OfType<ThrowingRecursionBehavior>().ToList()
-                .ForEach(b => _fixture.Behaviors.Remove(b));
-            _fixture.Behaviors.Add(new OmitOnRecursionBehavior());
 
         }
 
@@ -125,12 +119,13 @@ namespace PlexRequests.UnitTests.Models.Requests
 
         private void GivenACommand()
         {
-            _command = _fixture.Create<CreateMovieRequestCommand>();
+            _command = new CreateMovieRequestCommand();
         }
 
         private void GivenRequestAlreadyExists()
         {
-            _request = _fixture.Create<MovieRequestRow>();
+
+            _request = new MovieRequestRowBuilder().Build();
 
             _requestService.GetExistingRequest(Arg.Any<AgentTypes>(), Arg.Any<string>()).Returns(_request);
         }
@@ -142,7 +137,7 @@ namespace PlexRequests.UnitTests.Models.Requests
 
         private void GivenMovieAlreadyInPlex()
         {
-            _plexMediaItem = _fixture.Create<PlexMediaItemRow>();
+            _plexMediaItem = new MoviePlexMediaItemRowBuilder().Build();
 
             _plexService
                 .GetExistingMediaItemByAgent(Arg.Any<PlexMediaTypes>(), Arg.Any<AgentTypes>(), Arg.Any<string>())
@@ -151,7 +146,7 @@ namespace PlexRequests.UnitTests.Models.Requests
 
         private void GivenMovieAlreadyInPlexFromFallbackAgent()
         {
-            _plexMediaItem = _fixture.Create<PlexMediaItemRow>();
+            _plexMediaItem = new MoviePlexMediaItemRowBuilder().Build();
 
             _plexService
                 .GetExistingMediaItemByAgent(Arg.Any<PlexMediaTypes>(), Arg.Any<AgentTypes>(), Arg.Any<string>())
@@ -167,10 +162,7 @@ namespace PlexRequests.UnitTests.Models.Requests
 
         private void GivenMovieIsInTheMovieDb()
         {
-            _movieDetails = _fixture.Build<MovieDetails>()
-                                    .With(x => x.Release_Date, "2019-12-25")
-                                    .Create();
-
+            _movieDetails = new MovieDetailsBuilder().WithReleaseDate("2019-12-25").Build();
             _theMovieDbService.GetMovieDetails(Arg.Any<int>()).Returns(_movieDetails);
         }
 
@@ -181,14 +173,14 @@ namespace PlexRequests.UnitTests.Models.Requests
 
         private void GivenExternalIdsFromTheMovieDb()
         {
-            _externalIds = _fixture.Create<ExternalIds>();
+            _externalIds = new ExternalIdsBuilder().Build();
             _theMovieDbService.GetMovieExternalIds(Arg.Any<int>()).Returns(_externalIds);
         }
 
         private void GivenUserDetailsFromClaims()
         {
-            _claimsUsername = _fixture.Create<string>();
-            _claimsUserId = _fixture.Create<int>();
+            _claimsUsername = Guid.NewGuid().ToString();
+            _claimsUserId = new Random().Next(1, int.MaxValue);
 
             _claimsPrincipalAccessor.Username.Returns(_claimsUsername);
             _claimsPrincipalAccessor.UserId.Returns(_claimsUserId);

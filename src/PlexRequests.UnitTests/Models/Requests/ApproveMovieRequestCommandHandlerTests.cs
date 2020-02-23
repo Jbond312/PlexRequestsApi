@@ -1,9 +1,7 @@
 using System;
-using System.Linq;
 using System.Net;
 using System.Threading;
 using System.Threading.Tasks;
-using AutoFixture;
 using FluentAssertions;
 using MediatR;
 using NSubstitute;
@@ -14,6 +12,7 @@ using PlexRequests.Core.Services;
 using PlexRequests.DataAccess;
 using PlexRequests.DataAccess.Dtos;
 using PlexRequests.DataAccess.Enums;
+using PlexRequests.UnitTests.Builders.DataAccess;
 using TestStack.BDDfy;
 using Xunit;
 
@@ -25,19 +24,12 @@ namespace PlexRequests.UnitTests.Models.Requests
         private readonly IMovieRequestService _requestService;
         private readonly IUnitOfWork _unitOfWork;
 
-        private readonly Fixture _fixture;
-
         private ApproveMovieRequestCommand _command;
         private Func<Task> _commandAction;
         private MovieRequestRow _requestToUpdate;
 
         public ApproveMovieRequestCommandHandlerTests()
         {
-            _fixture = new Fixture();
-            _fixture.Behaviors.OfType<ThrowingRecursionBehavior>().ToList()
-                .ForEach(b => _fixture.Behaviors.Remove(b));
-            _fixture.Behaviors.Add(new OmitOnRecursionBehavior());
-
             _requestService = Substitute.For<IMovieRequestService>();
             _unitOfWork = Substitute.For<IUnitOfWork>();
             
@@ -80,7 +72,7 @@ namespace PlexRequests.UnitTests.Models.Requests
 
         private void GivenACommand()
         {
-            _command = _fixture.Create<ApproveMovieRequestCommand>();
+            _command = new ApproveMovieRequestCommand(1);
         }
 
         private void GivenNoRequestIsFound()
@@ -90,10 +82,7 @@ namespace PlexRequests.UnitTests.Models.Requests
 
         private void GivenARequestIsFoundWithStatus(RequestStatuses status)
         {
-            _requestToUpdate = _fixture.Build<MovieRequestRow>()
-                                  .With(x => x.RequestStatus, status)
-                                  .Create();
-            
+            _requestToUpdate = new MovieRequestRowBuilder().WithRequestStatus(status).Build();
             _requestService.GetRequestById(Arg.Any<int>()).Returns(_requestToUpdate);
         }
 

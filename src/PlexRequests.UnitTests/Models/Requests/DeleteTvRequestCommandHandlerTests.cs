@@ -1,10 +1,8 @@
 using System;
 using System.Collections.Generic;
-using System.Linq;
 using System.Net;
 using System.Threading;
 using System.Threading.Tasks;
-using AutoFixture;
 using FluentAssertions;
 using MediatR;
 using Microsoft.Extensions.Logging;
@@ -16,6 +14,7 @@ using PlexRequests.Core.Helpers;
 using PlexRequests.Core.Services;
 using PlexRequests.DataAccess;
 using PlexRequests.DataAccess.Dtos;
+using PlexRequests.UnitTests.Builders.DataAccess;
 using TestStack.BDDfy;
 using Xunit;
 
@@ -30,7 +29,6 @@ namespace PlexRequests.UnitTests.Models.Requests
         private readonly IUnitOfWork _unitOfWork;
         private readonly IClaimsPrincipalAccessor _claimsUserAccessor;
 
-        private readonly Fixture _fixture;
         private Func<Task> _commandAction;
         private TvRequestRow _request;
         private readonly int _requestUserId;
@@ -44,12 +42,7 @@ namespace PlexRequests.UnitTests.Models.Requests
             
             _underTest = new DeleteTvRequestCommandHandler(_requestService, _unitOfWork, _claimsUserAccessor, logger);
             
-            _fixture = new Fixture();
-            _fixture.Behaviors.OfType<ThrowingRecursionBehavior>().ToList()
-                .ForEach(b => _fixture.Behaviors.Remove(b));
-            _fixture.Behaviors.Add(new OmitOnRecursionBehavior());
-
-            _requestUserId = _fixture.Create<int>();
+            _requestUserId = new Random().Next(1, int.MaxValue);
         }
 
         [Fact]
@@ -68,7 +61,7 @@ namespace PlexRequests.UnitTests.Models.Requests
         {
             this.Given(x => x.GivenACommand())
                 .Given(x => x.GivenARequestIsFound())
-                .Given(x => x.GivenUserHasRequestedTvShow())
+                .Given(x => x.GivenOnlyASingleUserHasRequestedTvShow())
                 .Given(x => x.GivenRequestUserIsCurrentUser())
                 .When(x => x.WhenCommandActionIsCreated())
                 .Then(x => x.ThenCommandIsSuccessful())
@@ -93,7 +86,7 @@ namespace PlexRequests.UnitTests.Models.Requests
 
         private void GivenACommand()
         {
-            _command = _fixture.Create<DeleteTvRequestCommand>();
+            _command = new DeleteTvRequestCommand(1);
         }
 
         private void GivenNoRequestIsFound()
@@ -103,17 +96,14 @@ namespace PlexRequests.UnitTests.Models.Requests
 
         private void GivenARequestIsFound()
         {
-            _request = _fixture.Build<TvRequestRow>()
-                .With(x => x.TvRequestUsers, new List<TvRequestUserRow>())
-                .Create();
-            
+            _request = new TvRequestRowBuilder().Build();
             _requestService.GetRequestById(Arg.Any<int>()).Returns(_request);
         }
 
         private void GivenMultipleUsersHaveRequestedTvShow()
         {
-            var requestUser = _fixture.Build<TvRequestUserRow>().With(x => x.UserId, _requestUserId).Create();
-            var otherRequestUser = _fixture.Build<TvRequestUserRow>().Create();
+            var requestUser = new TvRequestUserRowBuilder().WithUserId(_requestUserId).Build();
+            var otherRequestUser = new TvRequestUserRowBuilder().Build();
 
             _request.TvRequestUsers = new List<TvRequestUserRow>
             {
@@ -122,9 +112,10 @@ namespace PlexRequests.UnitTests.Models.Requests
             };
         }
 
-        private void GivenUserHasRequestedTvShow()
+        private void GivenOnlyASingleUserHasRequestedTvShow()
         {
-            var requestUser = _fixture.Build<TvRequestUserRow>().With(x => x.UserId, _requestUserId).Create();
+            _request.TvRequestUsers = new List<TvRequestUserRow>();
+            var requestUser = new TvRequestUserRowBuilder().WithUserId(_requestUserId).Build();
 
             _request.TvRequestUsers.Add(requestUser);
         }

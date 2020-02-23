@@ -2,7 +2,6 @@ using System;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
-using AutoFixture;
 using AutoMapper;
 using FluentAssertions;
 using NSubstitute;
@@ -10,6 +9,7 @@ using PlexRequests.ApiRequests.Plex.Queries;
 using PlexRequests.DataAccess.Dtos;
 using PlexRequests.Mapping;
 using PlexRequests.Plex;
+using PlexRequests.UnitTests.Builders.DataAccess;
 using TestStack.BDDfy;
 using Xunit;
 
@@ -20,19 +20,12 @@ namespace PlexRequests.UnitTests.Models.Plex
         private readonly GetManyPlexServerLibraryQueryHandler _underTest;
         private readonly IPlexService _plexService;
 
-        private readonly Fixture _fixture;
-        
         private GetManyPlexServerLibraryQuery _request;
         private Func<Task<GetManyPlexServerLibraryQueryResult>> _commandAction;
         private PlexServerRow _server;
 
         public GetManyPlexServerLibraryQueryHandlerTests()
         {
-            _fixture = new Fixture();
-            _fixture.Behaviors.OfType<ThrowingRecursionBehavior>().ToList()
-                .ForEach(b => _fixture.Behaviors.Remove(b));
-            _fixture.Behaviors.Add(new OmitOnRecursionBehavior());
-
             _plexService = Substitute.For<IPlexService>();
             
             var mapperConfig = new MapperConfiguration(opts => { opts.AddProfile(new PlexProfile()); });
@@ -64,12 +57,14 @@ namespace PlexRequests.UnitTests.Models.Plex
 
         private void GivenAQueryRequest()
         {
-            _request = _fixture.Create<GetManyPlexServerLibraryQuery>();
+            _request = new GetManyPlexServerLibraryQuery();
         }
 
         private void GivenLibrariesAreReturned()
         {
-            _server = _fixture.Create<PlexServerRow>();
+            _server = new PlexServerRowBuilder()
+                .WithLibraries(3)
+                .Build();
             _plexService.GetServer().Returns(_server);
         }
         
@@ -99,6 +94,7 @@ namespace PlexRequests.UnitTests.Models.Plex
                 var matchingLibrary = _server.PlexLibraries.FirstOrDefault(x => x.LibraryKey == actualLibrary.Key);
 
                 matchingLibrary.Should().NotBeNull();
+                // ReSharper disable once PossibleNullReferenceException
                 actualLibrary.IsArchived.Should().Be(matchingLibrary.IsArchived);
                 actualLibrary.IsEnabled.Should().Be(matchingLibrary.IsEnabled);
                 actualLibrary.Title.Should().Be(matchingLibrary.Title);

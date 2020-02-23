@@ -3,7 +3,6 @@ using System.Linq;
 using System.Net;
 using System.Threading;
 using System.Threading.Tasks;
-using AutoFixture;
 using FluentAssertions;
 using MediatR;
 using NSubstitute;
@@ -12,6 +11,7 @@ using PlexRequests.Core.Exceptions;
 using PlexRequests.DataAccess;
 using PlexRequests.DataAccess.Dtos;
 using PlexRequests.Plex;
+using PlexRequests.UnitTests.Builders.DataAccess;
 using TestStack.BDDfy;
 using Xunit;
 
@@ -23,19 +23,12 @@ namespace PlexRequests.UnitTests.Models.Plex
         private readonly IPlexService _plexService;
         private readonly IUnitOfWork _unitOfWork;
 
-        private readonly Fixture _fixture;
-        
         private UpdatePlexServerLibraryCommand _command;
         private Func<Task> _commandAction;
         private PlexServerRow _plexServer;
 
         public UpdatePlexServerLibraryCommandHandlerTests()
         {
-            _fixture = new Fixture();
-            _fixture.Behaviors.OfType<ThrowingRecursionBehavior>().ToList()
-                .ForEach(b => _fixture.Behaviors.Remove(b));
-            _fixture.Behaviors.Add(new OmitOnRecursionBehavior());
-
             _plexService = Substitute.For<IPlexService>();
             _unitOfWork = Substitute.For<IUnitOfWork>();
             
@@ -69,14 +62,15 @@ namespace PlexRequests.UnitTests.Models.Plex
 
         private void GivenACommand()
         {
-            _command = _fixture.Build<UpdatePlexServerLibraryCommand>()
-                               .With(x => x.IsEnabled, true)
-                               .Create();
+            _command = new UpdatePlexServerLibraryCommand
+            {
+                IsEnabled = true
+            };
         }
 
         private void GivenNoMatchingLibrary(bool isArchived)
         {
-            _plexServer = _fixture.Create<PlexServerRow>();
+            _plexServer = new PlexServerRowBuilder().WithLibraries().Build();
 
             _plexServer.PlexLibraries.ElementAt(0).IsArchived = isArchived;
             
@@ -90,7 +84,7 @@ namespace PlexRequests.UnitTests.Models.Plex
 
         private void GivenAMatchingLibrary()
         {
-            _plexServer = _fixture.Create<PlexServerRow>();
+            _plexServer = new PlexServerRowBuilder().WithLibraries().Build();
             _plexServer.PlexLibraries.ElementAt(0).LibraryKey = _command.Key;
             _plexServer.PlexLibraries.ElementAt(0).IsEnabled = false;
 

@@ -27,7 +27,7 @@ namespace PlexRequests.ApiRequests.Requests.Commands
         {
             if (string.IsNullOrEmpty(command.Comment))
             {
-                throw new PlexRequestException("Invalid comment", "A comment must be specified when rejecting a request");
+                throw new PlexRequestException("Invalid request", "A comment must be specified when rejecting a request");
             }
             
             var request = await _requestService.GetRequestById(command.RequestId);

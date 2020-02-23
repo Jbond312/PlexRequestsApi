@@ -154,6 +154,7 @@ namespace PlexRequests.ApiRequests.Requests.Commands
             }
         }
         
+        // ReSharper disable once ParameterOnlyUsedForPreconditionCheck.Local
         private static void ValidateShowIsntAlreadyTracked(IEnumerable<TvRequestUserRow> userRequests)
         {
             if (userRequests.Any(x => x.Track))
@@ -196,7 +197,7 @@ namespace PlexRequests.ApiRequests.Requests.Commands
             return tvRequest;
         }
 
-        private void ValidateRequestedEpisodesNotAlreadyInPlex(ICollection<TvRequestSeasonRow> existingRootSeasons, List<TvRequestSeasonRow> requestedSeasons)
+        private static void ValidateRequestedEpisodesNotAlreadyInPlex(ICollection<TvRequestSeasonRow> existingRootSeasons, List<TvRequestSeasonRow> requestedSeasons)
         {
             RemoveExistingPlexEpisodesFromRequest(existingRootSeasons, requestedSeasons);
 
@@ -208,11 +209,12 @@ namespace PlexRequests.ApiRequests.Requests.Commands
             }
         }
 
-        private void ValidateAndRemoveExistingEpisodeRequests(List<TvRequestUserRow> existingRequests, List<TvRequestSeasonRow> seasonsToRequest)
+        private static void ValidateAndRemoveExistingEpisodeRequests(List<TvRequestUserRow> existingRequests, List<TvRequestSeasonRow> seasonsToRequest)
         {
             var existingSeasonEpisodeRequests = existingRequests
                 .Where(x => x.Season != null)
                 .GroupBy(x => x.Season.Value)
+                // ReSharper disable once PossibleInvalidOperationException
                 .ToDictionary(x => x.Key, x => x.Where(s => s.Episode != null).Select(e => e.Episode.Value));
 
             RemoveDuplicateEpisodeRequests(seasonsToRequest, existingSeasonEpisodeRequests);

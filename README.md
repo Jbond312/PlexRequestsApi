@@ -27,17 +27,9 @@ If you want to run the project in its existing state, it can be built and deploy
 ### Pre-requisites
 
 - Docker
-- .NET Core 2.2
-- MongoDb instance that is accessible from the plexrequests docker container
-
-### Configuring settings
-
-All of the settings for the application can currently be found within the [PlexRequests\appsettings.json](https://github.com/Jbond312/PlexRequestsApi/blob/develop/src/PlexRequests/appsettings.json) file and should be updated before running the Api. When running in `Production` environment variables should be specified instead for the MongoDb username and password (see example below). This configuration is temporary in the projects current state.
+- .NET Core 3.0
+- MSSQL Instance
 
 ### Build & Run
 
-Build:
->docker build . -t plexrequests
-
-Run:
->docker run -e MONGO_INITDB_ROOT_USERNAME=username -e MONGO_INITDB_ROOT_PASSWORD=password --name plexrequestsapi plexrequests
+This is in progress as the system is migrating to use a MSSQL database

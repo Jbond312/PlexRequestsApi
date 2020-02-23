@@ -1,9 +1,7 @@
 using System;
 using System.Collections.Generic;
-using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
-using AutoFixture;
 using AutoMapper;
 using FluentAssertions;
 using NSubstitute;
@@ -13,6 +11,8 @@ using PlexRequests.DataAccess;
 using PlexRequests.DataAccess.Dtos;
 using PlexRequests.DataAccess.Enums;
 using PlexRequests.Mapping;
+using PlexRequests.UnitTests.Builders;
+using PlexRequests.UnitTests.Builders.DataAccess;
 using TestStack.BDDfy;
 using Xunit;
 
@@ -22,8 +22,6 @@ namespace PlexRequests.UnitTests.Models.Issues
     {
         private readonly GetPagedIssueQueryHandler _underTest;
         private readonly IIssueService _issueService;
-
-        private readonly Fixture _fixture;
 
         private GetPagedIssueQuery _query;
         private Paged<IssueRow> _pagedIssue;
@@ -38,11 +36,6 @@ namespace PlexRequests.UnitTests.Models.Issues
             _issueService = Substitute.For<IIssueService>();
 
             _underTest = new GetPagedIssueQueryHandler(mapper, _issueService);
-
-            _fixture = new Fixture();
-            _fixture.Behaviors.OfType<ThrowingRecursionBehavior>().ToList()
-                .ForEach(b => _fixture.Behaviors.Remove(b));
-            _fixture.Behaviors.Add(new OmitOnRecursionBehavior());
         }
 
         [Fact]
@@ -72,15 +65,15 @@ namespace PlexRequests.UnitTests.Models.Issues
 
         private void GivenAQuery(bool includeResolved)
         {
-            _query = _fixture.Build<GetPagedIssueQuery>()
-            .With(x => x.IncludeResolved, includeResolved)
-            .Create();
+            _query = new GetPagedIssueQuery
+            {
+                IncludeResolved = includeResolved
+            };
         }
 
         private void GivenManyIssues()
         {
-            _pagedIssue = _fixture.Create<Paged<IssueRow>>();
-
+            _pagedIssue = new IssueRowBuilder().CreatePaged();
             _issueService.GetPaged(Arg.Any<int?>(), Arg.Any<int?>(), Arg.Do<List<IssueStatuses>>(x => _includedStatuses = x)).Returns(_pagedIssue);
         }
 

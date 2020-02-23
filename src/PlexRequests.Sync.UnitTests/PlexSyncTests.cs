@@ -1,7 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
-using AutoFixture;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using NSubstitute;
@@ -15,6 +14,9 @@ using PlexRequests.DataAccess.Dtos;
 using PlexRequests.DataAccess.Enums;
 using PlexRequests.Plex.Models;
 using PlexRequests.Sync.SyncProcessors;
+using PlexRequests.UnitTests.Builders.DataAccess;
+using PlexRequests.UnitTests.Builders.Plex;
+using PlexRequests.UnitTests.Builders.Settings;
 using TestStack.BDDfy;
 using Xunit;
 
@@ -30,13 +32,11 @@ namespace PlexRequests.Sync.UnitTests
         private readonly ICompletionService _completionService;
         private readonly IUnitOfWork _unitOfWork;
 
-        private readonly Fixture _fixture;
-
         private PlexServerRow _plexServer;
         private Func<Task> _commandAction;
         private PlexMediaContainer _remoteLibraryContainer;
         private ISyncProcessor _syncProcessor;
-        private SyncResult _syncProcessorResult;
+        private SyncResult _syncProcessorResult = new SyncResult();
 
         public PlexSyncTests()
         {
@@ -48,12 +48,7 @@ namespace PlexRequests.Sync.UnitTests
 
             var logger = Substitute.For<ILogger<PlexSync>>();
 
-            _fixture = new Fixture();
-            _fixture.Behaviors.OfType<ThrowingRecursionBehavior>().ToList()
-                .ForEach(b => _fixture.Behaviors.Remove(b));
-            _fixture.Behaviors.Add(new OmitOnRecursionBehavior());
-
-            var plexSettings = _fixture.Create<PlexSettings>();
+            var plexSettings = new PlexSettingsBuilder().Build();
             var options = Substitute.For<IOptionsSnapshot<PlexSettings>>();
             options.Value.Returns(plexSettings);
 
@@ -143,7 +138,7 @@ namespace PlexRequests.Sync.UnitTests
 
         private void GivenAPlexServer()
         {
-            _plexServer = _fixture.Create<PlexServerRow>();
+            _plexServer = new PlexServerRowBuilder().Build();
 
             _plexService.GetServer().Returns(_plexServer);
         }
@@ -158,16 +153,13 @@ namespace PlexRequests.Sync.UnitTests
 
         private void GivenASingleEnabledLibrary()
         {
-            var plexLibrary = _fixture.Build<PlexLibraryRow>()
-                                      .With(x => x.IsEnabled, true)
-                                      .Create();
-
+            var plexLibrary = new PlexLibraryRowBuilder().WithIsEnabled(true).Build();
             _plexServer.PlexLibraries = new List<PlexLibraryRow> { plexLibrary };
         }
 
         private void GivenMatchingRemoteLibraries()
         {
-            _remoteLibraryContainer = _fixture.Create<PlexMediaContainer>();
+            _remoteLibraryContainer = new PlexMediaContainerBuilder().Build();
 
             for (var i = 0; i < _plexServer.PlexLibraries.Count; i++)
             {
@@ -179,7 +171,7 @@ namespace PlexRequests.Sync.UnitTests
 
         private void GivenNoMatchingRemoteLibraries()
         {
-            _remoteLibraryContainer = _fixture.Create<PlexMediaContainer>();
+            _remoteLibraryContainer = new PlexMediaContainerBuilder().Build();
 
             _plexApi.GetLibraries(Arg.Any<string>(), Arg.Any<string>()).Returns(_remoteLibraryContainer);
         }
@@ -187,8 +179,6 @@ namespace PlexRequests.Sync.UnitTests
         private void GivenASyncProcessor()
         {
             _syncProcessor = Substitute.For<ISyncProcessor>();
-            _syncProcessorResult = _fixture.Create<SyncResult>();
-
             _syncProcessor
                 .Synchronise(Arg.Any<PlexMediaContainer>(), Arg.Any<bool>(), Arg.Any<string>(), Arg.Any<string>(), Arg.Any<string>())
                 .Returns(_syncProcessorResult);

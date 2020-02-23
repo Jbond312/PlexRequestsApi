@@ -1,9 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
-using AutoFixture;
 using FluentAssertions;
 using MediatR;
 using NSubstitute;
@@ -13,6 +11,9 @@ using PlexRequests.DataAccess;
 using PlexRequests.DataAccess.Dtos;
 using PlexRequests.Plex;
 using PlexRequests.Plex.Models;
+using PlexRequests.UnitTests.Builders;
+using PlexRequests.UnitTests.Builders.DataAccess;
+using PlexRequests.UnitTests.Builders.Plex;
 using TestStack.BDDfy;
 using Xunit;
 
@@ -27,8 +28,6 @@ namespace PlexRequests.UnitTests.Models.Plex
         private readonly IPlexService _plexService;
         private readonly IUnitOfWork _unitOfWork;
         
-        private readonly Fixture _fixture;
-        
         private SyncUsersCommand _command;
         private List<Friend> _remoteFriends;
         private List<UserRow> _localUsers;
@@ -42,12 +41,6 @@ namespace PlexRequests.UnitTests.Models.Plex
             _unitOfWork = Substitute.For<IUnitOfWork>();
 
             _underTest = new SyncUsersCommandHandler(_plexApi, _userService, _plexService, _unitOfWork);
-
-            _fixture = new Fixture();
-            _fixture.Behaviors.OfType<ThrowingRecursionBehavior>()
-                .ToList()
-                .ForEach(b => _fixture.Behaviors.Remove(b));
-            _fixture.Behaviors.Add(new OmitOnRecursionBehavior(1));
         }
 
         [Fact]
@@ -78,12 +71,12 @@ namespace PlexRequests.UnitTests.Models.Plex
 
         private void GivenACommand()
         {
-            _command = _fixture.Create<SyncUsersCommand>();
+            _command = new SyncUsersCommand();
         }
 
         private void GivenAServer()
         {
-            _plexService.GetServer().Returns(_fixture.Create<PlexServerRow>());
+            _plexService.GetServer().Returns(new PlexServerRowBuilder().Build());
         }
 
         private void GivenRemoteFriends(bool hasRemoteFriends)
@@ -92,10 +85,7 @@ namespace PlexRequests.UnitTests.Models.Plex
 
             if (hasRemoteFriends)
             {
-                _remoteFriends = _fixture.Build<Friend>()
-                                         .With(x => x.Id, _fixture.Create<int>().ToString)
-                                         .CreateMany()
-                                         .ToList();
+                _remoteFriends = new FriendBuilder().CreateMany();
             }
             
             _plexApi.GetFriends(Arg.Any<string>()).Returns(_remoteFriends);
@@ -107,10 +97,7 @@ namespace PlexRequests.UnitTests.Models.Plex
 
             if (hasLocalUsers)
             {
-                _localUsers = _fixture.Build<UserRow>()
-                                      .With(x => x.IsAdmin, false)
-                                      .CreateMany()
-                                      .ToList();
+                _localUsers = new UserRowBuilder().WithIsAdmin(false).CreateMany();
             }
 
             _userService.GetAllUsers().Returns(_localUsers);

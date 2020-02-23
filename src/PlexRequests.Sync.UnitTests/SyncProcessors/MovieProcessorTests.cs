@@ -1,17 +1,17 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Linq;
 using System.Threading.Tasks;
-using AutoFixture;
 using FluentAssertions;
 using Microsoft.Extensions.Logging;
 using NSubstitute;
-using PlexRequests.Core.Settings;
 using PlexRequests.DataAccess.Dtos;
 using PlexRequests.DataAccess.Enums;
 using PlexRequests.Plex;
 using PlexRequests.Plex.Models;
 using PlexRequests.Sync.SyncProcessors;
+using PlexRequests.UnitTests.Builders.DataAccess;
+using PlexRequests.UnitTests.Builders.Plex;
+using PlexRequests.UnitTests.Builders.Settings;
 using TestStack.BDDfy;
 using Xunit;
 
@@ -24,25 +24,18 @@ namespace PlexRequests.Sync.UnitTests.SyncProcessors
         private readonly IPlexService _plexService;
         private readonly IMediaItemProcessor _mediaItemProcessor;
 
-        private readonly Fixture _fixture;
-
         private PlexMediaContainer _plexMediaContainer;
         private Func<Task> _commandAction;
         private MediaItemResult _mediaItemResult;
 
         public MovieProcessorTests()
         {
-            _fixture = new Fixture();
-            _fixture.Behaviors.OfType<ThrowingRecursionBehavior>().ToList()
-                .ForEach(b => _fixture.Behaviors.Remove(b));
-            _fixture.Behaviors.Add(new OmitOnRecursionBehavior());
-
             _plexService = Substitute.For<IPlexService>();
             _mediaItemProcessor = Substitute.For<IMediaItemProcessor>();
             var loggerFactory = Substitute.For<ILoggerFactory>();
             loggerFactory.CreateLogger<MovieProcessor>().Returns(Substitute.For<ILogger>());
 
-            var plexSettings = _fixture.Create<PlexSettings>();
+            var plexSettings = new PlexSettingsBuilder().Build();
 
             _underTest = new MovieProcessor(_plexService, _mediaItemProcessor, plexSettings, loggerFactory);
         }
@@ -92,17 +85,17 @@ namespace PlexRequests.Sync.UnitTests.SyncProcessors
 
         private void GivenAContainerWithMetadata()
         {
-            _plexMediaContainer = _fixture.Create<PlexMediaContainer>();
+            _plexMediaContainer = new PlexMediaContainerBuilder().Build();
 
             foreach (var metadata in _plexMediaContainer.MediaContainer.Metadata)
             {
-                metadata.RatingKey = _fixture.Create<int>().ToString();
+                metadata.RatingKey = new Random().Next(1, int.MaxValue).ToString();
             }
         }
 
         private void GivenAProcessedMediaItem()
         {
-            _mediaItemResult = _fixture.Create<MediaItemResult>();
+            _mediaItemResult = new MediaItemResult(true, new MoviePlexMediaItemRowBuilder().Build());
 
             _mediaItemProcessor.GetMediaItem(Arg.Any<int>(), Arg.Any<PlexMediaTypes>(), Arg.Any<List<PlexMediaItemRow>>(),
                 Arg.Any<string>(), Arg.Any<string>(), Arg.Any<string>(), Arg.Any<string>()).Returns(_mediaItemResult);
@@ -110,10 +103,10 @@ namespace PlexRequests.Sync.UnitTests.SyncProcessors
 
         private void WhenAnActionIsCreated()
         {
-            var fullRefresh = _fixture.Create<bool>();
-            var authToken = _fixture.Create<string>();
-            var plexUri = _fixture.Create<string>();
-            var machineIdentifier = _fixture.Create<string>();
+            const bool fullRefresh = true;
+            var authToken = Guid.NewGuid().ToString();
+            var plexUri = Guid.NewGuid().ToString();
+            var machineIdentifier = Guid.NewGuid().ToString();
 
             _commandAction = async () =>
                 await _underTest.Synchronise(_plexMediaContainer, fullRefresh, authToken, plexUri, machineIdentifier);

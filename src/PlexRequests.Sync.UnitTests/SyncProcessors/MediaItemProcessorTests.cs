@@ -2,7 +2,6 @@
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
-using AutoFixture;
 using FluentAssertions;
 using Microsoft.Extensions.Logging;
 using NSubstitute;
@@ -12,6 +11,9 @@ using PlexRequests.DataAccess.Enums;
 using PlexRequests.Plex;
 using PlexRequests.Plex.Models;
 using PlexRequests.Sync.SyncProcessors;
+using PlexRequests.UnitTests.Builders;
+using PlexRequests.UnitTests.Builders.DataAccess;
+using PlexRequests.UnitTests.Builders.Plex;
 using TestStack.BDDfy;
 using Xunit;
 
@@ -23,7 +25,6 @@ namespace PlexRequests.Sync.UnitTests.SyncProcessors
 
         private readonly IPlexApi _plexApi;
 
-        private readonly Fixture _fixture;
         private readonly IAgentGuidParser _agentGuidParser;
 
         private Func<Task<MediaItemResult>> _getMediaItemAction;
@@ -43,11 +44,6 @@ namespace PlexRequests.Sync.UnitTests.SyncProcessors
 
             var logger = Substitute.For<ILogger<MediaItemProcessor>>();
             _underTest = new MediaItemProcessor(_plexApi, _agentGuidParser, logger);
-
-            _fixture = new Fixture();
-            _fixture.Behaviors.OfType<ThrowingRecursionBehavior>().ToList()
-                .ForEach(b => _fixture.Behaviors.Remove(b));
-            _fixture.Behaviors.Add(new OmitOnRecursionBehavior());
         }
 
         [Fact]
@@ -113,7 +109,7 @@ namespace PlexRequests.Sync.UnitTests.SyncProcessors
 
         private void GivenPlexMetadata(bool metadataExists)
         {
-            _plexMetadataContainer = _fixture.Create<PlexMediaContainer>();
+            _plexMetadataContainer = new PlexMediaContainerBuilder().Build();
 
             if (!metadataExists)
             {
@@ -125,13 +121,13 @@ namespace PlexRequests.Sync.UnitTests.SyncProcessors
 
         private void GivenARatingKey()
         {
-            _ratingKey = _fixture.Create<int>();
+            _ratingKey = new Random().Next(1, int.MaxValue);
         }
 
         private void GivenAgentDetails()
         {
             const AgentTypes agentType = AgentTypes.Imdb;
-            var agentSourceId = _fixture.Create<string>();
+            var agentSourceId = Guid.NewGuid().ToString();
 
             _agentDetails = new AgentGuidParserResult(agentType, agentSourceId);
 
@@ -141,17 +137,17 @@ namespace PlexRequests.Sync.UnitTests.SyncProcessors
 
         private void GivenAPlexMediaItem()
         {
-            _plexMediaItem = _fixture.Create<PlexMediaItemRow>();
+            _plexMediaItem = new MoviePlexMediaItemRowBuilder().Build();
         }
 
         private void WhenGetMediaItemActionIsCreated(bool isExistingMediaItem)
         {
             _mediaType = PlexMediaTypes.Show;
-            _localMedia = _fixture.CreateMany<PlexMediaItemRow>().ToList();
-            var authToken = _fixture.Create<string>();
-            var plexUri = _fixture.Create<string>();
-            var machineIdentifier = _fixture.Create<string>();
-            var plexUriFormat = _fixture.Create<string>();
+            _localMedia = new MoviePlexMediaItemRowBuilder().CreateMany();
+            var authToken = Guid.NewGuid().ToString();
+            var plexUri = Guid.NewGuid().ToString();
+            var machineIdentifier = Guid.NewGuid().ToString();
+            var plexUriFormat = Guid.NewGuid().ToString();
 
             if (isExistingMediaItem)
             {
@@ -165,7 +161,7 @@ namespace PlexRequests.Sync.UnitTests.SyncProcessors
 
         private void WhenUpdateResultActionIsCreated(bool isNew)
         {
-            _syncResult = _fixture.Create<SyncResult>();
+            _syncResult = new SyncResult();
 
             _updateResultAction = () => _underTest.UpdateResult(_syncResult, isNew, _plexMediaItem);
 

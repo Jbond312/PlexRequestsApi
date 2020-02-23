@@ -1,9 +1,7 @@
 using System;
-using System.Linq;
 using System.Net;
 using System.Threading;
 using System.Threading.Tasks;
-using AutoFixture;
 using FluentAssertions;
 using MediatR;
 using NSubstitute;
@@ -14,6 +12,7 @@ using PlexRequests.Core.Helpers;
 using PlexRequests.Core.Services;
 using PlexRequests.DataAccess;
 using PlexRequests.DataAccess.Dtos;
+using PlexRequests.UnitTests.Builders.DataAccess;
 using TestStack.BDDfy;
 using Xunit;
 
@@ -28,7 +27,6 @@ namespace PlexRequests.UnitTests.Models.Requests
         private readonly IUnitOfWork _unitOfWork;
         private readonly IClaimsPrincipalAccessor _claimsUserAccessor;
 
-        private readonly Fixture _fixture;
         private Func<Task> _commandAction;
         private MovieRequestRow _request;
 
@@ -39,11 +37,6 @@ namespace PlexRequests.UnitTests.Models.Requests
             _claimsUserAccessor = Substitute.For<IClaimsPrincipalAccessor>();
             
             _underTest = new DeleteMovieRequestCommandHandler(_requestService, _unitOfWork, _claimsUserAccessor);
-            
-            _fixture = new Fixture();
-            _fixture.Behaviors.OfType<ThrowingRecursionBehavior>().ToList()
-                .ForEach(b => _fixture.Behaviors.Remove(b));
-            _fixture.Behaviors.Add(new OmitOnRecursionBehavior());
         }
 
         [Fact]
@@ -83,7 +76,7 @@ namespace PlexRequests.UnitTests.Models.Requests
 
         private void GivenACommand()
         {
-            _command = _fixture.Create<DeleteMovieRequestCommand>();
+            _command = new DeleteMovieRequestCommand(1);
         }
 
         private void GivenNoRequestIsFound()
@@ -93,14 +86,14 @@ namespace PlexRequests.UnitTests.Models.Requests
 
         private void GivenARequestIsFound()
         {
-            _request = _fixture.Create<MovieRequestRow>();
+            _request = new MovieRequestRowBuilder().Build();
             
             _requestService.GetRequestById(Arg.Any<int>()).Returns(_request);
         }
 
         private void GivenRequestUserIsNotCurrentUser()
         {
-            _claimsUserAccessor.UserId.Returns(_fixture.Create<int>());
+            _claimsUserAccessor.UserId.Returns(new Random().Next(1, int.MaxValue));
         }
 
         private void GivenRequestUserIsCurrentUser()
