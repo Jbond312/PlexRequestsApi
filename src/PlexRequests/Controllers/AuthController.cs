@@ -26,13 +26,7 @@ namespace PlexRequests.Controllers
         public async Task<ActionResult<UserLoginCommandResult>> Login([FromBody] UserLoginCommand command)
         {
             var result = await _mediator.Send(command);
-
-            if (result == null)
-            {
-                return Unauthorized();
-            }
-
-            return Ok(result);
+            return result.ToOkIfValidResult();
         }
 
         [HttpPost("Refresh")]
@@ -42,8 +36,7 @@ namespace PlexRequests.Controllers
         public async Task<ActionResult<UserLoginCommandResult>> Refresh([FromBody] RefreshTokenCommand command)
         {
             var result = await _mediator.Send(command);
-
-            return Ok(result);
+            return result.ToOkIfValidResult();
         }
 
         [HttpPost("CreateAdmin")]
@@ -55,13 +48,7 @@ namespace PlexRequests.Controllers
         public async Task<ActionResult<UserLoginCommandResult>> AddPlexAdmin([FromBody] AddAdminCommand command)
         {
             var result = await _mediator.Send(command);
-
-            if (!result.IsSuccessful)
-            {
-                return BadRequest(result.ValidationErrors[0].Message);
-            }
-
-            return Ok(result);
+            return result.ToOkIfValidResult();
         }
     }
 }
