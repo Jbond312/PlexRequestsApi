@@ -69,6 +69,38 @@ namespace PlexRequests.ApiRequests
         public bool IsSuccessful => ValidationErrors.Any();
 
         public List<ValidationResult> ValidationErrors { get; set; }
+
+        public bool AddErrorIf(Func<bool> expression, string message, string description)
+        {
+            var shouldAddError = expression();
+            if (shouldAddError)
+            {
+                ValidationErrors.Add(new ValidationResult(message, description));
+            }
+
+            return shouldAddError;
+        }
+
+        public async Task<bool> AddErrorIf(Func<Task<bool>> expression, string message, string description)
+        {
+            var shouldAddError = await expression();
+            if (shouldAddError)
+            {
+                ValidationErrors.Add(new ValidationResult(message, description));
+            }
+
+            return shouldAddError;
+        }
+
+        public void AddError(string message, string description)
+        {
+            ValidationErrors.Add(new ValidationResult(message, description));
+        }
+
+        public void AddError(string message)
+        {
+            ValidationErrors.Add(new ValidationResult(message));
+        }
     }
 
     public class ValidationResult

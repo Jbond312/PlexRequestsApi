@@ -1,7 +1,6 @@
 using System.Threading;
 using System.Threading.Tasks;
 using MediatR;
-using PlexRequests.Core.Exceptions;
 using PlexRequests.Core.Helpers;
 using PlexRequests.Core.Services;
 using PlexRequests.DataAccess;
@@ -12,7 +11,7 @@ using PlexRequests.Plex;
 
 namespace PlexRequests.ApiRequests.Issues.Commands
 {
-    public class CreateIssueCommandHandler : AsyncRequestHandler<CreateIssueCommand>
+    public class CreateIssueCommandHandler : IRequestHandler<CreateIssueCommand, ValidationContext>
     {
         private readonly IIssueService _issueService;
         private readonly IPlexService _plexService;
@@ -31,15 +30,24 @@ namespace PlexRequests.ApiRequests.Issues.Commands
             _claimsPrincipalAccessor = claimsPrincipalAccessor;
         }
 
-        protected override async Task Handle(CreateIssueCommand command, CancellationToken cancellationToken)
+        public async Task<ValidationContext> Handle(CreateIssueCommand command, CancellationToken cancellationToken)
         {
-            ValidateCommand(command);
+            var result = new ValidationContext();
+
+            ValidateCommand(command, result);
 
             var plexMediaItem = await GetPlexMediaItem(command.TheMovieDbId, command.MediaType);
+
+            if (!result.IsSuccessful)
+            {
+                return result;
+            }
 
             CreateIssue(command, plexMediaItem);
 
             await _unitOfWork.CommitAsync();
+
+            return result;
         }
 
         private async Task<PlexMediaItemRow> GetPlexMediaItem(int theMovieDbId, PlexMediaTypes mediaType)
@@ -63,17 +71,10 @@ namespace PlexRequests.ApiRequests.Issues.Commands
             _issueService.Add(issue);
         }
 
-        private void ValidateCommand(CreateIssueCommand command)
+        private void ValidateCommand(CreateIssueCommand command, ValidationContext result)
         {
-            if (string.IsNullOrWhiteSpace(command.Title))
-            {
-                throw new PlexRequestException("Issue not created", "'Title' must be specified");
-            }
-
-            if (string.IsNullOrWhiteSpace(command.Description))
-            {
-                throw new PlexRequestException("Issue not created", "'Description' must be specified");
-            }
+            result.AddErrorIf(() => string.IsNullOrEmpty(command.Title), "Issue not created", $"'{nameof(command.Title)}' must be specified");
+            result.AddErrorIf(() => string.IsNullOrEmpty(command.Description), "Issue not created", $"'{nameof(command.Description)}' must be specified");
         }
     }
 }

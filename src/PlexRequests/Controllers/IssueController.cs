@@ -30,9 +30,9 @@ namespace PlexRequests.Controllers
         [SwaggerResponse(424)]
         public async Task<ActionResult> CreateIssue([FromBody] CreateIssueCommand command)
         {
-            await _mediator.Send(command);
+            var result = await _mediator.Send(command);
 
-            return NoContent();
+            return result.ToOkIfValidResult();
         }
 
         [HttpPut("{id:int}")]
