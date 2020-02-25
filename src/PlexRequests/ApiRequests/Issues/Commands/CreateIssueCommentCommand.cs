@@ -4,7 +4,7 @@ using Newtonsoft.Json;
 
 namespace PlexRequests.ApiRequests.Issues.Commands
 {
-    public class CreateIssueCommentCommand : IRequest
+    public class CreateIssueCommentCommand : IRequest<ValidationContext>
     {
         [JsonIgnore]
         public int Id { get; set; }

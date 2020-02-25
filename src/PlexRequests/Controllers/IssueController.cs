@@ -43,9 +43,8 @@ namespace PlexRequests.Controllers
         public async Task<ActionResult> UpdateIssue([FromRoute][Required] int id, [FromBody] UpdateIssueCommand command)
         {
             command.Id = id;
-            await _mediator.Send(command);
-
-            return NoContent();
+            var result = await _mediator.Send(command);
+            return result.ToOkIfValidResult();
         }
 
         [HttpPost("{id:int}/Comment")]
@@ -57,9 +56,8 @@ namespace PlexRequests.Controllers
         public async Task<ActionResult> CreateComment([FromRoute][Required] int id, [FromBody] CreateIssueCommentCommand command)
         {
             command.Id = id;
-            await _mediator.Send(command);
-
-            return NoContent();
+            var result = await _mediator.Send(command);
+            return result.ToResultIfValid<NoContentResult>();
         }
 
         [HttpGet("{id:int}")]
@@ -71,8 +69,7 @@ namespace PlexRequests.Controllers
         {
             var query = new GetOneIssueQuery(id);
             var result = await _mediator.Send(query);
-
-            return Ok(result.Issue);
+            return result.ToOkIfValidResult();
         }
 
         [HttpGet("")]
@@ -81,8 +78,7 @@ namespace PlexRequests.Controllers
         public async Task<ActionResult<GetPagedIssueQueryResult>> GetPagedIssues([FromQuery] GetPagedIssueQuery query)
         {
             var response = await _mediator.Send(query);
-
-            return Ok(response);
+            return response.ToOkIfValidResult();
         }
     }
 }

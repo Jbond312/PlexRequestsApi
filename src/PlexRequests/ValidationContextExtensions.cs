@@ -27,6 +27,26 @@ namespace PlexRequests
             return new OkResult();
         }
 
+        public static ActionResult ToResultIfValid<T, TA>(this ValidationContext<T> context) where T : class where TA : ActionResult, new()
+        {
+            if (!context.IsSuccessful)
+            {
+                return new BadRequestObjectResult(CreateErrors(context.ValidationErrors));
+            }
+
+            return new TA();
+        }
+
+        public static ActionResult ToResultIfValid<T>(this ValidationContext context) where T : ActionResult, new()
+        {
+            if (!context.IsSuccessful)
+            {
+                return new BadRequestObjectResult(CreateErrors(context.ValidationErrors));
+            }
+
+            return new T();
+        }
+
         private static List<ApiErrorResponse> CreateErrors(List<ValidationResult> validationResults)
         {
             return validationResults.Select(x => new ApiErrorResponse(x.Message, x.Description)).ToList();
