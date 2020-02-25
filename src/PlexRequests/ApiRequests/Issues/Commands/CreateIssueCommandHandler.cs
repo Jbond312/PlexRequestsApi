@@ -73,8 +73,8 @@ namespace PlexRequests.ApiRequests.Issues.Commands
 
         private void ValidateCommand(CreateIssueCommand command, ValidationContext result)
         {
-            result.AddErrorIf(() => string.IsNullOrEmpty(command.Title), "Issue not created", $"'{nameof(command.Title)}' must be specified");
-            result.AddErrorIf(() => string.IsNullOrEmpty(command.Description), "Issue not created", $"'{nameof(command.Description)}' must be specified");
+            result.AddErrorIf(() => string.IsNullOrWhiteSpace(command.Title), "Issue not created", $"'{nameof(command.Title)}' must be specified");
+            result.AddErrorIf(() => string.IsNullOrWhiteSpace(command.Description), "Issue not created", $"'{nameof(command.Description)}' must be specified");
         }
     }
 }

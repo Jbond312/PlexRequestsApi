@@ -66,7 +66,7 @@ namespace PlexRequests.ApiRequests
             ValidationErrors = new List<ValidationResult>();
         }
 
-        public bool IsSuccessful => ValidationErrors.Any();
+        public bool IsSuccessful => ValidationErrors.Count == 0;
 
         public List<ValidationResult> ValidationErrors { get; set; }
 
