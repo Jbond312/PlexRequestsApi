@@ -13,7 +13,7 @@ using PlexRequests.Plex.Models;
 
 namespace PlexRequests.ApiRequests.Plex.Commands
 {
-    public class SyncUsersCommandHandler : AsyncRequestHandler<SyncUsersCommand>
+    public class SyncUsersCommandHandler : IRequestHandler<SyncUsersCommand, ValidationContext>
     {
         private readonly IPlexApi _plexApi;
         private readonly IUserService _userService;
@@ -32,9 +32,17 @@ namespace PlexRequests.ApiRequests.Plex.Commands
             _unitOfWork = unitOfWork;
         }
 
-        protected override async Task Handle(SyncUsersCommand request, CancellationToken cancellationToken)
+        public async Task<ValidationContext> Handle(SyncUsersCommand request, CancellationToken cancellationToken)
         {
+            var result = new ValidationContext();
+
             var server = await _plexService.GetServer();
+
+            if (server == null)
+            {
+                result.AddError("No admin server found", "Cannot sync users as no admin server has been found");
+                return result;
+            }
 
             var remoteFriends = await _plexApi.GetFriends(server.AccessToken);
 
@@ -45,6 +53,8 @@ namespace PlexRequests.ApiRequests.Plex.Commands
             await CreateNewUsers(remoteFriends);
 
             await _unitOfWork.CommitAsync();
+
+            return result;
         }
 
         private async Task CreateNewUsers(List<Friend> remoteFriends)

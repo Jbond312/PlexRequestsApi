@@ -24,6 +24,12 @@ namespace PlexRequests.ApiRequests.Plex.Queries
         public async Task<GetPlexServerQueryResult> Handle(GetServerQuery request, CancellationToken cancellationToken)
         {
             var server = await _plexService.GetServer();
+
+            if (server == null)
+            {
+                return null;
+            }
+
             var serverModel = _mapper.Map<PlexServerDetailModel>(server);
 
             return new GetPlexServerQueryResult

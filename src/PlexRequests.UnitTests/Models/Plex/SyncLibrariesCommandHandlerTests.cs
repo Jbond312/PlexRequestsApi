@@ -7,6 +7,7 @@ using FluentAssertions;
 using MediatR;
 using Microsoft.Extensions.Options;
 using NSubstitute;
+using PlexRequests.ApiRequests;
 using PlexRequests.ApiRequests.Plex.Commands;
 using PlexRequests.Core.Settings;
 using PlexRequests.DataAccess;
@@ -23,14 +24,14 @@ namespace PlexRequests.UnitTests.Models.Plex
 {
     public class SyncLibrariesCommandHandlerTests
     {
-        private readonly IRequestHandler<SyncLibrariesCommand> _underTest;
+        private readonly IRequestHandler<SyncLibrariesCommand, ValidationContext> _underTest;
 
         private readonly IPlexApi _plexApi;
         private readonly IPlexService _plexService;
         private readonly IUnitOfWork _unitOfWork;
         
         private SyncLibrariesCommand _command;
-        private Func<Task> _commandAction;
+        private Func<Task<ValidationContext>> _commandAction;
         private PlexMediaContainer _remoteLibraryContainer;
         private PlexServerRow _plexServer;
 
@@ -105,9 +106,10 @@ namespace PlexRequests.UnitTests.Models.Plex
             _commandAction = async () => await _underTest.Handle(_command, CancellationToken.None);
         }
 
-        private void ThenAllLocalLibrariesArchived()
+        private async Task ThenAllLocalLibrariesArchived()
         {
-            _commandAction.Should().NotThrow();
+            var result = await _commandAction();
+            result.IsSuccessful.Should().BeTrue();
 
             _plexServer.Should().NotBeNull();
             _plexServer.Should().BeEquivalentTo(_plexServer, options => options.Excluding(x => x.PlexLibraries));

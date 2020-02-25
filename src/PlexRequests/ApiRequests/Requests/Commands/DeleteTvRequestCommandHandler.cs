@@ -1,20 +1,18 @@
-using System.Linq;
-using System.Net;
-using System.Threading;
-using System.Threading.Tasks;
 using MediatR;
 using Microsoft.Extensions.Logging;
-using PlexRequests.Core.Exceptions;
 using PlexRequests.Core.Helpers;
 using PlexRequests.Core.Services;
 using PlexRequests.DataAccess;
 using PlexRequests.DataAccess.Dtos;
+using System.Linq;
+using System.Threading;
+using System.Threading.Tasks;
 
 // ReSharper disable ParameterOnlyUsedForPreconditionCheck.Local
 
 namespace PlexRequests.ApiRequests.Requests.Commands
 {
-    public class DeleteTvRequestCommandHandler : AsyncRequestHandler<DeleteTvRequestCommand>
+    public class DeleteTvRequestCommandHandler : IRequestHandler<DeleteTvRequestCommand, ValidationContext>
     {
         private readonly ITvRequestService _requestService;
         private readonly IUnitOfWork _unitOfWork;
@@ -34,9 +32,16 @@ namespace PlexRequests.ApiRequests.Requests.Commands
             _logger = logger;
         }
         
-        protected override async Task Handle(DeleteTvRequestCommand command, CancellationToken cancellationToken)
+        public async Task<ValidationContext> Handle(DeleteTvRequestCommand command, CancellationToken cancellationToken)
         {
-            var request = await ValidateRequestExists(command);
+            var result = new ValidationContext();
+
+            var request = await ValidateRequestExists(command, result);
+
+            if (!result.IsSuccessful)
+            {
+                return result;
+            }
 
             var requestUser = request.TvRequestUsers.FirstOrDefault(x => x.UserId == _claimsUserAccessor.UserId);
 
@@ -56,16 +61,17 @@ namespace PlexRequests.ApiRequests.Requests.Commands
             }
 
             await _unitOfWork.CommitAsync();
+
+            return result;
         }
 
-        private async Task<TvRequestRow> ValidateRequestExists(DeleteTvRequestCommand command)
+        private async Task<TvRequestRow> ValidateRequestExists(DeleteTvRequestCommand command, ValidationContext result)
         {
             var request = await _requestService.GetRequestById(command.Id);
 
             if (request == null)
             {
-                throw new PlexRequestException("Invalid request id", "A request for the given id was not found.",
-                    HttpStatusCode.NotFound);
+                result.AddError("Invalid request id", "A request for the given id was not found.");
             }
 
             return request;

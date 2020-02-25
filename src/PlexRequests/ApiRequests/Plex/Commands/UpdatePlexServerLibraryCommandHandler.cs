@@ -1,15 +1,13 @@
 using System.Linq;
-using System.Net;
 using System.Threading;
 using System.Threading.Tasks;
 using MediatR;
-using PlexRequests.Core.Exceptions;
 using PlexRequests.DataAccess;
 using PlexRequests.Plex;
 
 namespace PlexRequests.ApiRequests.Plex.Commands
 {
-    public class UpdatePlexServerLibraryCommandHandler : AsyncRequestHandler<UpdatePlexServerLibraryCommand>
+    public class UpdatePlexServerLibraryCommandHandler : IRequestHandler<UpdatePlexServerLibraryCommand, ValidationContext>
     {
         private readonly IPlexService _plexService;
         private readonly IUnitOfWork _unitOfWork;
@@ -23,20 +21,33 @@ namespace PlexRequests.ApiRequests.Plex.Commands
             _unitOfWork = unitOfWork;
         }
         
-        protected override async Task Handle(UpdatePlexServerLibraryCommand request, CancellationToken cancellationToken)
+        public async Task<ValidationContext> Handle(UpdatePlexServerLibraryCommand request, CancellationToken cancellationToken)
         {
+            var resultContext = new ValidationContext();
+
             var server = await _plexService.GetServer();
+
+            if (server == null)
+            {
+                resultContext.AddError("No admin server found", "Cannot update plex library as no admin server has been found");
+                return resultContext;
+            }
 
             var libraryToUpdate = server.PlexLibraries.FirstOrDefault(x => x.LibraryKey == request.Key && !x.IsArchived);
 
-            if (libraryToUpdate == null)
+            resultContext.AddErrorIf(() => libraryToUpdate == null, "Invalid library key", "No library was found for the given key");
+
+            if(!resultContext.IsSuccessful)
             {
-                throw new PlexRequestException("Invalid library key", "No library was found for the given key", HttpStatusCode.NotFound);
+                return resultContext;
             }
 
+            // ReSharper disable once PossibleNullReferenceException
             libraryToUpdate.IsEnabled = request.IsEnabled;
 
             await _unitOfWork.CommitAsync();
+
+            return resultContext;
         }
     }
 }
