@@ -10,7 +10,6 @@ using PlexRequests.DataAccess.Enums;
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Net;
 using System.Threading;
 using System.Threading.Tasks;
 using PlexRequests.ApiRequests;
@@ -45,7 +44,7 @@ namespace PlexRequests.UnitTests.Models.Requests
             this.Given(x => x.GivenACommand(approveAll))
                 .Given(x => x.GivenNoRequestFound())
                 .When(x => x.WhenACommandActionIsCreated())
-                .Then(x => x.ThenAnErrorIsThrown("Invalid request", "No request was found with the given Id", HttpStatusCode.NotFound))
+                .Then(x => x.ThenAnErrorIsThrown("Invalid request", "No request was found with the given Id"))
                 .BDDfy();
         }
 
@@ -57,7 +56,7 @@ namespace PlexRequests.UnitTests.Models.Requests
                 .Given(x => x.GivenARequestIsFound())
                 .Given(x => x.GivenOverallRequestStatusIs(RequestStatuses.Completed))
                 .When(x => x.WhenACommandActionIsCreated())
-                .Then(x => x.ThenAnErrorIsThrown("Invalid request", "Request has already been completed", HttpStatusCode.BadRequest))
+                .Then(x => x.ThenAnErrorIsThrown("Invalid request", "Request has already been completed"))
                 .BDDfy();
         }
 
@@ -195,7 +194,7 @@ namespace PlexRequests.UnitTests.Models.Requests
             _commandAction = async () => await _underTest.Handle(_command, CancellationToken.None);
         }
 
-        private async Task ThenAnErrorIsThrown(string expectedMessage, string expectedDescription, HttpStatusCode expectedStatusCode)
+        private async Task ThenAnErrorIsThrown(string expectedMessage, string expectedDescription)
         {
             var result = await _commandAction();
             result.IsSuccessful.Should().BeFalse();

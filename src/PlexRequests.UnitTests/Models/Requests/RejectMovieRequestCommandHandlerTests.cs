@@ -1,5 +1,4 @@
 using System;
-using System.Net;
 using System.Threading;
 using System.Threading.Tasks;
 using FluentAssertions;
@@ -8,7 +7,6 @@ using NSubstitute;
 using NSubstitute.ReturnsExtensions;
 using PlexRequests.ApiRequests;
 using PlexRequests.ApiRequests.Requests.Commands;
-using PlexRequests.Core.Exceptions;
 using PlexRequests.Core.Services;
 using PlexRequests.DataAccess;
 using PlexRequests.DataAccess.Dtos;
