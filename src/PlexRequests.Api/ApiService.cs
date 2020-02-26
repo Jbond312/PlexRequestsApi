@@ -132,6 +132,7 @@ namespace PlexRequests.Api
                 _logger.LogDebug(rawResponse);
             }
 
+            //TODO Enable retries and handle different response status codes accordingly
             throw new PlexRequestException("Unsuccessful response from 3rd Party API", httpResponse.StatusCode.ToString(), HttpStatusCode.FailedDependency);
         }
     }

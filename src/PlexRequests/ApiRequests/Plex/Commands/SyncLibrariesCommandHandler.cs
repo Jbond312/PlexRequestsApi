@@ -12,7 +12,7 @@ using PlexRequests.Plex.Models;
 
 namespace PlexRequests.ApiRequests.Plex.Commands
 {
-    public class SyncLibrariesCommandHandler : AsyncRequestHandler<SyncLibrariesCommand>
+    public class SyncLibrariesCommandHandler : IRequestHandler<SyncLibrariesCommand, ValidationContext>
     {
         private readonly IPlexApi _plexApi;
         private readonly IPlexService _plexService;
@@ -31,9 +31,17 @@ namespace PlexRequests.ApiRequests.Plex.Commands
             _plexSettings = plexSettings.Value;
         }
 
-        protected override async Task Handle(SyncLibrariesCommand request, CancellationToken cancellationToken)
+        public async Task<ValidationContext> Handle(SyncLibrariesCommand request, CancellationToken cancellationToken)
         {
+            var result = new ValidationContext();
+
             var server = await _plexService.GetServer();
+
+            if(server == null)
+            {
+                result.AddError("No admin server found", "Cannot sync libraries as no admin server has been found");
+                return result;
+            }
 
             var libraryContainer = await _plexApi.GetLibraries(server.AccessToken, server.GetPlexUri(_plexSettings.ConnectLocally));
 
@@ -42,6 +50,8 @@ namespace PlexRequests.ApiRequests.Plex.Commands
             SetNewLibraries(libraryContainer, server);
             
             await _unitOfWork.CommitAsync();
+
+            return result;
         }
 
         private static void SetNewLibraries(PlexMediaContainer libraryContainer, PlexServerRow server)

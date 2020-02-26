@@ -2,7 +2,7 @@
 
 namespace PlexRequests.ApiRequests.Plex.Commands
 {
-    public class SyncLibrariesCommand : IRequest
+    public class SyncLibrariesCommand : IRequest<ValidationContext>
     {
     }
 }

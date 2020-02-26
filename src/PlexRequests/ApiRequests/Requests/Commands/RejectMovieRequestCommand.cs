@@ -4,7 +4,7 @@ using Newtonsoft.Json;
 
 namespace PlexRequests.ApiRequests.Requests.Commands
 {
-    public class RejectMovieRequestCommand : IRequest
+    public class RejectMovieRequestCommand : IRequest<ValidationContext>
     {
         [JsonIgnore]
         public int RequestId { get; set; }

@@ -49,11 +49,14 @@ namespace PlexRequests.Sync
 
             var plexServer = await _plexService.GetServer();
 
-            var plexUrl = plexServer.GetPlexUri(_plexSettings.ConnectLocally);
+            if (plexServer == null)
+            {
+                _logger.LogInformation("Unable to sync plex content as no admin server was found");
+            }
 
-            var librariesToSync = plexServer.PlexLibraries.Where(x => x.IsEnabled).ToList();
+            var librariesToSync = plexServer?.PlexLibraries.Where(x => x.IsEnabled).ToList();
 
-            if (!librariesToSync.Any())
+            if (librariesToSync == null || !librariesToSync.Any())
             {
                 _logger.LogDebug("No Plex libraries have been enabled for synchronisation");
                 return;
@@ -66,6 +69,8 @@ namespace PlexRequests.Sync
                 _plexService.DeleteAllMediaItems();
             }
 
+            var plexUrl = plexServer.GetPlexUri(_plexSettings.ConnectLocally);
+            
             var plexLibraryContainer = await _plexApi.GetLibraries(plexServer.AccessToken, plexUrl);
 
             foreach (var libraryToSync in librariesToSync)

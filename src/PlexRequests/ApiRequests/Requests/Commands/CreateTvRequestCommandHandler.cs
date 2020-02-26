@@ -1,12 +1,6 @@
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Threading;
-using System.Threading.Tasks;
 using AutoMapper;
 using MediatR;
 using PlexRequests.ApiRequests.Requests.Models.Create;
-using PlexRequests.Core.Exceptions;
 using PlexRequests.Core.Helpers;
 using PlexRequests.Core.Services;
 using PlexRequests.DataAccess;
@@ -14,10 +8,15 @@ using PlexRequests.DataAccess.Dtos;
 using PlexRequests.DataAccess.Enums;
 using PlexRequests.TheMovieDb;
 using PlexRequests.TheMovieDb.Models;
+using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Threading;
+using System.Threading.Tasks;
 
 namespace PlexRequests.ApiRequests.Requests.Commands
 {
-    public class CreateTvRequestCommandHandler : AsyncRequestHandler<CreateTvRequestCommand>
+    public class CreateTvRequestCommandHandler : IRequestHandler<CreateTvRequestCommand, ValidationContext>
     {
         private readonly IMapper _mapper;
         private readonly ITvRequestService _requestService;
@@ -39,9 +38,11 @@ namespace PlexRequests.ApiRequests.Requests.Commands
             _claimsPrincipalAccessor = claimsPrincipalAccessor;
         }
 
-        protected override async Task Handle(CreateTvRequestCommand request, CancellationToken cancellationToken)
+        public async Task<ValidationContext> Handle(CreateTvRequestCommand request, CancellationToken cancellationToken)
         {
-             ValidateRequestIsCorrect(request);
+            var resultContext = new ValidationContext();
+
+             ValidateRequestIsCorrect(request, resultContext);
 
              var seasonsToRequest = _mapper.Map<List<TvRequestSeasonRow>>(request.Seasons);
 
@@ -61,10 +62,10 @@ namespace PlexRequests.ApiRequests.Requests.Commands
              {
                  if (!tvDetails.In_Production)
                  {
-                     throw new PlexRequestException("Request not created", "Cannot track a TV Show that is no longer in production");
+                     resultContext.AddError("Request not created", "Cannot track a TV Show that is no longer in production");
                  }
 
-                 ValidateShowIsntAlreadyTracked(existingUserRequests);
+                 ValidateShowIsntAlreadyTracked(existingUserRequests, resultContext);
 
                  if (!existingRequest.Track)
                  {
@@ -79,13 +80,20 @@ namespace PlexRequests.ApiRequests.Requests.Commands
              }
              else
              {
-                 ValidateAndRemoveExistingEpisodeRequests(existingUserRequests, seasonsToRequest);
-                 ValidateRequestedEpisodesNotAlreadyInPlex(existingRequest.TvRequestSeasons, seasonsToRequest);
+                 ValidateAndRemoveExistingEpisodeRequests(existingUserRequests, seasonsToRequest, resultContext);
+                 ValidateRequestedEpisodesNotAlreadyInPlex(existingRequest.TvRequestSeasons, seasonsToRequest, resultContext);
                  await AddNewRootLevelRequests(existingRequest, seasonsToRequest);
                  AddUserRequests(existingRequest, seasonsToRequest);
              }
-             
+
+             if (!resultContext.IsSuccessful)
+             {
+                 return resultContext;
+             }
+
              await _unitOfWork.CommitAsync();
+
+             return resultContext;
         }
 
         private void AddUserRequests(TvRequestRow existingRequest, List<TvRequestSeasonRow> seasonsToRequest)
@@ -155,11 +163,11 @@ namespace PlexRequests.ApiRequests.Requests.Commands
         }
         
         // ReSharper disable once ParameterOnlyUsedForPreconditionCheck.Local
-        private static void ValidateShowIsntAlreadyTracked(IEnumerable<TvRequestUserRow> userRequests)
+        private static void ValidateShowIsntAlreadyTracked(IEnumerable<TvRequestUserRow> userRequests, ValidationContext resultContext)
         {
             if (userRequests.Any(x => x.Track))
             {
-                throw new PlexRequestException("Request not created", "TV Show is already being tracked");
+                resultContext.AddError("Request not created", "TV Show is already being tracked");
             }
         }
 
@@ -197,19 +205,17 @@ namespace PlexRequests.ApiRequests.Requests.Commands
             return tvRequest;
         }
 
-        private static void ValidateRequestedEpisodesNotAlreadyInPlex(ICollection<TvRequestSeasonRow> existingRootSeasons, List<TvRequestSeasonRow> requestedSeasons)
+        private static void ValidateRequestedEpisodesNotAlreadyInPlex(ICollection<TvRequestSeasonRow> existingRootSeasons, List<TvRequestSeasonRow> requestedSeasons, ValidationContext resultContext)
         {
             RemoveExistingPlexEpisodesFromRequest(existingRootSeasons, requestedSeasons);
 
             if (!requestedSeasons.SelectMany(x => x.TvRequestEpisodes).Any())
             {
-                throw new PlexRequestException(
-                    "Request not created",
-                    "All TV Episodes are already available in Plex.");
+                resultContext.AddError("Request not created", "All TV Episodes are already available in Plex.");
             }
         }
 
-        private static void ValidateAndRemoveExistingEpisodeRequests(List<TvRequestUserRow> existingRequests, List<TvRequestSeasonRow> seasonsToRequest)
+        private static void ValidateAndRemoveExistingEpisodeRequests(List<TvRequestUserRow> existingRequests, List<TvRequestSeasonRow> seasonsToRequest, ValidationContext resultContext)
         {
             var existingSeasonEpisodeRequests = existingRequests
                 .Where(x => x.Season != null)
@@ -221,39 +227,38 @@ namespace PlexRequests.ApiRequests.Requests.Commands
 
             if (!seasonsToRequest.SelectMany(x => x.TvRequestEpisodes).Any())
             {
-                throw new PlexRequestException("Request not created", "All TV Episodes have already been requested.");
+                resultContext.AddError("Request not created", "All TV Episodes have already been requested.");
             }
         }
 
-        private static void ValidateRequestIsCorrect(CreateTvRequestCommand request)
+        private static void ValidateRequestIsCorrect(CreateTvRequestCommand request, ValidationContext result)
         {
             if (request.TrackShow && request.Seasons != null && request.Seasons.Count > 0)
             {
-                throw new PlexRequestException("Request not created", "Requests to track and for specific episodes must be made separately.");
+                result.AddError("Request not created", "Requests to track and for specific episodes must be made separately.");
+                return;
             }
 
             if (!request.TrackShow)
             {
                 if (request.Seasons == null || !request.Seasons.Any())
                 {
-                    throw new PlexRequestException("Request not created",
-                        "At least one season must be given in a request.");
+                    result.AddError("Request not created", "At least one season must be given in a request.");
+                    return;
                 }
 
-                ValidateNoDuplicateSeasonsOrEpisodes(request);
+                ValidateNoDuplicateSeasonsOrEpisodes(request, result);
 
                 RemoveSeasonsWithNoEpisodes(request.Seasons);
 
                 if (!request.Seasons.Any())
                 {
-                    throw new PlexRequestException("Request not created",
-                        "Each requested season must have at least one episode.");
-
+                    result.AddError("Request not created", "Each requested season must have at least one episode.");
                 }
             }
         }
 
-        private static void ValidateNoDuplicateSeasonsOrEpisodes(CreateTvRequestCommand request)
+        private static void ValidateNoDuplicateSeasonsOrEpisodes(CreateTvRequestCommand request, ValidationContext result)
         {
             var existingSeasons = new List<int>();
             for (var sIndex = 0; sIndex < request.Seasons?.Count; sIndex++)
@@ -262,7 +267,7 @@ namespace PlexRequests.ApiRequests.Requests.Commands
 
                 if (existingSeasons.Contains(season.Index))
                 {
-                    throw new PlexRequestException("Request not created", "All seasons in a request must be unique.");
+                    result.AddError("Request not created", "All seasons in a request must be unique.");
                 }
 
                 existingSeasons.Add(season.Index);
@@ -273,7 +278,7 @@ namespace PlexRequests.ApiRequests.Requests.Commands
                     var episode = season.Episodes[eIndex];
                     if (existingEpisodes.Contains(episode.Index))
                     {
-                        throw new PlexRequestException("Request not created", "All episodes in a season must be unique.");
+                        result.AddError("Request not created", "All episodes in a season must be unique.");
                     }
 
                     existingEpisodes.Add(episode.Index);

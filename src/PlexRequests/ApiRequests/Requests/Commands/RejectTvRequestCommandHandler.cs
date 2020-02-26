@@ -1,17 +1,15 @@
-using System.Collections.Generic;
-using System.Net;
-using System.Threading;
-using System.Threading.Tasks;
 using MediatR;
-using PlexRequests.Core.Exceptions;
 using PlexRequests.Core.Services;
 using PlexRequests.DataAccess;
 using PlexRequests.DataAccess.Dtos;
 using PlexRequests.DataAccess.Enums;
+using System.Collections.Generic;
+using System.Threading;
+using System.Threading.Tasks;
 
 namespace PlexRequests.ApiRequests.Requests.Commands
 {
-    public class RejectTvRequestCommandHandler : AsyncRequestHandler<RejectTvRequestCommand>
+    public class RejectTvRequestCommandHandler : IRequestHandler<RejectTvRequestCommand, ValidationContext>
     {
         private readonly ITvRequestService _requestService;
         private readonly IUnitOfWork _unitOfWork;
@@ -24,25 +22,33 @@ namespace PlexRequests.ApiRequests.Requests.Commands
             _unitOfWork = unitOfWork;
         }
 
-        protected override async Task Handle(RejectTvRequestCommand command, CancellationToken cancellationToken)
+        public async Task<ValidationContext> Handle(RejectTvRequestCommand command, CancellationToken cancellationToken)
         {
+            var result = new ValidationContext();
+
             if (string.IsNullOrWhiteSpace(command.Comment))
             {
-                throw new PlexRequestException("Invalid request", "A comment must be specified when rejecting a request");
+                result.AddError("Invalid request", "A comment must be specified when rejecting a request");
             }
 
             var request = await _requestService.GetRequestById(command.RequestId);
 
             if (request == null)
             {
-                throw new PlexRequestException("Invalid request", "No request was found with the given Id", HttpStatusCode.NotFound);
+                result.AddError("Invalid request", "No request was found with the given Id");
             }
 
-            if (request.RequestStatus == RequestStatuses.Completed)
+            if (request?.RequestStatus == RequestStatuses.Completed)
             {
-                throw new PlexRequestException("Invalid request", "Request has already been completed");
+                result.AddError("Invalid request", "Request has already been completed");
             }
 
+            if (!result.IsSuccessful)
+            {
+                return result;
+            }
+
+            // ReSharper disable once PossibleNullReferenceException
             if (request.Track)
             {
                 request.RequestStatus = RequestStatuses.Rejected;
@@ -64,6 +70,8 @@ namespace PlexRequests.ApiRequests.Requests.Commands
             request.Comment = command.Comment;
 
             await _unitOfWork.CommitAsync();
+
+            return result;
         }
 
         private void PartialReject(TvRequestRow request, Dictionary<int, List<int>> episodesBySeason)

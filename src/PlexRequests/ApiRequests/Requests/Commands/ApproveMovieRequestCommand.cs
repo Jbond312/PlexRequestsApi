@@ -3,7 +3,7 @@ using MediatR;
 
 namespace PlexRequests.ApiRequests.Requests.Commands
 {
-    public class ApproveMovieRequestCommand : IRequest
+    public class ApproveMovieRequestCommand : IRequest<ValidationContext>
     {
         [Required]
         public int RequestId { get; }

@@ -1,7 +1,6 @@
 ﻿using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
-using PlexRequests.Core.Exceptions;
 using PlexRequests.DataAccess.Dtos;
 using PlexRequests.DataAccess.Enums;
 using PlexRequests.DataAccess.Repositories;
@@ -25,12 +24,6 @@ namespace PlexRequests.Plex
         public async Task<PlexServerRow> GetServer()
         {
             var server = await _plexServerRepository.Get();
-
-            if (server == null)
-            {
-                throw new PlexRequestException("Unable to find the Admin server");
-            }
-
             return server;
         }
 

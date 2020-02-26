@@ -1,8 +1,6 @@
-using System.Net;
 using System.Threading;
 using System.Threading.Tasks;
 using MediatR;
-using PlexRequests.Core.Exceptions;
 using PlexRequests.Core.Services;
 using PlexRequests.DataAccess;
 using PlexRequests.DataAccess.Enums;
@@ -11,7 +9,7 @@ using PlexRequests.DataAccess.Enums;
 
 namespace PlexRequests.ApiRequests.Issues.Commands
 {
-    public class UpdateIssueCommandHandler : AsyncRequestHandler<UpdateIssueCommand>
+    public class UpdateIssueCommandHandler : IRequestHandler<UpdateIssueCommand, ValidationContext>
     {
         private readonly IIssueService _issueService;
         private readonly IUnitOfWork _unitOfWork;
@@ -24,39 +22,36 @@ namespace PlexRequests.ApiRequests.Issues.Commands
             _issueService = issueService;
             _unitOfWork = unitOfWork;
         }
-
-        protected override async Task Handle(UpdateIssueCommand command, CancellationToken cancellationToken)
+        
+        public async Task<ValidationContext> Handle(UpdateIssueCommand command, CancellationToken cancellationToken)
         {
-            ValidateCommand(command);
+            var resultContext = new ValidationContext();
+
+            ValidateCommand(command, resultContext);
 
             var issue = await _issueService.GetIssueById(command.Id);
 
-            if (issue == null)
-            {
-                throw new PlexRequestException("Issue not updated", "No issue was found with the given Id", HttpStatusCode.NotFound);
-            }
+            resultContext.AddErrorIf(() => issue == null, "Invalid IssueId", "No issue was found with the given Id");
+            resultContext.AddErrorIf(() => issue?.IssueStatus == IssueStatuses.Resolved, "Issue already resolved", "The issue has already been resolved");
 
-            if (issue.IssueStatus == IssueStatuses.Resolved)
+            if (!resultContext.IsSuccessful)
             {
-                throw new PlexRequestException("Issue not updated", "The issue has already been resolved");
+                return resultContext;
             }
 
             issue.IssueStatus = command.Status;
 
             await _unitOfWork.CommitAsync();
+
+            return resultContext;
         }
 
-        private void ValidateCommand(UpdateIssueCommand command)
+        private static void ValidateCommand(UpdateIssueCommand command, ValidationContext context)
         {
-            if (command.Status == IssueStatuses.Resolved && string.IsNullOrWhiteSpace(command.Outcome))
-            {
-                throw new PlexRequestException("Issue not updated", "An outcome is required when resolving an issue");
-            }
-
-            if (command.Status != IssueStatuses.Resolved && !string.IsNullOrWhiteSpace(command.Outcome))
-            {
-                throw new PlexRequestException("Issue not updated", "An outcome can only be set when resolving an issue");
-            }
+            context.AddErrorIf(() => command.Status == IssueStatuses.Resolved || string.IsNullOrEmpty(command.Outcome), 
+                "Outcome required", "An outcome is required when resolving an issue");
+            context.AddErrorIf(() => command.Status != IssueStatuses.Resolved && !string.IsNullOrWhiteSpace(command.Outcome),
+                "Outcome should not be supplied", "An outcome can only be set when resolving an issue");
         }
     }
 }

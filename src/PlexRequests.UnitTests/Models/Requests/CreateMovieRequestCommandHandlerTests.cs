@@ -1,7 +1,6 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Net;
 using System.Threading;
 using System.Threading.Tasks;
 using FluentAssertions;
@@ -9,8 +8,8 @@ using MediatR;
 using Microsoft.Extensions.Logging;
 using NSubstitute;
 using NSubstitute.ReturnsExtensions;
+using PlexRequests.ApiRequests;
 using PlexRequests.ApiRequests.Requests.Commands;
-using PlexRequests.Core.Exceptions;
 using PlexRequests.Core.Helpers;
 using PlexRequests.Core.Services;
 using PlexRequests.DataAccess;
@@ -28,7 +27,7 @@ namespace PlexRequests.UnitTests.Models.Requests
 {
     public class CreateMovieRequestCommandHandlerTests
     {
-        private readonly IRequestHandler<CreateMovieRequestCommand> _underTest;
+        private readonly IRequestHandler<CreateMovieRequestCommand, ValidationContext> _underTest;
 
         private readonly ITheMovieDbService _theMovieDbService;
         private readonly IMovieRequestService _requestService;
@@ -38,7 +37,7 @@ namespace PlexRequests.UnitTests.Models.Requests
 
         private CreateMovieRequestCommand _command;
         private MovieRequestRow _request;
-        private Func<Task> _commandAction;
+        private Func<Task<ValidationContext>> _commandAction;
         private PlexMediaItemRow _plexMediaItem;
         private MovieRequestRow _createdRequest;
         private string _claimsUsername;
@@ -66,8 +65,7 @@ namespace PlexRequests.UnitTests.Models.Requests
                 .Given(x => GivenMovieIsInTheMovieDb())
                 .Given(x => x.GivenRequestAlreadyExists())
                 .When(x => x.WhenCommandActionIsCreated())
-                .Then(x => x.ThenErrorIsThrown("Request not created", "The Movie has already been requested.",
-                    HttpStatusCode.BadRequest))
+                .Then(x => x.ThenErrorIsThrown("Request not created", "The Movie has already been requested."))
                 .Then(x => x.ThenChangesAreNotCommitted())
                 .BDDfy();
         }
@@ -80,8 +78,7 @@ namespace PlexRequests.UnitTests.Models.Requests
                 .Given(x => x.GivenNoRequestExists())
                 .Given(x => x.GivenMovieAlreadyInPlex())
                 .When(x => x.WhenCommandActionIsCreated())
-                .Then(x => x.ThenErrorIsThrown("Request not created", "The Movie is already available in Plex.",
-                    HttpStatusCode.BadRequest))
+                .Then(x => x.ThenErrorIsThrown("Request not created", "The Movie is already available in Plex."))
                 .Then(x => x.ThenChangesAreNotCommitted())
                 .BDDfy();
         }
@@ -95,8 +92,7 @@ namespace PlexRequests.UnitTests.Models.Requests
                 .Given(x => x.GivenExternalIdsFromTheMovieDb())
                 .Given(x => x.GivenMovieAlreadyInPlexFromFallbackAgent())
                 .When(x => x.WhenCommandActionIsCreated())
-                .Then(x => x.ThenErrorIsThrown("Request not created", "The Movie is already available in Plex.",
-                    HttpStatusCode.BadRequest))
+                .Then(x => x.ThenErrorIsThrown("Request not created", "The Movie is already available in Plex."))
                 .Then(x => x.ThenChangesAreNotCommitted())
                 .BDDfy();
         }
@@ -186,9 +182,10 @@ namespace PlexRequests.UnitTests.Models.Requests
             _claimsPrincipalAccessor.UserId.Returns(_claimsUserId);
         }
 
-        private void ThenRequestIsCreated()
+        private async Task ThenRequestIsCreated()
         {
-            _commandAction.Should().NotThrow();
+            var result = await _commandAction();
+            result.IsSuccessful.Should().BeTrue();
 
             _createdRequest.Should().NotBeNull();
             _createdRequest.MovieRequestId.Should().Be(default);
@@ -213,12 +210,13 @@ namespace PlexRequests.UnitTests.Models.Requests
             _commandAction = async () => await _underTest.Handle(_command, CancellationToken.None);
         }
 
-        private void ThenErrorIsThrown(string message, string description, HttpStatusCode statusCode)
+        private async Task ThenErrorIsThrown(string message, string description)
         {
-            _commandAction.Should().Throw<PlexRequestException>()
-                          .WithMessage(message)
-                          .Where(x => x.Description == description)
-                          .Where(x => x.StatusCode == statusCode);
+            var result = await _commandAction();
+            result.IsSuccessful.Should().BeFalse();
+            var firstError = result.ValidationErrors[0];
+            firstError.Message.Should().Be(message);
+            firstError.Description.Should().Be(description);
         }
 
         private void ThenChangesAreCommitted()

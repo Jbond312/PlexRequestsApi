@@ -5,6 +5,7 @@ using System.Threading.Tasks;
 using AutoMapper;
 using FluentAssertions;
 using NSubstitute;
+using PlexRequests.ApiRequests;
 using PlexRequests.ApiRequests.Plex.Queries;
 using PlexRequests.DataAccess.Dtos;
 using PlexRequests.Mapping;
@@ -21,7 +22,7 @@ namespace PlexRequests.UnitTests.Models.Plex
         private readonly IPlexService _plexService;
 
         private GetManyPlexServerLibraryQuery _request;
-        private Func<Task<GetManyPlexServerLibraryQueryResult>> _commandAction;
+        private Func<Task<ValidationContext<GetManyPlexServerLibraryQueryResult>>> _commandAction;
         private PlexServerRow _server;
 
         public GetManyPlexServerLibraryQueryHandlerTests()
@@ -88,8 +89,10 @@ namespace PlexRequests.UnitTests.Models.Plex
             var result = await _commandAction();
 
             result.Should().NotBeNull();
+            result.IsSuccessful.Should().BeTrue();
+            result.Data.Should().NotBeNull();
 
-            foreach (var actualLibrary in result.Libraries)
+            foreach (var actualLibrary in result.Data.Libraries)
             {
                 var matchingLibrary = _server.PlexLibraries.FirstOrDefault(x => x.LibraryKey == actualLibrary.Key);
 

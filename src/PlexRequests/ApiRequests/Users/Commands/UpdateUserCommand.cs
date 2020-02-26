@@ -5,7 +5,7 @@ using PlexRequests.Attributes;
 
 namespace PlexRequests.ApiRequests.Users.Commands
 {
-    public class UpdateUserCommand : IRequest
+    public class UpdateUserCommand : IRequest<ValidationContext>
     {
         [JsonIgnore]
         public int Id { get; set; }

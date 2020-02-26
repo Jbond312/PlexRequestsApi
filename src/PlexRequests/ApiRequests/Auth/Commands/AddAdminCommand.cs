@@ -3,7 +3,7 @@ using MediatR;
 
 namespace PlexRequests.ApiRequests.Auth.Commands
 {
-    public class AddAdminCommand : IRequest<UserLoginCommandResult>
+    public class AddAdminCommand : IRequest<ValidationContext<UserLoginCommandResult>>
     {
         [Required]
         [MinLength(1)]

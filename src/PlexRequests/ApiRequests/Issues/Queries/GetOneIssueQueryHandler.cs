@@ -1,15 +1,13 @@
-using System.Net;
 using System.Threading;
 using System.Threading.Tasks;
 using AutoMapper;
 using MediatR;
 using PlexRequests.ApiRequests.Issues.Models.Detail;
-using PlexRequests.Core.Exceptions;
 using PlexRequests.Core.Services;
 
 namespace PlexRequests.ApiRequests.Issues.Queries
 {
-    public class GetOneIssueQueryHandler : IRequestHandler<GetOneIssueQuery, GetOneIssueQueryResult>
+    public class GetOneIssueQueryHandler : IRequestHandler<GetOneIssueQuery, ValidationContext<GetOneIssueQueryResult>>
     {
         private readonly IMapper _mapper;
         private readonly IIssueService _issueService;
@@ -23,21 +21,27 @@ namespace PlexRequests.ApiRequests.Issues.Queries
             _issueService = issueService;
         }
 
-        public async Task<GetOneIssueQueryResult> Handle(GetOneIssueQuery request, CancellationToken cancellationToken)
+        public async Task<ValidationContext<GetOneIssueQueryResult>> Handle(GetOneIssueQuery request, CancellationToken cancellationToken)
         {
+            var resultContext = new ValidationContext<GetOneIssueQueryResult>();
+
             var issue = await _issueService.GetIssueById(request.Id);
 
-            if (issue == null)
+            resultContext.AddErrorIf(() => issue == null, "Invalid Id", "No issue found for the given id");
+
+            if (!resultContext.IsSuccessful)
             {
-                throw new PlexRequestException("Invalid Id", "No issue found for the given Id", HttpStatusCode.NotFound);
+                return resultContext;
             }
 
             var issueModel = _mapper.Map<IssueDetailModel>(issue);
 
-            return new GetOneIssueQueryResult
+            resultContext.Data = new GetOneIssueQueryResult
             {
                 Issue = issueModel
             };
+
+            return resultContext;
         }
     }
 }

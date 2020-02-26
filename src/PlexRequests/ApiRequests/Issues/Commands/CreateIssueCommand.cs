@@ -4,7 +4,7 @@ using PlexRequests.DataAccess.Enums;
 
 namespace PlexRequests.ApiRequests.Issues.Commands
 {
-    public class CreateIssueCommand : IRequest
+    public class CreateIssueCommand : IRequest<ValidationContext>
     {
         [Required]
         [Range(1, int.MaxValue)]

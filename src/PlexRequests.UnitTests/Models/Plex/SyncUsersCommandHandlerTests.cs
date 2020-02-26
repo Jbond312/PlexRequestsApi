@@ -5,6 +5,7 @@ using System.Threading.Tasks;
 using FluentAssertions;
 using MediatR;
 using NSubstitute;
+using PlexRequests.ApiRequests;
 using PlexRequests.ApiRequests.Plex.Commands;
 using PlexRequests.Core.Services;
 using PlexRequests.DataAccess;
@@ -21,7 +22,7 @@ namespace PlexRequests.UnitTests.Models.Plex
 {
     public class SyncUsersCommandHandlerTests
     {
-        private readonly IRequestHandler<SyncUsersCommand> _underTest;
+        private readonly IRequestHandler<SyncUsersCommand, ValidationContext> _underTest;
 
         private readonly IPlexApi _plexApi;
         private readonly IUserService _userService;
@@ -31,7 +32,7 @@ namespace PlexRequests.UnitTests.Models.Plex
         private SyncUsersCommand _command;
         private List<Friend> _remoteFriends;
         private List<UserRow> _localUsers;
-        private Func<Task> _commandAction;
+        private Func<Task<ValidationContext>> _commandAction;
 
         public SyncUsersCommandHandlerTests()
         {
@@ -108,11 +109,12 @@ namespace PlexRequests.UnitTests.Models.Plex
             _commandAction = async () => await _underTest.Handle(_command, CancellationToken.None);
         }
 
-        private void ThenLocalUsersAreCreated()
+        private async Task ThenLocalUsersAreCreated()
         {
-            _commandAction.Should().NotThrow();
+            var result = await _commandAction();
+            result.IsSuccessful.Should().BeTrue();
 
-            _userService.Received(_remoteFriends.Count).AddUser(Arg.Any<UserRow>());
+            await _userService.Received(_remoteFriends.Count).AddUser(Arg.Any<UserRow>());
         }
 
         private void ThenLocalUsersAreDisabled()

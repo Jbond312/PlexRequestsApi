@@ -1,13 +1,12 @@
 using System;
 using System.Linq;
-using System.Net;
 using System.Threading;
 using System.Threading.Tasks;
 using FluentAssertions;
 using MediatR;
 using NSubstitute;
+using PlexRequests.ApiRequests;
 using PlexRequests.ApiRequests.Plex.Commands;
-using PlexRequests.Core.Exceptions;
 using PlexRequests.DataAccess;
 using PlexRequests.DataAccess.Dtos;
 using PlexRequests.Plex;
@@ -19,12 +18,12 @@ namespace PlexRequests.UnitTests.Models.Plex
 {
     public class UpdatePlexServerLibraryCommandHandlerTests
     {
-        private readonly IRequestHandler<UpdatePlexServerLibraryCommand> _underTest;
+        private readonly IRequestHandler<UpdatePlexServerLibraryCommand, ValidationContext> _underTest;
         private readonly IPlexService _plexService;
         private readonly IUnitOfWork _unitOfWork;
 
         private UpdatePlexServerLibraryCommand _command;
-        private Func<Task> _commandAction;
+        private Func<Task<ValidationContext>> _commandAction;
         private PlexServerRow _plexServer;
 
         public UpdatePlexServerLibraryCommandHandlerTests()
@@ -44,7 +43,7 @@ namespace PlexRequests.UnitTests.Models.Plex
             this.Given(x => x.GivenACommand())
                 .Given(x => x.GivenNoMatchingLibrary(isArchived))
                 .When(x => x.WhenACommandActionIsCreated())
-                .Then(x => x.ThenAnErrorIsThrown("Invalid library key", "No library was found for the given key", HttpStatusCode.NotFound))
+                .Then(x => x.ThenAnErrorIsThrown("Invalid library key", "No library was found for the given key"))
                 .BDDfy();
         }
 
@@ -96,17 +95,19 @@ namespace PlexRequests.UnitTests.Models.Plex
             _commandAction = async () => await _underTest.Handle(_command, CancellationToken.None);
         }
 
-        private void ThenAnErrorIsThrown(string message, string description, HttpStatusCode statusCode)
+        private async Task ThenAnErrorIsThrown(string message, string description)
         {
-            _commandAction.Should().Throw<PlexRequestException>()
-                          .WithMessage(message)
-                          .Where(x => x.Description == description)
-                          .Where(x => x.StatusCode == statusCode);
+            var result = await _commandAction();
+            result.IsSuccessful.Should().BeFalse();
+            var firstError = result.ValidationErrors.First();
+            firstError.Message.Should().Be(message);
+            firstError.Description.Should().Be(description);
         }
 
-        private void ThenCommandIsSuccessful()
+        private async Task ThenCommandIsSuccessful()
         {
-            _commandAction.Should().NotThrow();
+            var result = await _commandAction();
+            result.IsSuccessful.Should().BeTrue();
         }
 
         private void ThenLibraryIsUpdatedCorrectly()
