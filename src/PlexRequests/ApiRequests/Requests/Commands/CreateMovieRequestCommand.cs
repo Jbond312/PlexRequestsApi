@@ -3,7 +3,7 @@ using MediatR;
 
 namespace PlexRequests.ApiRequests.Requests.Commands
 {
-    public class CreateMovieRequestCommand : IRequest
+    public class CreateMovieRequestCommand : IRequest<ValidationContext>
     {
         [Required]
         [Range(1, int.MaxValue)]

@@ -1,13 +1,12 @@
 using System;
-using System.Net;
 using System.Threading;
 using System.Threading.Tasks;
 using FluentAssertions;
 using MediatR;
 using NSubstitute;
 using NSubstitute.ReturnsExtensions;
+using PlexRequests.ApiRequests;
 using PlexRequests.ApiRequests.Requests.Commands;
-using PlexRequests.Core.Exceptions;
 using PlexRequests.Core.Services;
 using PlexRequests.DataAccess;
 using PlexRequests.DataAccess.Dtos;
@@ -20,12 +19,12 @@ namespace PlexRequests.UnitTests.Models.Requests
 {
     public class ApproveMovieRequestCommandHandlerTests
     {
-        private readonly IRequestHandler<ApproveMovieRequestCommand> _underTest;
+        private readonly IRequestHandler<ApproveMovieRequestCommand, ValidationContext> _underTest;
         private readonly IMovieRequestService _requestService;
         private readonly IUnitOfWork _unitOfWork;
 
         private ApproveMovieRequestCommand _command;
-        private Func<Task> _commandAction;
+        private Func<Task<ValidationContext>> _commandAction;
         private MovieRequestRow _requestToUpdate;
 
         public ApproveMovieRequestCommandHandlerTests()
@@ -42,7 +41,7 @@ namespace PlexRequests.UnitTests.Models.Requests
             this.Given(x => x.GivenACommand())
                 .Given(x => x.GivenNoRequestIsFound())
                 .When(x => x.WhenCommandActionIsCreated())
-                .Then(x => x.ThenAnErrorIsThrown("Invalid request", "No request was found with the given Id", HttpStatusCode.NotFound))
+                .Then(x => x.ThenAnErrorIsThrown("Invalid request", "No request was found with the given Id"))
                 .Then(x => x.ThenChangesAreNotCommitted())
                 .BDDfy();
         }
@@ -53,7 +52,7 @@ namespace PlexRequests.UnitTests.Models.Requests
             this.Given(x => x.GivenACommand())
                 .Given(x => x.GivenARequestIsFoundWithStatus(RequestStatuses.Completed))
                 .When(x => x.WhenCommandActionIsCreated())
-                .Then(x => x.ThenAnErrorIsThrown("Invalid request", "Request has already been completed", HttpStatusCode.BadRequest))
+                .Then(x => x.ThenAnErrorIsThrown("Invalid request", "Request has already been completed"))
                 .Then(x => x.ThenChangesAreNotCommitted())
                 .BDDfy();
         }
@@ -91,17 +90,19 @@ namespace PlexRequests.UnitTests.Models.Requests
             _commandAction = async () => await _underTest.Handle(_command, CancellationToken.None);
         }
 
-        private void ThenAnErrorIsThrown(string expectedMessage, string expectedDescription, HttpStatusCode statusCode)
+        private async Task ThenAnErrorIsThrown(string expectedMessage, string expectedDescription)
         {
-            _commandAction.Should().Throw<PlexRequestException>()
-                          .WithMessage(expectedMessage)
-                          .Where(x => x.Description == expectedDescription)
-                          .Where(x => x.StatusCode == statusCode);
+            var result = await _commandAction();
+            result.IsSuccessful.Should().BeFalse();
+            var firstError = result.ValidationErrors[0];
+            firstError.Message.Should().Be(expectedMessage);
+            firstError.Description.Should().Be(expectedDescription);
         }
 
-        private void ThenTheCommandIsSuccessful()
+        private async Task ThenTheCommandIsSuccessful()
         {
-            _commandAction.Should().NotThrow();
+            var result = await _commandAction();
+            result.IsSuccessful.Should().BeTrue();
         }
 
         private void ThenARequestWasUpdatedCorrectly()

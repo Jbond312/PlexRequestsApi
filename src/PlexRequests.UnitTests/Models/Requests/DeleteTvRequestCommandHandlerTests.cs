@@ -1,6 +1,5 @@
 using System;
 using System.Collections.Generic;
-using System.Net;
 using System.Threading;
 using System.Threading.Tasks;
 using FluentAssertions;
@@ -8,8 +7,8 @@ using MediatR;
 using Microsoft.Extensions.Logging;
 using NSubstitute;
 using NSubstitute.ReturnsExtensions;
+using PlexRequests.ApiRequests;
 using PlexRequests.ApiRequests.Requests.Commands;
-using PlexRequests.Core.Exceptions;
 using PlexRequests.Core.Helpers;
 using PlexRequests.Core.Services;
 using PlexRequests.DataAccess;
@@ -22,14 +21,14 @@ namespace PlexRequests.UnitTests.Models.Requests
 {
     public class DeleteTvRequestCommandHandlerTests
     {
-        private readonly IRequestHandler<DeleteTvRequestCommand> _underTest;
+        private readonly IRequestHandler<DeleteTvRequestCommand, ValidationContext> _underTest;
         
         private DeleteTvRequestCommand _command;
         private readonly ITvRequestService _requestService;
         private readonly IUnitOfWork _unitOfWork;
         private readonly IClaimsPrincipalAccessor _claimsUserAccessor;
 
-        private Func<Task> _commandAction;
+        private Func<Task<ValidationContext>> _commandAction;
         private TvRequestRow _request;
         private readonly int _requestUserId;
 
@@ -51,7 +50,7 @@ namespace PlexRequests.UnitTests.Models.Requests
             this.Given(x => x.GivenACommand())
                 .Given(x => x.GivenNoRequestIsFound())
                 .When(x => x.WhenCommandActionIsCreated())
-                .Then(x => x.ThenErrorIsThrown("Invalid request id", "A request for the given id was not found.", HttpStatusCode.NotFound))
+                .Then(x => x.ThenErrorIsThrown("Invalid request id", "A request for the given id was not found."))
                 .Then(x => x.ThenChangesAreNotCommitted())
                 .BDDfy();
         }
@@ -130,17 +129,19 @@ namespace PlexRequests.UnitTests.Models.Requests
             _commandAction = async () => await _underTest.Handle(_command, CancellationToken.None);
         }
 
-        private void ThenErrorIsThrown(string message, string description, HttpStatusCode statusCode)
+        private async Task ThenErrorIsThrown(string message, string description)
         {
-            _commandAction.Should().Throw<PlexRequestException>()
-                          .WithMessage(message)
-                          .Where(x => x.Description == description)
-                          .Where(x => x.StatusCode == statusCode);
+            var result = await _commandAction();
+            result.IsSuccessful.Should().BeFalse();
+            var firstError = result.ValidationErrors[0];
+            firstError.Message.Should().Be(message);
+            firstError.Description.Should().Be(description);
         }
 
-        private void ThenCommandIsSuccessful()
+        private async Task ThenCommandIsSuccessful()
         {
-            _commandAction.Should().NotThrow();
+            var result = await _commandAction();
+            result.IsSuccessful.Should().BeTrue();
         }
 
         private void ThenEntireRequestIsDeleted()

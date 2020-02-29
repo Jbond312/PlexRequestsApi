@@ -1,15 +1,13 @@
-using System.Net;
 using System.Threading;
 using System.Threading.Tasks;
 using MediatR;
-using PlexRequests.Core.Exceptions;
 using PlexRequests.Core.Services;
 using PlexRequests.DataAccess;
 using PlexRequests.DataAccess.Enums;
 
 namespace PlexRequests.ApiRequests.Requests.Commands
 {
-    public class ApproveMovieRequestCommandHandler : AsyncRequestHandler<ApproveMovieRequestCommand>
+    public class ApproveMovieRequestCommandHandler : IRequestHandler<ApproveMovieRequestCommand, ValidationContext>
     {
         private readonly IMovieRequestService _requestService;
         private readonly IUnitOfWork _unitOfWork;
@@ -21,25 +19,27 @@ namespace PlexRequests.ApiRequests.Requests.Commands
         {
             _requestService = requestService;
             _unitOfWork = unitOfWork;
-        }
+        } 
         
-        protected override async Task Handle(ApproveMovieRequestCommand command, CancellationToken cancellationToken)
+        public async Task<ValidationContext> Handle(ApproveMovieRequestCommand command, CancellationToken cancellationToken)
         {
+            var result = new ValidationContext();
+
             var request = await _requestService.GetRequestById(command.RequestId);
 
-            if (request == null)
+            result.AddErrorIf(() => request == null, "Invalid request", "No request was found with the given Id");
+            result.AddErrorIf(() => request?.RequestStatus == RequestStatuses.Completed, "Invalid request", "Request has already been completed");
+
+            if (!result.IsSuccessful)
             {
-                throw new PlexRequestException("Invalid request", "No request was found with the given Id", HttpStatusCode.NotFound);
-            }
-            
-            if (request.RequestStatus == RequestStatuses.Completed)
-            {
-                throw new PlexRequestException("Invalid request", "Request has already been completed");
+                return result;
             }
 
             request.RequestStatus = RequestStatuses.Approved;
 
             await _unitOfWork.CommitAsync();
+
+            return result;
         }
     }
 }

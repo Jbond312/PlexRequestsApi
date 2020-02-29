@@ -3,7 +3,7 @@ using MediatR;
 
 namespace PlexRequests.ApiRequests.Issues.Queries
 {
-    public class GetPagedIssueQuery : IRequest<GetPagedIssueQueryResult>
+    public class GetPagedIssueQuery : IRequest<ValidationContext<GetPagedIssueQueryResult>>
     {
         [Range(1, int.MaxValue)]
         public int? Page { get; set; }

@@ -32,9 +32,8 @@ namespace PlexRequests.Controllers
         [SwaggerResponse(401)]
         public async Task<ActionResult> SyncUsers()
         {
-            await _mediator.Send(new SyncUsersCommand());
-
-            return NoContent();
+            var result = await _mediator.Send(new SyncUsersCommand());
+            return result.ToResultIfValid<NoContentResult>();
         }
 
         [HttpGet]
@@ -47,9 +46,8 @@ namespace PlexRequests.Controllers
         {
             var query = new GetManyPlexServerLibraryQuery();
 
-            var queryResult = await _mediator.Send(query);
-
-            return Ok(queryResult.Libraries);
+            var result = await _mediator.Send(query);
+            return result.ToOkIfValidResult();
         }
 
         [HttpPut]
@@ -62,10 +60,8 @@ namespace PlexRequests.Controllers
         public async Task<ActionResult> UpdateLibrary([FromRoute] string key, [FromBody] UpdatePlexServerLibraryCommand command)
         {
             command.Key = key;
-
-            await _mediator.Send(command);
-
-            return NoContent();
+            var result = await _mediator.Send(command);
+            return result.ToResultIfValid<NoContentResult>();
         }
 
         [HttpPost("Libraries/Sync")]
@@ -77,9 +73,8 @@ namespace PlexRequests.Controllers
         [SwaggerResponse(401)]
         public async Task<ActionResult> SyncLibraries()
         {
-            await _mediator.Send(new SyncLibrariesCommand());
-
-            return NoContent();
+            var result = await _mediator.Send(new SyncLibrariesCommand());
+            return result.ToResultIfValid<NoContentResult>();
         }
 
         [HttpPost("Content/Sync")]
@@ -109,7 +104,12 @@ namespace PlexRequests.Controllers
 
             var result = await _mediator.Send(query);
 
-            return Ok(result.Server);
+            if(result == null)
+            {
+                return NotFound();
+            }
+
+            return Ok(result);
         }
     }
 }

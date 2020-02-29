@@ -9,7 +9,7 @@ using PlexRequests.DataAccess.Enums;
 
 namespace PlexRequests.ApiRequests.Issues.Queries
 {
-    public class GetPagedIssueQueryHandler : IRequestHandler<GetPagedIssueQuery, GetPagedIssueQueryResult>
+    public class GetPagedIssueQueryHandler : IRequestHandler<GetPagedIssueQuery, ValidationContext<GetPagedIssueQueryResult>>
     {
         private readonly IMapper _mapper;
         private readonly IIssueService _issueService;
@@ -23,8 +23,10 @@ namespace PlexRequests.ApiRequests.Issues.Queries
             _issueService = issueService;
         }
 
-        public async Task<GetPagedIssueQueryResult> Handle(GetPagedIssueQuery request, CancellationToken cancellationToken)
+        public async Task<ValidationContext<GetPagedIssueQueryResult>> Handle(GetPagedIssueQuery request, CancellationToken cancellationToken)
         {
+            var resultContext = new ValidationContext<GetPagedIssueQueryResult>();
+
             var includedStatuses = new List<IssueStatuses>{
                 IssueStatuses.InProgress,
                 IssueStatuses.Pending
@@ -39,13 +41,15 @@ namespace PlexRequests.ApiRequests.Issues.Queries
 
             var issueViewModels = _mapper.Map<List<IssueListDetailModel>>(pagedResponse.Items);
 
-            return new GetPagedIssueQueryResult
+            resultContext.Data = new GetPagedIssueQueryResult
             {
                 Page = pagedResponse.Page,
                 PageSize = pagedResponse.PageSize,
                 TotalPages = pagedResponse.TotalPages,
                 Items = issueViewModels
             };
+
+            return resultContext;
         }
     }
 }

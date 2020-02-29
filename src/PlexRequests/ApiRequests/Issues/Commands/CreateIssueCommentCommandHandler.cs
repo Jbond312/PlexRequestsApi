@@ -1,8 +1,6 @@
-using System.Net;
 using System.Threading;
 using System.Threading.Tasks;
 using MediatR;
-using PlexRequests.Core.Exceptions;
 using PlexRequests.Core.Helpers;
 using PlexRequests.Core.Services;
 using PlexRequests.DataAccess;
@@ -12,7 +10,7 @@ using PlexRequests.DataAccess.Dtos;
 
 namespace PlexRequests.ApiRequests.Issues.Commands
 {
-    public class CreateIssueCommentCommandHandler : AsyncRequestHandler<CreateIssueCommentCommand>
+    public class CreateIssueCommentCommandHandler : IRequestHandler<CreateIssueCommentCommand, ValidationContext>
     {
         private readonly IIssueService _issueService;
         private readonly IUnitOfWork _unitOfWork;
@@ -28,15 +26,19 @@ namespace PlexRequests.ApiRequests.Issues.Commands
             _claimsPrincipalAccessor = claimsPrincipalAccessor;
         }
 
-        protected override async Task Handle(CreateIssueCommentCommand command, CancellationToken cancellationToken)
+        public async Task<ValidationContext> Handle(CreateIssueCommentCommand command, CancellationToken cancellationToken)
         {
-            ValidateCommand(command);
+            var resultContext = new ValidationContext();
+
+            resultContext.AddErrorIf(() => string.IsNullOrEmpty(command.Comment), "Invalid Comment", "A comment must be specified");
 
             var issue = await _issueService.GetIssueById(command.Id);
 
-            if (issue == null)
+            resultContext.AddErrorIf(() => issue == null, "Comment not created", "An issue could not be found with the given id");
+
+            if (!resultContext.IsSuccessful)
             {
-                throw new PlexRequestException("Comment not created", "An issue could not be found with the given Id", HttpStatusCode.NotFound);
+                return resultContext;
             }
 
             var issueComment = new IssueCommentRow
@@ -48,14 +50,8 @@ namespace PlexRequests.ApiRequests.Issues.Commands
             issue.IssueComments.Add(issueComment);
 
             await _unitOfWork.CommitAsync();
-        }
 
-        private void ValidateCommand(CreateIssueCommentCommand command)
-        {
-            if (string.IsNullOrWhiteSpace(command.Comment))
-            {
-                throw new PlexRequestException("Comment not created", "A comment must be specified");
-            }
+            return resultContext;
         }
     }
 }

@@ -1,9 +1,7 @@
 using System.Collections.Generic;
-using System.Net;
 using System.Threading;
 using System.Threading.Tasks;
 using MediatR;
-using PlexRequests.Core.Exceptions;
 using PlexRequests.Core.Services;
 using PlexRequests.DataAccess;
 using PlexRequests.DataAccess.Dtos;
@@ -11,7 +9,7 @@ using PlexRequests.DataAccess.Enums;
 
 namespace PlexRequests.ApiRequests.Requests.Commands
 {
-    public class ApproveTvRequestCommandHandler : AsyncRequestHandler<ApproveTvRequestCommand>
+    public class ApproveTvRequestCommandHandler : IRequestHandler<ApproveTvRequestCommand, ValidationContext>
     {
         private readonly ITvRequestService _requestService;
         private readonly IUnitOfWork _unitOfWork;
@@ -25,18 +23,17 @@ namespace PlexRequests.ApiRequests.Requests.Commands
             _unitOfWork = unitOfWork;
         }
 
-        protected override async Task Handle(ApproveTvRequestCommand command, CancellationToken cancellationToken)
+        public async Task<ValidationContext> Handle(ApproveTvRequestCommand command, CancellationToken cancellationToken)
         {
+            var result = new ValidationContext();
             var request = await _requestService.GetRequestById(command.RequestId);
 
-            if (request == null)
-            {
-                throw new PlexRequestException("Invalid request", "No request was found with the given Id", HttpStatusCode.NotFound);
-            }
+            result.AddErrorIf(() => request == null, "Invalid request", "No request was found with the given Id");
+            result.AddErrorIf(() => request?.RequestStatus == RequestStatuses.Completed, "Invalid request", "Request has already been completed");
 
-            if (request.RequestStatus == RequestStatuses.Completed)
+            if (!result.IsSuccessful)
             {
-                throw new PlexRequestException("Invalid request", "Request has already been completed");
+                return result;
             }
 
             if (request.Track)
@@ -58,6 +55,8 @@ namespace PlexRequests.ApiRequests.Requests.Commands
             }
 
             await _unitOfWork.CommitAsync();
+
+            return result;
         }
 
         private static void ApproveEpisodes(TvRequestRow request, IReadOnlyDictionary<int, List<int>> commandEpisodesBySeason)

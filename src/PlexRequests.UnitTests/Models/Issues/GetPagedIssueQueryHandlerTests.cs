@@ -5,6 +5,7 @@ using System.Threading.Tasks;
 using AutoMapper;
 using FluentAssertions;
 using NSubstitute;
+using PlexRequests.ApiRequests;
 using PlexRequests.ApiRequests.Issues.Queries;
 using PlexRequests.Core.Services;
 using PlexRequests.DataAccess;
@@ -26,7 +27,7 @@ namespace PlexRequests.UnitTests.Models.Issues
         private GetPagedIssueQuery _query;
         private Paged<IssueRow> _pagedIssue;
         private List<IssueStatuses> _includedStatuses;
-        private Func<Task<GetPagedIssueQueryResult>> _queryAction;
+        private Func<Task<ValidationContext<GetPagedIssueQueryResult>>> _queryAction;
 
         public GetPagedIssueQueryHandlerTests()
         {
@@ -97,7 +98,8 @@ namespace PlexRequests.UnitTests.Models.Issues
             var result = await _queryAction();
 
             result.Should().NotBeNull();
-            result.Items.Count.Should().Be(_pagedIssue.Items.Count);
+            result.Data.Should().NotBeNull();
+            result.Data.Items.Count.Should().Be(_pagedIssue.Items.Count);
             result.Should().BeEquivalentTo(_pagedIssue, options => options.ExcludingMissingMembers());
         }
     }

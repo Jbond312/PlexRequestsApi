@@ -1,13 +1,12 @@
 using System;
-using System.Net;
 using System.Threading;
 using System.Threading.Tasks;
 using FluentAssertions;
 using MediatR;
 using NSubstitute;
 using NSubstitute.ReturnsExtensions;
+using PlexRequests.ApiRequests;
 using PlexRequests.ApiRequests.Requests.Commands;
-using PlexRequests.Core.Exceptions;
 using PlexRequests.Core.Helpers;
 using PlexRequests.Core.Services;
 using PlexRequests.DataAccess;
@@ -20,14 +19,14 @@ namespace PlexRequests.UnitTests.Models.Requests
 {
     public class DeleteMovieRequestCommandHandlerTests
     {
-        private readonly IRequestHandler<DeleteMovieRequestCommand> _underTest;
+        private readonly IRequestHandler<DeleteMovieRequestCommand, ValidationContext> _underTest;
         
         private DeleteMovieRequestCommand _command;
         private readonly IMovieRequestService _requestService;
         private readonly IUnitOfWork _unitOfWork;
         private readonly IClaimsPrincipalAccessor _claimsUserAccessor;
 
-        private Func<Task> _commandAction;
+        private Func<Task<ValidationContext>> _commandAction;
         private MovieRequestRow _request;
 
         public DeleteMovieRequestCommandHandlerTests()
@@ -45,7 +44,7 @@ namespace PlexRequests.UnitTests.Models.Requests
             this.Given(x => x.GivenACommand())
                 .Given(x => x.GivenNoRequestIsFound())
                 .When(x => x.WhenCommandActionIsCreated())
-                .Then(x => x.ThenErrorIsThrown("Invalid request id", "A request for the given id was not found.", HttpStatusCode.NotFound))
+                .Then(x => x.ThenErrorIsThrown("Invalid request id", "A request for the given id was not found."))
                 .Then(x => x.ThenChangesAreNotCommitted())
                 .BDDfy();
         }
@@ -57,7 +56,7 @@ namespace PlexRequests.UnitTests.Models.Requests
                 .Given(x => x.GivenARequestIsFound())
                 .Given(x=> x.GivenRequestUserIsNotCurrentUser())
                 .When(x => x.WhenCommandActionIsCreated())
-                .Then(x => x.ThenErrorIsThrown("Unable to delete request", "Forbidden access to protected resource.", HttpStatusCode.Forbidden))
+                .Then(x => x.ThenErrorIsThrown("Unable to delete request", "Forbidden access to protected resource."))
                 .Then(x => x.ThenChangesAreNotCommitted())
                 .BDDfy();
         }
@@ -106,12 +105,13 @@ namespace PlexRequests.UnitTests.Models.Requests
             _commandAction = async () => await _underTest.Handle(_command, CancellationToken.None);
         }
 
-        private void ThenErrorIsThrown(string message, string description, HttpStatusCode statusCode)
+        private async Task ThenErrorIsThrown(string message, string description)
         {
-            _commandAction.Should().Throw<PlexRequestException>()
-                          .WithMessage(message)
-                          .Where(x => x.Description == description)
-                          .Where(x => x.StatusCode == statusCode);
+            var result = await _commandAction();
+            result.IsSuccessful.Should().BeFalse();
+            var firstError = result.ValidationErrors[0];
+            firstError.Message.Should().Be(message);
+            firstError.Description.Should().Be(description);
         }
 
         private void ThenDeleteIsSuccessful()

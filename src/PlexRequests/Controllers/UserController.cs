@@ -44,9 +44,9 @@ namespace PlexRequests.Controllers
         public async Task<ActionResult> UpdateUser([FromRoute] int id, [FromBody] UpdateUserCommand command)
         {
             command.Id = id;
-            await _mediator.Send(command);
+            var result = await _mediator.Send(command);
 
-            return NoContent();
+            return result.ToResultIfValid<NoContentResult>();
         }
     }
 }

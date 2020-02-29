@@ -1,16 +1,14 @@
 ﻿using System.Linq;
-using System.Net;
 using System.Threading;
 using System.Threading.Tasks;
 using MediatR;
-using PlexRequests.Core.Exceptions;
 using PlexRequests.Core.Services;
 using PlexRequests.DataAccess;
 using PlexRequests.DataAccess.Dtos;
 
 namespace PlexRequests.ApiRequests.Users.Commands
 {
-    public class UpdateUserCommandHandler : AsyncRequestHandler<UpdateUserCommand>
+    public class UpdateUserCommandHandler : IRequestHandler<UpdateUserCommand, ValidationContext>
     {
         private readonly IUserService _userService;
         private readonly IUnitOfWork _unitOfWork;
@@ -24,11 +22,20 @@ namespace PlexRequests.ApiRequests.Users.Commands
             _unitOfWork = unitOfWork;
         }
 
-        protected override async Task Handle(UpdateUserCommand command, CancellationToken cancellationToken)
+        public async Task<ValidationContext> Handle(UpdateUserCommand command, CancellationToken cancellationToken)
         {
-            var user = await ValidateAndReturnUser(command);
+            var resultContext = new ValidationContext();
+
+            var user = await ValidateAndReturnUser(command, resultContext);
+
+            if (!resultContext.IsSuccessful)
+            {
+                return resultContext;
+            }
 
             await UpdateUser(command, user);
+
+            return resultContext;
         }
 
         private async Task UpdateUser(UpdateUserCommand command, UserRow user)
@@ -42,14 +49,13 @@ namespace PlexRequests.ApiRequests.Users.Commands
             await _unitOfWork.CommitAsync();
         }
 
-        private async Task<UserRow> ValidateAndReturnUser(UpdateUserCommand command)
+        private async Task<UserRow> ValidateAndReturnUser(UpdateUserCommand command, ValidationContext resultContext)
         {
             var user = await _userService.GetUser(command.Id);
 
             if (user == null)
             {
-                throw new PlexRequestException("Invalid user id", "A user for the given id was not found",
-                    HttpStatusCode.NotFound);
+                resultContext.AddError("Invalid user id", "A user for the given id was not found");
             }
 
             return user;

@@ -27,9 +27,8 @@ namespace PlexRequests.Controllers
         [SwaggerResponse(401)]
         public async Task<ActionResult> CreateMovieRequest([FromBody] CreateMovieRequestCommand command)
         {
-            await _mediator.Send(command);
-
-            return NoContent();
+            var result = await _mediator.Send(command);
+            return result.ToResultIfValid<NoContentResult>();
         }
 
         [HttpPost("Movie/{id:int}/Approve")]
@@ -42,9 +41,9 @@ namespace PlexRequests.Controllers
         {
             var command = new ApproveMovieRequestCommand(id);
 
-            await _mediator.Send(command);
+            var result = await _mediator.Send(command);
 
-            return NoContent();
+            return result.ToResultIfValid<NoContentResult>();
         }
 
         [HttpPost("Movie/{id:int}/Reject")]
@@ -57,9 +56,9 @@ namespace PlexRequests.Controllers
         {
             command.RequestId = id;
 
-            await _mediator.Send(command);
+            var result = await _mediator.Send(command);
 
-            return NoContent();
+            return result.ToResultIfValid<NoContentResult>();
         }
 
         [HttpPost("Tv")]
@@ -68,9 +67,9 @@ namespace PlexRequests.Controllers
         [SwaggerResponse(401)]
         public async Task<ActionResult> CreateTvRequest([FromBody] CreateTvRequestCommand command)
         {
-            await _mediator.Send(command);
+            var result = await _mediator.Send(command);
 
-            return NoContent();
+            return result.ToResultIfValid<NoContentResult>();
         }
 
         [HttpPost("Tv/{id:int}/Approve")]
@@ -83,9 +82,9 @@ namespace PlexRequests.Controllers
         {
             command.RequestId = id;
 
-            await _mediator.Send(command);
+            var result = await _mediator.Send(command);
 
-            return NoContent();
+            return result.ToResultIfValid<NoContentResult>();
         }
 
         [HttpPost("Tv/{id:int}/Reject")]
@@ -98,9 +97,9 @@ namespace PlexRequests.Controllers
         {
             command.RequestId = id;
 
-            await _mediator.Send(command);
+            var result = await _mediator.Send(command);
 
-            return NoContent();
+            return result.ToResultIfValid<NoContentResult>();
         }
 
         [HttpDelete("Movie/{id:int}")]
@@ -113,9 +112,9 @@ namespace PlexRequests.Controllers
         {
             var command = new DeleteMovieRequestCommand(id);
 
-            await _mediator.Send(command);
+            var result = await _mediator.Send(command);
 
-            return NoContent();
+            return result.ToResultIfValid<NoContentResult>();
         }
 
         [HttpGet("Movie")]
@@ -150,9 +149,9 @@ namespace PlexRequests.Controllers
         {
             var command = new DeleteTvRequestCommand(id);
 
-            await _mediator.Send(command);
+            var result = await _mediator.Send(command);
 
-            return NoContent();
+            return result.ToResultIfValid<NoContentResult>();
         }
     }
 }

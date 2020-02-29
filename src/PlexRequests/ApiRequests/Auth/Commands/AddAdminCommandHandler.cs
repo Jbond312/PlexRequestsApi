@@ -7,7 +7,6 @@ using MediatR;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using PlexRequests.Core.Auth;
-using PlexRequests.Core.Exceptions;
 using PlexRequests.Core.ExtensionMethods;
 using PlexRequests.Core.Services;
 using PlexRequests.Core.Settings;
@@ -18,7 +17,7 @@ using PlexRequests.Plex.Models;
 
 namespace PlexRequests.ApiRequests.Auth.Commands
 {
-    public class AddAdminCommandHandler : IRequestHandler<AddAdminCommand, UserLoginCommandResult>
+    public class AddAdminCommandHandler : IRequestHandler<AddAdminCommand, ValidationContext<UserLoginCommandResult>>
     {
         private readonly IUserService _userService;
         private readonly IPlexService _plexService;
@@ -47,20 +46,28 @@ namespace PlexRequests.ApiRequests.Auth.Commands
             _logger = logger;
         }
 
-        public async Task<UserLoginCommandResult> Handle(AddAdminCommand request, CancellationToken cancellationToken)
+        public async Task<ValidationContext<UserLoginCommandResult>> Handle(AddAdminCommand request, CancellationToken cancellationToken)
         {
+            var result =  new ValidationContext<UserLoginCommandResult>();
             _logger.LogDebug("Attempting to create first Admin account");
 
-            await CheckAdminNotAlreadyCreated();
+            if (await result.AddErrorIf(HasAdminAlreadyBeenCreated, "Unable to add Plex Admin", "An Admin account has already been created"))
+            {
+                return result;
+            }
 
             _logger.LogDebug("No existing Admin account, attempting Plex SignIn");
             var plexUser = await _plexApi.SignIn(request.Username, request.Password);
 
-            if (plexUser == null)
+            if (result.AddErrorIf(() => plexUser == null, "Invalid PlexCredentials", "The Login credentials for Plex were invalid"))
             {
                 _logger.LogDebug("Invalid PlexCredentials");
-                throw new PlexRequestException("Invalid PlexCredentials",
-                    "The Login credentials for Plex were invalid.");
+                return result;
+            }
+
+            if (!result.IsSuccessful)
+            {
+                return result;
             }
 
             _logger.LogDebug("Plex SignIn Successful");
@@ -75,17 +82,18 @@ namespace PlexRequests.ApiRequests.Auth.Commands
 
             await _unitOfWork.CommitAsync();
             
-            var result = new UserLoginCommandResult
+            result.Data = new UserLoginCommandResult
             {
                 AccessToken = _tokenService.CreateToken(adminUser),
                 RefreshToken = refreshToken.Token
             };
+
             return result;
         }
 
         private async Task CreateAdminServer(User plexUser)
         {
-            _logger.LogDebug("Getting PlexServers");
+            _logger.LogDebug("Getting PlexServers for Admin user");
             var servers = await _plexApi.GetServers(plexUser.AuthToken);
 
             var adminServer = servers?.FirstOrDefault(x => x.Owned == "1");
@@ -132,14 +140,18 @@ namespace PlexRequests.ApiRequests.Auth.Commands
             return adminUser;
         }
 
-        private async Task CheckAdminNotAlreadyCreated()
+        private async Task<bool> HasAdminAlreadyBeenCreated()
         {
-            if (await _userService.IsAdminCreated())
+            var adminAlreadyExists = await _userService.IsAdminCreated();
+
+            if (adminAlreadyExists)
             {
                 _logger.LogInformation("Attempt to create Admin account when one already exists");
-                throw new PlexRequestException("Unable to add Plex Admin", "An Admin account has already been created");
             }
+
+            return adminAlreadyExists;
         }
+
 
         private async Task CreateAdminServer(Server adminServer, User plexUser)
         {
@@ -177,6 +189,10 @@ namespace PlexRequests.ApiRequests.Auth.Commands
                         Title = x.Title,
                         Type = x.Type
                     }).ToList();
+            }
+            else
+            {
+                _logger.LogInformation("No Plex Libraries were found for the server");
             }
 
             await _plexService.AddServer(plexServer);

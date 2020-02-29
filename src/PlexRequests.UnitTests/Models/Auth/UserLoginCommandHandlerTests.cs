@@ -7,6 +7,7 @@ using Microsoft.Extensions.Logging;
 using NSubstitute;
 using NSubstitute.ExceptionExtensions;
 using NSubstitute.ReturnsExtensions;
+using PlexRequests.ApiRequests;
 using PlexRequests.ApiRequests.Auth.Commands;
 using PlexRequests.Core.Exceptions;
 using PlexRequests.Core.Services;
@@ -32,7 +33,7 @@ namespace PlexRequests.UnitTests.Models.Auth
         private UserRow _matchingDbUser;
         private string _createdToken;
         private UserRefreshTokenRow _createdRefreshToken;
-        private Func<Task<UserLoginCommandResult>> _commandAction;
+        private Func<Task<ValidationContext<UserLoginCommandResult>>> _commandAction;
 
         public UserLoginCommandHandlerTests()
         {
@@ -51,7 +52,7 @@ namespace PlexRequests.UnitTests.Models.Auth
             this.Given(x => x.GivenACommand())
                 .Given(x => x.GivenInvalidPlexCredentialsThrowsException())
                 .When(x => x.WhenACommandActionIsCreated())
-                .Then(x => x.ThenAnErrorIsThrown("Invalid Plex Credentials", "Unable to login to Plex with the given credentials", HttpStatusCode.BadRequest))
+                .Then(x => x.ThenAnErrorIsThrown("Invalid Plex Credentials", "Unable to login to Plex with the given credentials"))
                 .BDDfy();
         }
 
@@ -62,7 +63,7 @@ namespace PlexRequests.UnitTests.Models.Auth
                 .Given(x => x.GivenValidPlexCredentials())
                 .Given(x => x.GivenNoMatchingUser())
                 .When(x => x.WhenACommandActionIsCreated())
-                .Then(x => x.ThenAnErrorIsThrown("Unrecognised user", "The user is not recognised or has been disabled.", HttpStatusCode.BadRequest))
+                .Then(x => x.ThenAnErrorIsThrown("Unrecognised user", "The user is not recognised or has been disabled."))
                 .BDDfy();
         }
 
@@ -73,7 +74,7 @@ namespace PlexRequests.UnitTests.Models.Auth
                 .Given(x => x.GivenValidPlexCredentials())
                 .Given(x => x.GivenAMatchingUser(true))
                 .When(x => x.WhenACommandActionIsCreated())
-                .Then(x => x.ThenAnErrorIsThrown("Unrecognised user", "The user is not recognised or has been disabled.", HttpStatusCode.BadRequest))
+                .Then(x => x.ThenAnErrorIsThrown("Unrecognised user", "The user is not recognised or has been disabled."))
                 .BDDfy();
         }
 
@@ -168,12 +169,13 @@ namespace PlexRequests.UnitTests.Models.Auth
             _commandAction = async () => await _underTest.Handle(_command, CancellationToken.None);
         }
 
-        private void ThenAnErrorIsThrown(string message, string description, HttpStatusCode httpStatusCode)
+        private async Task ThenAnErrorIsThrown(string message, string description)
         {
-            _commandAction.Should().Throw<PlexRequestException>()
-                          .WithMessage(message)
-                          .Where(x => x.Description == description)
-                          .Where(x => x.StatusCode == httpStatusCode);
+            var result = await _commandAction();
+            result.IsSuccessful.Should().BeFalse();
+            var firstError = result.ValidationErrors[0];
+            firstError.Message.Should().Be(message);
+            firstError.Description.Should().Be(description);
         }
 
         private void ThenUserIsUpdatedCorrectly()
@@ -197,7 +199,7 @@ namespace PlexRequests.UnitTests.Models.Auth
             var response = await _commandAction();
 
             response.Should().NotBeNull();
-            response.AccessToken.Should().Be(_createdToken);
+            response.Data.AccessToken.Should().Be(_createdToken);
         }
 
         private async Task ThenARefreshTokenIsReturnedCorrectly()
@@ -205,7 +207,7 @@ namespace PlexRequests.UnitTests.Models.Auth
             var response = await _commandAction();
 
             response.Should().NotBeNull();
-            response.RefreshToken.Should().Be(_createdRefreshToken.Token);
+            response.Data.RefreshToken.Should().Be(_createdRefreshToken.Token);
         }
 
         private void ThenChangesAreCommitted()

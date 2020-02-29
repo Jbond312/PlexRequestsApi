@@ -5,7 +5,7 @@ using PlexRequests.DataAccess.Enums;
 
 namespace PlexRequests.ApiRequests.Issues.Commands
 {
-    public class UpdateIssueCommand : IRequest
+    public class UpdateIssueCommand : IRequest<ValidationContext>
     {
         [JsonIgnore]
         public int Id { get; set; }

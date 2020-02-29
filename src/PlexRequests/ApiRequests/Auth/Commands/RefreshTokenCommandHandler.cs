@@ -6,14 +6,13 @@ using System.Threading;
 using System.Threading.Tasks;
 using MediatR;
 using Microsoft.Extensions.Logging;
-using PlexRequests.Core.Exceptions;
 using PlexRequests.Core.Services;
 using PlexRequests.DataAccess;
 using PlexRequests.DataAccess.Dtos;
 
 namespace PlexRequests.ApiRequests.Auth.Commands
 {
-    public class RefreshTokenCommandHandler : IRequestHandler<RefreshTokenCommand, UserLoginCommandResult>
+    public class RefreshTokenCommandHandler : IRequestHandler<RefreshTokenCommand, ValidationContext<UserLoginCommandResult>>
     {
         private readonly ITokenService _tokenService;
         private readonly IUserService _userService;
@@ -33,69 +32,79 @@ namespace PlexRequests.ApiRequests.Auth.Commands
             _logger = logger;
         }
 
-        public async Task<UserLoginCommandResult> Handle(RefreshTokenCommand request, CancellationToken cancellationToken)
+        public async Task<ValidationContext<UserLoginCommandResult>> Handle(RefreshTokenCommand request, CancellationToken cancellationToken)
         {
             _logger.LogDebug("Attempting to refresh users token");
 
+            var resultContext = new ValidationContext<UserLoginCommandResult>();
+
             if (string.IsNullOrWhiteSpace(request.RefreshToken) || string.IsNullOrWhiteSpace(request.AccessToken))
             {
+                resultContext
+                .AddError("Invalid Token");
                 _logger.LogDebug("RefreshToken or AccessToken was not specified when attempting to refresh a token");
-                throw CreateInvalidTokenException();
+                return resultContext;
             }
 
             var principal = _tokenService.GetPrincipalFromAccessToken(request.AccessToken);
             var userIdClaim = principal?.Claims?.FirstOrDefault(x => x.Type == ClaimTypes.NameIdentifier);
 
-            var user = await ValidateAndReturnUser(userIdClaim);
-
-            if (!IsUserRefreshTokenValid(user.UserRefreshTokens, request.RefreshToken))
+            var user = await ValidateAndReturnUser(userIdClaim, resultContext);
+            
+            if (!IsUserRefreshTokenValid(user?.UserRefreshTokens, request.RefreshToken))
             {
+                resultContext.AddError("Invalid Token");
                 _logger.LogDebug("Refresh token has either expired or does not match the users current refresh token");
-                throw CreateInvalidTokenException();
+            }
+
+            if (!resultContext.IsSuccessful)
+            {
+                return resultContext;
             }
 
             _logger.LogDebug("Refresh token is valid, re-creating tokens for user.");
             
             var accessToken = _tokenService.CreateToken(user);
             var refreshToken = _tokenService.CreateRefreshToken();
+            // ReSharper disable once PossibleNullReferenceException
             user.UserRefreshTokens.Add(refreshToken);
 
             await _unitOfWork.CommitAsync();
 
-            return new UserLoginCommandResult
+            resultContext.Data = new UserLoginCommandResult
             {
                 AccessToken = accessToken,
                 RefreshToken = refreshToken.Token
             };
+
+            return resultContext;
         }
 
-        private async Task<UserRow> ValidateAndReturnUser(Claim userIdClaim)
+        private async Task<UserRow> ValidateAndReturnUser(Claim userIdClaim, ValidationContext<UserLoginCommandResult> context)
         {
             if (userIdClaim?.Value == null)
             {
+                context.AddError("Invalid Token");
                 _logger.LogDebug("UserId could not be extracted from the claim");
-                throw CreateInvalidTokenException();
+                return null;
             }
 
             var user = await _userService.GetUser(Guid.Parse(userIdClaim.Value));
 
-            if (user == null || user.IsDisabled)
+            if (user != null && !user.IsDisabled)
             {
-                _logger.LogDebug($"User either no longer exists or has been disabled");
-                throw CreateInvalidTokenException();
+                return user;
             }
 
-            return user;
+            context.AddError("Invalid Token");
+            _logger.LogDebug("User either no longer exists or has been disabled");
+            return null;
+
         }
 
         private static bool IsUserRefreshTokenValid(ICollection<UserRefreshTokenRow> userRefreshTokens, string refreshTokenToValidate)
         {
             return userRefreshTokens.Any() && userRefreshTokens.Any(x => DateTime.UtcNow <= x.ExpiresUtc && x.Token.Equals(refreshTokenToValidate, StringComparison.InvariantCultureIgnoreCase));
-        }
-
-        private static PlexRequestException CreateInvalidTokenException()
-        {
-            return new PlexRequestException("Invalid Token");
         }
     }
 }

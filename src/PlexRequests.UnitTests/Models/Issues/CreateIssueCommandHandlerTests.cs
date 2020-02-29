@@ -1,12 +1,11 @@
 using System;
-using System.Net;
 using System.Threading;
 using System.Threading.Tasks;
 using FluentAssertions;
 using MediatR;
 using NSubstitute;
+using PlexRequests.ApiRequests;
 using PlexRequests.ApiRequests.Issues.Commands;
-using PlexRequests.Core.Exceptions;
 using PlexRequests.Core.Helpers;
 using PlexRequests.Core.Services;
 using PlexRequests.DataAccess;
@@ -21,7 +20,7 @@ namespace PlexRequests.UnitTests.Models.Issues
 {
     public class CreateIssueCommandHandlerTests
     {
-        private readonly IRequestHandler<CreateIssueCommand> _underTest;
+        private readonly IRequestHandler<CreateIssueCommand, ValidationContext> _underTest;
 
         private readonly IIssueService _issueService;
         private readonly IPlexService _plexService;
@@ -29,7 +28,7 @@ namespace PlexRequests.UnitTests.Models.Issues
         private readonly IClaimsPrincipalAccessor _claimsPrincipalAccessor;
 
         private CreateIssueCommand _command;
-        private Func<Task> _commandAction;
+        private Func<Task<ValidationContext>> _commandAction;
         private IssueRow _issueCreated;
         private PlexMediaItemRow _plexMediaItem;
         private int _claimsUserId;
@@ -55,7 +54,7 @@ namespace PlexRequests.UnitTests.Models.Issues
             this.Given(x => x.GivenACommand())
             .Given(x => x.GivenATitle(title))
             .When(x => x.WhenCommandActionIsCreated())
-            .Then(x => x.ThenErrorIsThrown("Issue not created", "'Title' must be specified", HttpStatusCode.BadRequest))
+            .Then(x => x.ThenErrorIsThrown("Issue not created", "'Title' must be specified"))
             .Then(x => x.ThenChangesAreNotCommitted())
             .BDDfy();
         }
@@ -70,7 +69,7 @@ namespace PlexRequests.UnitTests.Models.Issues
             this.Given(x => x.GivenACommand())
             .Given(x => x.GivenADescription(description))
             .When(x => x.WhenCommandActionIsCreated())
-            .Then(x => x.ThenErrorIsThrown("Issue not created", "'Description' must be specified", HttpStatusCode.BadRequest))
+            .Then(x => x.ThenErrorIsThrown("Issue not created", "'Description' must be specified"))
             .Then(x => x.ThenChangesAreNotCommitted())
             .BDDfy();
         }
@@ -141,12 +140,13 @@ namespace PlexRequests.UnitTests.Models.Issues
             _commandAction = async () => await _underTest.Handle(_command, CancellationToken.None);
         }
 
-        private void ThenErrorIsThrown(string message, string description, HttpStatusCode statusCode)
+        private async Task ThenErrorIsThrown(string message, string description)
         {
-            _commandAction.Should().Throw<PlexRequestException>()
-                          .WithMessage(message)
-                          .Where(x => x.Description == description)
-                          .Where(x => x.StatusCode == statusCode);
+            var result = await _commandAction();
+            result.IsSuccessful.Should().BeFalse();
+            var firstError = result.ValidationErrors[0];
+            firstError.Message.Should().Be(message);
+            firstError.Description.Should().Be(description);
         }
 
         private void ThenIssueIsCreated()

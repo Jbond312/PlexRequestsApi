@@ -5,7 +5,7 @@ using PlexRequests.ApiRequests.Requests.Models.Create;
 
 namespace PlexRequests.ApiRequests.Requests.Commands
 {
-    public class CreateTvRequestCommand : IRequest
+    public class CreateTvRequestCommand : IRequest<ValidationContext>
     {
         [Required]
         [Range(1, int.MaxValue)]

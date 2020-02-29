@@ -3,7 +3,7 @@ using MediatR;
 
 namespace PlexRequests.ApiRequests.Requests.Commands
 {
-    public class DeleteMovieRequestCommand : IRequest
+    public class DeleteMovieRequestCommand : IRequest<ValidationContext>
     {
         [Required]
         public int Id { get; set; }
