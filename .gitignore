@@ -16,6 +16,9 @@ charts/
 # User-specific files (MonoDevelop/Xamarin Studio)
 *.userprefs
 
+# Azure Functions localsettings file
+**/PlexRequests.Functions/local.settings.json
+
 # Build results
 [Dd]ebug/
 [Dd]ebugPublic/
