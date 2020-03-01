@@ -32,7 +32,7 @@ namespace PlexRequests.Functions.HttpTriggers
         {
             var accessResult = _accessTokenProvider.ValidateToken(req);
 
-            if (accessResult.Status != AccessTokenStatus.Valid)
+            if (!accessResult.IsValid)
             {
                 return new UnauthorizedResult();
             }
