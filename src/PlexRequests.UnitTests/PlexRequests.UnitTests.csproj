@@ -12,7 +12,7 @@
     <PackageReference Include="xunit.runner.visualstudio" Version="2.4.0" />
   </ItemGroup>
   <ItemGroup>
+    <ProjectReference Include="..\PlexRequests.Functions\PlexRequests.Functions.csproj" />
     <ProjectReference Include="..\PlexRequests.UnitTests.Builders\PlexRequests.UnitTests.Builders.csproj" />
-    <ProjectReference Include="..\PlexRequests\PlexRequests.csproj" />
   </ItemGroup>
 </Project>
