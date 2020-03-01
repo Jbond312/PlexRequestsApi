@@ -2,8 +2,8 @@
 using System.Threading;
 using System.Threading.Tasks;
 using MediatR;
-using PlexRequests.ApiRequests.Search.Models;
 using PlexRequests.Functions.Features.Search.Helpers;
+using PlexRequests.Functions.Features.Search.Models;
 using PlexRequests.TheMovieDb;
 
 namespace PlexRequests.Functions.Features.Search.Queries

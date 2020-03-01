@@ -4,6 +4,6 @@ namespace PlexRequests.Functions.AccessTokens
 {
     public interface IAccessTokenProvider
     {
-        AccessTokenResult ValidateToken(HttpRequest request);
+        AccessTokenResult ValidateToken(HttpRequest request, string requiredRole = null);
     }
 }

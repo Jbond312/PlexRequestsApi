@@ -5,6 +5,7 @@
         Valid,
         Expired,
         Error,
-        NoToken
+        NoToken,
+        InsufficientPermissions
     }
 }

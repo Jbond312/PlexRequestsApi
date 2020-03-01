@@ -1,6 +1,6 @@
 using System.Collections.Generic;
 using FluentAssertions;
-using PlexRequests.Attributes;
+using PlexRequests.Functions.Attributes;
 using Xunit;
 
 namespace PlexRequests.UnitTests.Attributes

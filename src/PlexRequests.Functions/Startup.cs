@@ -41,21 +41,21 @@ namespace PlexRequests.Functions
                 .AddEnvironmentVariables("APPSETTING_")
                 .Build();
 
-            builder.Services.AddOptions<AuthenticationSettings>().Configure<IConfiguration>((settings, configuration) =>
+            builder.Services.AddOptions<AuthenticationSettings>().Configure<IConfiguration>((settings, optConfig) =>
             {
-                configuration.GetSection(nameof(AuthenticationSettings)).Bind(settings);
+                optConfig.GetSection(nameof(AuthenticationSettings)).Bind(settings);
             });
-            builder.Services.AddOptions<TheMovieDbSettings>().Configure<IConfiguration>((settings, configuration) =>
+            builder.Services.AddOptions<TheMovieDbSettings>().Configure<IConfiguration>((settings, optConfig) =>
             {
-                configuration.GetSection(nameof(TheMovieDbSettings)).Bind(settings);
+                optConfig.GetSection(nameof(TheMovieDbSettings)).Bind(settings);
             });
-            builder.Services.AddOptions<PlexSettings>().Configure<IConfiguration>((settings, configuration) =>
+            builder.Services.AddOptions<PlexSettings>().Configure<IConfiguration>((settings, optConfig) =>
             {
-                configuration.GetSection(nameof(PlexSettings)).Bind(settings);
+                optConfig.GetSection(nameof(PlexSettings)).Bind(settings);
             });
-            builder.Services.AddOptions<PlexRequestsSettings>().Configure<IConfiguration>((settings, configuration) =>
+            builder.Services.AddOptions<PlexRequestsSettings>().Configure<IConfiguration>((settings, optConfig) =>
             {
-                configuration.GetSection(nameof(PlexRequestsSettings)).Bind(settings);
+                optConfig.GetSection(nameof(PlexRequestsSettings)).Bind(settings);
             });
 
             RegisterServices(builder.Services);
@@ -71,8 +71,6 @@ namespace PlexRequests.Functions
             services.AddTransient<DataAccess.Repositories.ITvRequestRepository, DataAccess.Repositories.TvRequestRepository>();
             services.AddTransient<DataAccess.Repositories.IIssuesRepository, DataAccess.Repositories.IssuesRepository>();
 
-            var connectionString = Environment.GetEnvironmentVariable("PlexRequestsDataContext");
-
             services.AddDbContext<PlexRequestsDataContext>(
                 options =>
                 {
@@ -83,6 +81,7 @@ namespace PlexRequests.Functions
 
         private static void RegisterServices(IServiceCollection services)
         {
+            services.AddSingleton<IRequestValidator, RequestValidator>();
             services.AddSingleton<IAccessTokenProvider, AccessTokenProvider>();
             services.AddTransient<IClaimsPrincipalAccessor, ClaimsPrincipalAccessor>();
             services.AddTransient<IPlexApi, PlexApi>();
@@ -108,7 +107,7 @@ namespace PlexRequests.Functions
             services.AddTransient<IAgentGuidParser, AgentGuidParser>();
             services.AddTransient<IRequestHelper, RequestHelper>();
             services.AddTransient<IMovieQueryHelper, MovieQueryHelper>();
-            //services.AddTransient<ITvQueryHelper, TvQueryHelper>();
+            services.AddTransient<ITvQueryHelper, TvQueryHelper>();
         }
     }
 }

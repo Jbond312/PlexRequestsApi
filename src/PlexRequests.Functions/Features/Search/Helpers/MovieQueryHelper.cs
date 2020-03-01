@@ -2,9 +2,9 @@
 using System.Linq;
 using System.Threading.Tasks;
 using AutoMapper;
-using PlexRequests.ApiRequests.Search.Models;
 using PlexRequests.Core.Services;
 using PlexRequests.DataAccess.Enums;
+using PlexRequests.Functions.Features.Search.Models;
 using PlexRequests.Plex.MediaItemRetriever;
 using PlexRequests.TheMovieDb.Models;
 

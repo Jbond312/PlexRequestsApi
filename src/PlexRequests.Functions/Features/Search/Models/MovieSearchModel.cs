@@ -3,7 +3,7 @@ using Newtonsoft.Json;
 using Newtonsoft.Json.Converters;
 using PlexRequests.DataAccess.Enums;
 
-namespace PlexRequests.ApiRequests.Search.Models
+namespace PlexRequests.Functions.Features.Search.Models
 {
     public class MovieSearchModel
     {

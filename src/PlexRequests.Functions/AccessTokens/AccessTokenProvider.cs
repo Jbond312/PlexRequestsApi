@@ -26,12 +26,12 @@ namespace PlexRequests.Functions.AccessTokens
             _authSettings = authOptionsSnapshot.Value;
         }
 
-        public AccessTokenResult ValidateToken(HttpRequest request)
+        public AccessTokenResult ValidateToken(HttpRequest request, string requiredRole = null)
         {
             try
             {
                 var authToken = GetAuthToken(request);
-                if (string.IsNullOrEmpty(authToken))
+                if (!string.IsNullOrEmpty(authToken))
                 {
                     var tokenParams = new TokenValidationParameters()
                     {
@@ -54,6 +54,15 @@ namespace PlexRequests.Functions.AccessTokens
                     {
                         _logger.LogInformation("Unable to identify principal. Security token algorithms do not match");
                         return AccessTokenResult.Error(new Exception("Invalid security token"));
+                    }
+
+                    if (!string.IsNullOrEmpty(requiredRole))
+                    {
+                        if (!result.IsInRole(requiredRole))
+                        {
+                            _logger.LogInformation($"User attempted to access a forbidden resource");
+                            return AccessTokenResult.InsufficientPermissions(result);
+                        }
                     }
 
                     return AccessTokenResult.Success(result);
