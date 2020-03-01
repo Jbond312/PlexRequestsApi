@@ -11,12 +11,15 @@ namespace PlexRequests.Functions.HttpTriggers
     public class AuthHttpTrigger
     {
         private readonly IMediator _mediator;
+        private readonly IRequestValidator _requestValidator;
 
         public AuthHttpTrigger(
-            IMediator mediator
+            IMediator mediator,
+            IRequestValidator requestValidator
         )
         {
             _mediator = mediator;
+            _requestValidator = requestValidator;
         }
 
         [FunctionName("Login")]
@@ -24,11 +27,50 @@ namespace PlexRequests.Functions.HttpTriggers
             [HttpTrigger(AuthorizationLevel.Anonymous, "post", Route = "auth/login")]
             HttpRequest req)
         {
-            var command = await req.DeserializeBody<UserLoginCommand>();
+            var command = await req.DeserializeAndValidateRequest<UserLoginCommand>();
+            var requestValidationResult = _requestValidator.ValidateRequest(command);
+            if (!requestValidationResult.IsSuccessful)
+            {
+                return requestValidationResult.ToResultIfValid<UserLoginCommand, BadRequestResult>();
+            }
 
-            var result = await _mediator.Send(command);
+            var resultContext = await _mediator.Send(command);
 
-            return result.ToOkIfValidResult();
+            return resultContext.ToOkIfValidResult();
+        }
+
+        [FunctionName("Refresh")]
+        public async Task<IActionResult> Refresh(
+            [HttpTrigger(AuthorizationLevel.Anonymous, "post", Route = "auth/refresh")]
+            HttpRequest req)
+        {
+            var command = await req.DeserializeAndValidateRequest<RefreshTokenCommand>();
+            var requestValidationResult = _requestValidator.ValidateRequest(command);
+            if (!requestValidationResult.IsSuccessful)
+            {
+                return requestValidationResult.ToResultIfValid<RefreshTokenCommand, BadRequestResult>();
+            }
+
+            var resultContext = await _mediator.Send(command);
+
+            return resultContext.ToOkIfValidResult();
+        }
+
+        [FunctionName("CreateAdmin")]
+        public async Task<IActionResult> CreateAdmin(
+            [HttpTrigger(AuthorizationLevel.Anonymous, "post", Route = "auth/createadmin")]
+            HttpRequest req)
+        {
+            var command = await req.DeserializeAndValidateRequest<AddAdminCommand>();
+            var requestValidationResult = _requestValidator.ValidateRequest(command);
+            if (!requestValidationResult.IsSuccessful)
+            {
+                return requestValidationResult.ToResultIfValid<AddAdminCommand, BadRequestResult>();
+            }
+
+            var resultContext = await _mediator.Send(command);
+
+            return resultContext.ToOkIfValidResult();
         }
     }
 }
