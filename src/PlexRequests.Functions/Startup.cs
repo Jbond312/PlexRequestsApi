@@ -71,8 +71,6 @@ namespace PlexRequests.Functions
             services.AddTransient<DataAccess.Repositories.ITvRequestRepository, DataAccess.Repositories.TvRequestRepository>();
             services.AddTransient<DataAccess.Repositories.IIssuesRepository, DataAccess.Repositories.IssuesRepository>();
 
-            var connectionString = Environment.GetEnvironmentVariable("PlexRequestsDataContext");
-
             services.AddDbContext<PlexRequestsDataContext>(
                 options =>
                 {

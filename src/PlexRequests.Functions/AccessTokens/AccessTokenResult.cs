@@ -46,5 +46,14 @@ namespace PlexRequests.Functions.AccessTokens
                 Status = AccessTokenStatus.NoToken
             };
         }
+
+        public static AccessTokenResult InsufficientPermissions(ClaimsPrincipal principal)
+        {
+            return new AccessTokenResult
+            {
+                Principal = principal,
+                Status = AccessTokenStatus.InsufficientPermissions
+            };
+        }
     }
 }
