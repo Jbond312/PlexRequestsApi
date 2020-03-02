@@ -6,6 +6,8 @@ using Microsoft.Azure.Functions.Extensions.DependencyInjection;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Logging.ApplicationInsights;
 using PlexRequests.Api;
 using PlexRequests.Core.Helpers;
 using PlexRequests.Core.Services;
@@ -56,6 +58,12 @@ namespace PlexRequests.Functions
             builder.Services.AddOptions<PlexRequestsSettings>().Configure<IConfiguration>((settings, optConfig) =>
             {
                 optConfig.GetSection(nameof(PlexRequestsSettings)).Bind(settings);
+            });
+
+            builder.Services.AddLogging(config =>
+            {
+                config.AddFilter<ApplicationInsightsLoggerProvider>("", LogLevel.Trace);
+                config.AddFilter<ApplicationInsightsLoggerProvider>("Microsoft", LogLevel.Warning);
             });
 
             RegisterServices(builder.Services);
