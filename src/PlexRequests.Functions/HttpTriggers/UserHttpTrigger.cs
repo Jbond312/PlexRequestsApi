@@ -85,5 +85,29 @@ namespace PlexRequests.Functions.HttpTriggers
 
             return resultContext.ToResultIfValid<NoContentResult>();
         }
+
+        [FunctionName("GetUserRoles")]
+        public async Task<IActionResult> GetUserRoles(
+            [HttpTrigger(AuthorizationLevel.Anonymous, "get", Route = "user/roles")] HttpRequest req)
+        {
+            var accessResult = _accessTokenProvider.ValidateToken(req);
+
+            if (!accessResult.IsValid)
+            {
+                return new UnauthorizedResult();
+            }
+
+            var query = new GetUserRolesQuery();
+
+            var requestValidationResult = _requestValidator.ValidateRequest(query);
+            if (!requestValidationResult.IsSuccessful)
+            {
+                return requestValidationResult.ToResultIfValid<GetUserRolesQuery, BadRequestResult>();
+            }
+
+            var resultContext = await _mediator.Send(query);
+
+            return new OkObjectResult(resultContext);
+        }
     }
 }
