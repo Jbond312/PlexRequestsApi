@@ -50,7 +50,7 @@ namespace PlexRequests.Functions.Features.Auth.Commands
             var userIdClaim = principal?.Claims?.FirstOrDefault(x => x.Type == ClaimTypes.NameIdentifier);
 
             var user = await ValidateAndReturnUser(userIdClaim, resultContext);
-            
+
             if (!IsUserRefreshTokenValid(user?.UserRefreshTokens, request.RefreshToken))
             {
                 resultContext.AddError("Invalid Token");
@@ -63,7 +63,7 @@ namespace PlexRequests.Functions.Features.Auth.Commands
             }
 
             _logger.LogDebug("Refresh token is valid, re-creating tokens for user.");
-            
+
             var accessToken = _tokenService.CreateToken(user);
             var refreshToken = _tokenService.CreateRefreshToken();
             // ReSharper disable once PossibleNullReferenceException
@@ -89,7 +89,7 @@ namespace PlexRequests.Functions.Features.Auth.Commands
                 return null;
             }
 
-            var user = await _userService.GetUser(Guid.Parse(userIdClaim.Value));
+            var user = await _userService.GetUser(int.Parse(userIdClaim.Value));
 
             if (user != null && !user.IsDisabled)
             {
