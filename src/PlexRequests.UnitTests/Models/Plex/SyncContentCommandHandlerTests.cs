@@ -4,7 +4,7 @@ using System.Threading.Tasks;
 using FluentAssertions;
 using MediatR;
 using NSubstitute;
-using PlexRequests.ApiRequests.Plex.Commands;
+using PlexRequests.Functions.Features.Plex.Commands;
 using PlexRequests.Sync;
 using TestStack.BDDfy;
 using Xunit;
