@@ -4,40 +4,40 @@ using System.Threading;
 using System.Threading.Tasks;
 using AutoMapper;
 using MediatR;
-using PlexRequests.Core.Helpers;
 using PlexRequests.Core.Services;
 using PlexRequests.Functions.Features.Users.Models.Detail;
 
 namespace PlexRequests.Functions.Features.Users.Queries
 {
-    public class GetManyUserQueryHandler : IRequestHandler<GetManyUserQuery, GetManyUserQueryResult>
+    public class GetManyUserQueryHandler : IRequestHandler<GetManyUserQuery, ValidationContext<GetManyUserQueryResult>>
     {
         private readonly IMapper _mapper;
         private readonly IUserService _userRepository;
-        private readonly IClaimsPrincipalAccessor _claimsPrincipalAccessor;
 
         public GetManyUserQueryHandler(
             IMapper mapper,
-            IUserService userRepository,
-            IClaimsPrincipalAccessor claimsPrincipalAccessor)
+            IUserService userRepositoryr)
         {
             _mapper = mapper;
-            _userRepository = userRepository;
-            _claimsPrincipalAccessor = claimsPrincipalAccessor;
+            _userRepository = userRepositoryr;
         }
 
-        public async Task<GetManyUserQueryResult> Handle(GetManyUserQuery query, CancellationToken cancellationToken)
+        public async Task<ValidationContext<GetManyUserQueryResult>> Handle(GetManyUserQuery query, CancellationToken cancellationToken)
         {
+            var resultContext = new ValidationContext<GetManyUserQueryResult>();
+
             var users = await _userRepository.GetAllUsers(query.IncludeDisabled);
 
-            users = users.Where(x => x.UserId != _claimsPrincipalAccessor.UserId);
+            users = users.Where(x => x.UserId != query.UserInfo.UserId);
 
             var userModels = _mapper.Map<List<UserDetailModel>>(users);
 
-            return new GetManyUserQueryResult
+            resultContext.Data = new GetManyUserQueryResult
             {
                 Users = userModels
             };
+
+            return resultContext;
         }
     }
 }

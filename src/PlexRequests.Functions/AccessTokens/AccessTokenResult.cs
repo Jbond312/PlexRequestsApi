@@ -1,11 +1,14 @@
 ﻿using System;
+using System.Linq;
 using System.Security.Claims;
+using PlexRequests.Core.Auth;
 
 namespace PlexRequests.Functions.AccessTokens
 {
     public sealed class AccessTokenResult
     {
         public ClaimsPrincipal Principal { get; private set; }
+        public UserInfo UserInfo { get; set; }
 
         public AccessTokenStatus Status { get; private set; }
 
@@ -15,13 +18,25 @@ namespace PlexRequests.Functions.AccessTokens
 
         public static AccessTokenResult Success(ClaimsPrincipal principal)
         {
+            var userNameClaim = principal.Claims.First(x => x.Type == ClaimTypes.Name);
+            var userIdClaim = principal.Claims.First(x => x.Type == ClaimTypes.NameIdentifier);
+            var roles = principal.Claims.Where(x => x.Type == ClaimTypes.Role).Select(x => x.Value).ToList();
+
+            var userInfo = new UserInfo
+            {
+                Username = userNameClaim.Value,
+                UserId = int.Parse(userIdClaim.Value),
+                Roles = roles
+            };
+
             return new AccessTokenResult
             {
                 Principal = principal,
-                Status = AccessTokenStatus.Valid
+                Status = AccessTokenStatus.Valid,
+                UserInfo = userInfo
             };
         }
-
+        
         public static AccessTokenResult Expired()
         {
             return new AccessTokenResult

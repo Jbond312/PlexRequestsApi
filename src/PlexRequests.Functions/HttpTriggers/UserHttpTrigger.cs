@@ -1,4 +1,5 @@
-﻿using System.Threading.Tasks;
+﻿using System.Security.Claims;
+using System.Threading.Tasks;
 using MediatR;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
@@ -47,7 +48,8 @@ namespace PlexRequests.Functions.HttpTriggers
 
             var query = new GetManyUserQuery
             {
-                IncludeDisabled = includeDisabled
+                IncludeDisabled = includeDisabled,
+                UserInfo = accessResult.UserInfo
             };
 
             var requestValidationResult = _requestValidator.ValidateRequest(query);
@@ -58,7 +60,7 @@ namespace PlexRequests.Functions.HttpTriggers
 
             var resultContext = await _mediator.Send(query);
 
-            return new OkObjectResult(resultContext.Users);
+            return resultContext.ToOkIfValidResult();
         }
 
         [FunctionName("UpdateUser")]
