@@ -6,13 +6,12 @@ using System.Threading.Tasks;
 using AutoMapper;
 using FluentAssertions;
 using NSubstitute;
-using PlexRequests.Core.Helpers;
+using PlexRequests.Core.Auth;
 using PlexRequests.Core.Services;
 using PlexRequests.DataAccess.Dtos;
 using PlexRequests.Functions.Features;
 using PlexRequests.Functions.Features.Users.Queries;
 using PlexRequests.Functions.Mapping;
-using PlexRequests.UnitTests.Builders;
 using PlexRequests.UnitTests.Builders.DataAccess;
 using TestStack.BDDfy;
 using Xunit;
@@ -21,9 +20,8 @@ namespace PlexRequests.UnitTests.Models.Users
 {
     public class GetManyUserQueryHandlerTests
     {
-        private GetManyUserQueryHandler _underTest;
-        private IUserService _userService;
-        private IClaimsPrincipalAccessor _claimsAccessor;
+        private readonly GetManyUserQueryHandler _underTest;
+        private readonly IUserService _userService;
 
         private List<UserRow> _users = new List<UserRow>();
         private GetManyUserQuery _query = new GetManyUserQuery();
@@ -32,11 +30,10 @@ namespace PlexRequests.UnitTests.Models.Users
         public GetManyUserQueryHandlerTests()
         {
             _userService = Substitute.For<IUserService>();
-            _claimsAccessor = Substitute.For<IClaimsPrincipalAccessor>();
 
             var mapperConfig = new MapperConfiguration(opts => { opts.AddProfile(new UserProfile()); });
             var mapper = mapperConfig.CreateMapper();
-            _underTest = new GetManyUserQueryHandler(mapper, _userService, _claimsAccessor);
+            _underTest = new GetManyUserQueryHandler(mapper, _userService);
         }
 
         [Fact]
@@ -70,13 +67,19 @@ namespace PlexRequests.UnitTests.Models.Users
 
         private void Given_ClaimsProcessor_Returns_UserId_Not_In_List()
         {
-            var maxUserId = !_users.Any() ? 0 : _users.Max(x => x.UserId) + 1;
-            _claimsAccessor.UserId.Returns(maxUserId);
+            var invalidUserId = !_users.Any() ? 0 : _users.Max(x => x.UserId) + 1;
+            _query.UserInfo = new UserInfo
+            {
+                UserId = invalidUserId
+            };
         }
 
         private void Given_ClaimsProcessor_Matches_A_UserId()
         {
-            _claimsAccessor.UserId.Returns(_users.First().UserId);
+            _query.UserInfo = new UserInfo
+            {
+                UserId = _users.First().UserId
+            };
         }
 
         private void Given_No_Users_Returned()
@@ -86,7 +89,12 @@ namespace PlexRequests.UnitTests.Models.Users
 
         private void Given_Users_Returned()
         {
-            _users = new UserRowBuilder().CreateMany();
+            _users = new List<UserRow>
+            {
+                new UserRowBuilder().WithUserId(1).Build(),
+                new UserRowBuilder().WithUserId(2).Build(),
+                new UserRowBuilder().WithUserId(3).Build(),
+            };
             _userService.GetAllUsers(Arg.Any<bool>()).Returns(_users);
         }
 
@@ -99,14 +107,14 @@ namespace PlexRequests.UnitTests.Models.Users
         {
             var result = await _queryAction();
             result.IsSuccessful.Should().BeTrue();
-            result.Data.Users.Count.Should().Equals(_users.Count);
+            result.Data.Users.Count.Should().Be(_users.Count);
         }
 
         private async Task Then_Matching_User_Is_Skipped()
         {
             var result = await _queryAction();
             result.IsSuccessful.Should().BeTrue();
-            result.Data.Users.Count.Should().Equals(_users.Count - 1);
+            result.Data.Users.Count.Should().Be(_users.Count - 1);
         }
 
     }

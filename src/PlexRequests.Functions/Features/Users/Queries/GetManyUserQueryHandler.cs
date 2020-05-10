@@ -4,7 +4,6 @@ using System.Threading;
 using System.Threading.Tasks;
 using AutoMapper;
 using MediatR;
-using PlexRequests.Core.Helpers;
 using PlexRequests.Core.Services;
 using PlexRequests.Functions.Features.Users.Models.Detail;
 
@@ -14,16 +13,13 @@ namespace PlexRequests.Functions.Features.Users.Queries
     {
         private readonly IMapper _mapper;
         private readonly IUserService _userRepository;
-        private readonly IClaimsPrincipalAccessor _claimsPrincipalAccessor;
 
         public GetManyUserQueryHandler(
             IMapper mapper,
-            IUserService userRepository,
-            IClaimsPrincipalAccessor claimsPrincipalAccessor)
+            IUserService userRepositoryr)
         {
             _mapper = mapper;
-            _userRepository = userRepository;
-            _claimsPrincipalAccessor = claimsPrincipalAccessor;
+            _userRepository = userRepositoryr;
         }
 
         public async Task<ValidationContext<GetManyUserQueryResult>> Handle(GetManyUserQuery query, CancellationToken cancellationToken)
@@ -32,7 +28,7 @@ namespace PlexRequests.Functions.Features.Users.Queries
 
             var users = await _userRepository.GetAllUsers(query.IncludeDisabled);
 
-            users = users.Where(x => x.UserId != _claimsPrincipalAccessor.UserId);
+            users = users.Where(x => x.UserId != query.UserInfo.UserId);
 
             var userModels = _mapper.Map<List<UserDetailModel>>(users);
 
