@@ -10,7 +10,7 @@ using PlexRequests.Functions.Features.Users.Models.Detail;
 
 namespace PlexRequests.Functions.Features.Users.Queries
 {
-    public class GetManyUserQueryHandler : IRequestHandler<GetManyUserQuery, GetManyUserQueryResult>
+    public class GetManyUserQueryHandler : IRequestHandler<GetManyUserQuery, ValidationContext<GetManyUserQueryResult>>
     {
         private readonly IMapper _mapper;
         private readonly IUserService _userRepository;
@@ -26,18 +26,22 @@ namespace PlexRequests.Functions.Features.Users.Queries
             _claimsPrincipalAccessor = claimsPrincipalAccessor;
         }
 
-        public async Task<GetManyUserQueryResult> Handle(GetManyUserQuery query, CancellationToken cancellationToken)
+        public async Task<ValidationContext<GetManyUserQueryResult>> Handle(GetManyUserQuery query, CancellationToken cancellationToken)
         {
+            var resultContext = new ValidationContext<GetManyUserQueryResult>();
+
             var users = await _userRepository.GetAllUsers(query.IncludeDisabled);
 
             users = users.Where(x => x.UserId != _claimsPrincipalAccessor.UserId);
 
             var userModels = _mapper.Map<List<UserDetailModel>>(users);
 
-            return new GetManyUserQueryResult
+            resultContext.Data = new GetManyUserQueryResult
             {
                 Users = userModels
             };
+
+            return resultContext;
         }
     }
 }

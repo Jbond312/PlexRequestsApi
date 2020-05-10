@@ -58,7 +58,7 @@ namespace PlexRequests.Functions.HttpTriggers
 
             var resultContext = await _mediator.Send(query);
 
-            return new OkObjectResult(resultContext.Users);
+            return resultContext.ToOkIfValidResult();
         }
 
         [FunctionName("UpdateUser")]
