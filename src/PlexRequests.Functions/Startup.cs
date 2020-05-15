@@ -35,11 +35,15 @@ namespace PlexRequests.Functions
             builder.Services.AddAutoMapper(assemblies);
             builder.Services.AddMediatR(assemblies);
 
+            var environmentName = Environment.GetEnvironmentVariable("AZURE_FUNCTIONS_ENVIRONMENT") ?? "Development";
+
             var configuration = new ConfigurationBuilder()
 #if DEBUG
                 .AddJsonFile("local.settings.json", optional: true, reloadOnChange: true)
 #endif
                 .AddEnvironmentVariables()
+                .AddJsonFile("appsettings.json", false, true)
+                .AddJsonFile($"appsettings.{environmentName}.json", true, true)
                 .AddEnvironmentVariables("APPSETTING_")
                 .Build();
 
@@ -58,12 +62,6 @@ namespace PlexRequests.Functions
             builder.Services.AddOptions<PlexRequestsSettings>().Configure<IConfiguration>((settings, optConfig) =>
             {
                 optConfig.GetSection(nameof(PlexRequestsSettings)).Bind(settings);
-            });
-
-            builder.Services.AddLogging(config =>
-            {
-                config.AddFilter<ApplicationInsightsLoggerProvider>("", LogLevel.Trace);
-                config.AddFilter<ApplicationInsightsLoggerProvider>("Microsoft", LogLevel.Warning);
             });
 
             RegisterServices(builder.Services);
