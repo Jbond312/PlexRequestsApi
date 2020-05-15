@@ -16,6 +16,7 @@ namespace PlexRequests.DataAccess.Repositories
         Task<UserRow> GetUserFromPlexId(int plexAccountId);
         Task Add(UserRow user);
         Task<UserRow> GetAdmin();
+        void DeleteExpiredUserTokens();
     }
 
     public class UserRepository : BaseRepository, IUserRepository
@@ -70,6 +71,16 @@ namespace PlexRequests.DataAccess.Repositories
         public async Task<UserRow> GetAdmin()
         {
             return await GetUsers().FirstOrDefaultAsync(x => x.IsAdmin);
+        }
+
+        /// <summary>
+        /// Deletes any expired refresh tokens that expired at least 1 day ago
+        /// </summary>
+        public void DeleteExpiredUserTokens()
+        {
+            var tokensToDelete = DbContext.UserRefreshTokens.Where(x => x.ExpiresUtc.AddDays(1) < DateTime.UtcNow);
+
+            DbContext.UserRefreshTokens.RemoveRange(tokensToDelete);
         }
 
         private IQueryable<UserRow> GetUsers()
