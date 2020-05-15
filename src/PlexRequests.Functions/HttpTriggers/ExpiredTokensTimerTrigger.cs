@@ -18,7 +18,7 @@ namespace PlexRequests.Functions.HttpTriggers
 
         [FunctionName("RemoveExpiredTokens")]
         // ReSharper disable once UnusedParameter.Global
-        public Task RemoveExpiredTokens([TimerTrigger("0 0 * * *")]TimerInfo timer)
+        public Task RemoveExpiredTokens([TimerTrigger("0 0 * * * *")]TimerInfo timer)
         {
             //Runs every day at 12:00 AM
             var command = new RemoveExpiredRefreshTokensCommand();
