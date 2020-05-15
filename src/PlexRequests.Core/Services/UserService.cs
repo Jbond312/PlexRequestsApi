@@ -53,5 +53,10 @@ namespace PlexRequests.Core.Services
 
             return adminUser != null;
         }
+
+        public void DeleteExpiredUserTokens()
+        {
+            _userRepository.DeleteExpiredUserTokens();
+        }
     }
 }

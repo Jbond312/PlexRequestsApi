@@ -14,5 +14,6 @@ namespace PlexRequests.Core.Services
         Task AddUser(UserRow userRow);
         Task<bool> UserExists(string email);
         Task<bool> IsAdminCreated();
+        void DeleteExpiredUserTokens();
     }
 }

@@ -2,7 +2,7 @@
 
 namespace PlexRequests.Functions.HttpTriggers
 {
-    public class StayWarmTrigger
+    public class StayWarmTimerTrigger
     {
         [FunctionName("StayWarm")]
         // ReSharper disable once UnusedParameter.Global
