@@ -41,6 +41,8 @@ namespace PlexRequests.Functions.HttpTriggers
             }
 
             var command = await req.DeserializeAndValidateRequest<CreateIssueCommand>();
+            command.UserInfo = accessResult.UserInfo;
+
             var requestValidationResult = _requestValidator.ValidateRequest(command);
             if (!requestValidationResult.IsSuccessful)
             {
@@ -101,6 +103,8 @@ namespace PlexRequests.Functions.HttpTriggers
 
             var command = await req.DeserializeAndValidateRequest<CreateIssueCommentCommand>();
             command.Id = id;
+            command.UserInfo = accessResult.UserInfo;
+
             var requestValidationResult = _requestValidator.ValidateRequest(command);
             if (!requestValidationResult.IsSuccessful)
             {

@@ -3,7 +3,6 @@ using System.Threading;
 using System.Threading.Tasks;
 using AutoMapper;
 using MediatR;
-using PlexRequests.Core.Helpers;
 using PlexRequests.Core.Services;
 using PlexRequests.Functions.Features.Requests.Models.Detail;
 
@@ -13,16 +12,13 @@ namespace PlexRequests.Functions.Features.Requests.Queries
     {
         private readonly IMapper _mapper;
         private readonly IMovieRequestService _requestService;
-        private readonly IClaimsPrincipalAccessor _claimsAccessor;
 
         public GetMoviePagedRequestQueryHandler(
             IMapper mapper,
-            IMovieRequestService requestService,
-            IClaimsPrincipalAccessor claimsAccessor)
+            IMovieRequestService requestService)
         {
             _mapper = mapper;
             _requestService = requestService;
-            _claimsAccessor = claimsAccessor;
         }
 
         public async Task<GetMoviePagedRequestQueryResult> Handle(GetMoviePagedRequestQuery request, CancellationToken cancellationToken)
@@ -31,7 +27,7 @@ namespace PlexRequests.Functions.Features.Requests.Queries
 
             if (request.IncludeCurrentUsersOnly != null && request.IncludeCurrentUsersOnly.Value)
             {
-                userId = _claimsAccessor.UserId;
+                userId = request.UserInfo.UserId;
             }
             
             var pagedResponse = await _requestService.GetPaged(request.Title, request.Status, userId, request.Page, request.PageSize);

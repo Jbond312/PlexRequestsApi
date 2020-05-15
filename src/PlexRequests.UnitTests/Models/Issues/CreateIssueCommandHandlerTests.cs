@@ -4,7 +4,7 @@ using System.Threading.Tasks;
 using FluentAssertions;
 using MediatR;
 using NSubstitute;
-using PlexRequests.Core.Helpers;
+using PlexRequests.Core.Auth;
 using PlexRequests.Core.Services;
 using PlexRequests.DataAccess;
 using PlexRequests.DataAccess.Dtos;
@@ -25,13 +25,11 @@ namespace PlexRequests.UnitTests.Models.Issues
         private readonly IIssueService _issueService;
         private readonly IPlexService _plexService;
         private readonly IUnitOfWork _unitOfWork;
-        private readonly IClaimsPrincipalAccessor _claimsPrincipalAccessor;
 
         private CreateIssueCommand _command;
         private Func<Task<ValidationContext>> _commandAction;
         private IssueRow _issueCreated;
         private PlexMediaItemRow _plexMediaItem;
-        private int _claimsUserId;
 
 
         public CreateIssueCommandHandlerTests()
@@ -39,9 +37,8 @@ namespace PlexRequests.UnitTests.Models.Issues
             _issueService = Substitute.For<IIssueService>();
             _plexService = Substitute.For<IPlexService>();
             _unitOfWork = Substitute.For<IUnitOfWork>();
-            _claimsPrincipalAccessor = Substitute.For<IClaimsPrincipalAccessor>();
 
-            _underTest = new CreateIssueCommandHandler(_issueService, _plexService, _unitOfWork, _claimsPrincipalAccessor);
+            _underTest = new CreateIssueCommandHandler(_issueService, _plexService, _unitOfWork);
         }
 
         [Theory]
@@ -83,7 +80,6 @@ namespace PlexRequests.UnitTests.Models.Issues
             .Given(x => x.GivenAMediaType(mediaType))
             .Given(x => x.GivenMediaItemIsReturned())
             .Given(x => x.GivenAnIssueIsCreated())
-            .Given(x => x.GivenUserDetailsFromClaims())
             .When(x => x.WhenCommandActionIsCreated())
             .Then(x => x.ThenIssueIsCreated())
             .Then(x => x.ThenChangesAreCommitted())
@@ -97,7 +93,8 @@ namespace PlexRequests.UnitTests.Models.Issues
                 Title = Guid.NewGuid().ToString(),
                 Description = Guid.NewGuid().ToString(),
                 MediaType = PlexMediaTypes.Movie,
-                TheMovieDbId = new Random().Next(1, int.MaxValue)
+                TheMovieDbId = new Random().Next(1, int.MaxValue),
+                UserInfo = new UserInfo()
             };
         }
 
@@ -128,13 +125,6 @@ namespace PlexRequests.UnitTests.Models.Issues
             _issueService.Add(Arg.Do<IssueRow>(x => _issueCreated = x));
         }
 
-        private void GivenUserDetailsFromClaims()
-        {
-            _claimsUserId = new Random().Next(1, int.MaxValue);
-
-            _claimsPrincipalAccessor.UserId.Returns(_claimsUserId);
-        }
-
         private void WhenCommandActionIsCreated()
         {
             _commandAction = async () => await _underTest.Handle(_command, CancellationToken.None);
@@ -159,7 +149,7 @@ namespace PlexRequests.UnitTests.Models.Issues
             _issueCreated.Title.Should().Be(_command.Title);
             _issueCreated.Description.Should().Be(_command.Description);
             _issueCreated.IssueStatus.Should().Be(IssueStatuses.Pending);
-            _issueCreated.UserId.Should().Be(_claimsUserId);
+            _issueCreated.UserId.Should().Be(_command.UserInfo.UserId);
             _issueCreated.IssueComments.Should().BeEmpty();
         }
 

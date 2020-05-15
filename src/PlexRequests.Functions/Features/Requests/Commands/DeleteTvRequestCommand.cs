@@ -3,7 +3,7 @@ using MediatR;
 
 namespace PlexRequests.Functions.Features.Requests.Commands
 {
-    public class DeleteTvRequestCommand : IRequest<ValidationContext>
+    public class DeleteTvRequestCommand : BaseRequest, IRequest<ValidationContext>
     {
         [Required]
         [Range(1, int.MaxValue)]

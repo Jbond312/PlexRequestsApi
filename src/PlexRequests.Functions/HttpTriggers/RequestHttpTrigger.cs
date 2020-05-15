@@ -43,6 +43,8 @@ namespace PlexRequests.Functions.HttpTriggers
             }
 
             var command = await req.DeserializeAndValidateRequest<CreateMovieRequestCommand>();
+            command.UserInfo = accessResult.UserInfo;
+
             var requestValidationResult = _requestValidator.ValidateRequest(command);
             if (!requestValidationResult.IsSuccessful)
             {
@@ -117,6 +119,8 @@ namespace PlexRequests.Functions.HttpTriggers
             }
 
             var command = await req.DeserializeAndValidateRequest<CreateTvRequestCommand>();
+            command.UserInfo = accessResult.UserInfo;
+
             var requestValidationResult = _requestValidator.ValidateRequest(command);
             if (!requestValidationResult.IsSuccessful)
             {
@@ -191,6 +195,8 @@ namespace PlexRequests.Functions.HttpTriggers
             }
 
             var command = new DeleteMovieRequestCommand(id);
+            command.UserInfo = accessResult.UserInfo;
+
             var requestValidationResult = _requestValidator.ValidateRequest(command);
             if (!requestValidationResult.IsSuccessful)
             {
@@ -246,7 +252,8 @@ namespace PlexRequests.Functions.HttpTriggers
                 Status = status,
                 IncludeCurrentUsersOnly = includeCurrentUsersOnly,
                 Page = page,
-                PageSize = pageSize
+                PageSize = pageSize,
+                UserInfo = accessResult.UserInfo
             };
 
             var requestValidationResult = _requestValidator.ValidateRequest(query);
@@ -304,7 +311,8 @@ namespace PlexRequests.Functions.HttpTriggers
                 Status = status,
                 IncludeCurrentUsersOnly = includeCurrentUsersOnly,
                 Page = page,
-                PageSize = pageSize
+                PageSize = pageSize,
+                UserInfo = accessResult.UserInfo
             };
 
             var requestValidationResult = _requestValidator.ValidateRequest(query);
@@ -331,6 +339,8 @@ namespace PlexRequests.Functions.HttpTriggers
             }
 
             var command = new DeleteTvRequestCommand(id);
+            command.UserInfo = accessResult.UserInfo;
+
             var requestValidationResult = _requestValidator.ValidateRequest(command);
             if (!requestValidationResult.IsSuccessful)
             {

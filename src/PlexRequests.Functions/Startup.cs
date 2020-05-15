@@ -91,7 +91,6 @@ namespace PlexRequests.Functions
         {
             services.AddSingleton<IRequestValidator, RequestValidator>();
             services.AddSingleton<IAccessTokenProvider, AccessTokenProvider>();
-            services.AddTransient<IClaimsPrincipalAccessor, ClaimsPrincipalAccessor>();
             services.AddTransient<IPlexApi, PlexApi>();
             services.AddTransient<ITheMovieDbApi, TheMovieDbApi>();
             services.AddTransient<IUserService, UserService>();

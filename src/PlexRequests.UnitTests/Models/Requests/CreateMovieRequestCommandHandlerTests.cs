@@ -8,7 +8,7 @@ using MediatR;
 using Microsoft.Extensions.Logging;
 using NSubstitute;
 using NSubstitute.ReturnsExtensions;
-using PlexRequests.Core.Helpers;
+using PlexRequests.Core.Auth;
 using PlexRequests.Core.Services;
 using PlexRequests.DataAccess;
 using PlexRequests.DataAccess.Dtos;
@@ -33,15 +33,12 @@ namespace PlexRequests.UnitTests.Models.Requests
         private readonly IMovieRequestService _requestService;
         private readonly IPlexService _plexService;
         private readonly IUnitOfWork _unitOfWork;
-        private readonly IClaimsPrincipalAccessor _claimsPrincipalAccessor;
 
         private CreateMovieRequestCommand _command;
         private MovieRequestRow _request;
         private Func<Task<ValidationContext>> _commandAction;
         private PlexMediaItemRow _plexMediaItem;
         private MovieRequestRow _createdRequest;
-        private string _claimsUsername;
-        private int _claimsUserId;
         private MovieDetails _movieDetails;
         private ExternalIds _externalIds;
 
@@ -51,10 +48,9 @@ namespace PlexRequests.UnitTests.Models.Requests
             _requestService = Substitute.For<IMovieRequestService>();
             _plexService = Substitute.For<IPlexService>();
             _unitOfWork = Substitute.For<IUnitOfWork>();
-            _claimsPrincipalAccessor = Substitute.For<IClaimsPrincipalAccessor>();
             var logger = Substitute.For<ILogger<CreateRequestCommandHandler>>();
 
-            _underTest = new CreateRequestCommandHandler(_theMovieDbService, _requestService, _plexService, _unitOfWork, _claimsPrincipalAccessor, logger);
+            _underTest = new CreateRequestCommandHandler(_theMovieDbService, _requestService, _plexService, _unitOfWork, logger);
 
         }
 
@@ -106,7 +102,6 @@ namespace PlexRequests.UnitTests.Models.Requests
                 .Given(x => x.GivenNoRequestExists())
                 .Given(x => x.GivenMovieNotInPlex())
                 .Given(x => x.GivenARequestIsCreated())
-                .Given(x => x.GivenUserDetailsFromClaims())
                 .When(x => x.WhenCommandActionIsCreated())
                 .Then(x => x.ThenRequestIsCreated())
                 .Then(x => x.ThenChangesAreCommitted())
@@ -115,7 +110,10 @@ namespace PlexRequests.UnitTests.Models.Requests
 
         private void GivenACommand()
         {
-            _command = new CreateMovieRequestCommand();
+            _command = new CreateMovieRequestCommand
+            {
+                UserInfo = new UserInfo()
+            };
         }
 
         private void GivenRequestAlreadyExists()
@@ -171,15 +169,6 @@ namespace PlexRequests.UnitTests.Models.Requests
         {
             _externalIds = new ExternalIdsBuilder().Build();
             _theMovieDbService.GetMovieExternalIds(Arg.Any<int>()).Returns(_externalIds);
-        }
-
-        private void GivenUserDetailsFromClaims()
-        {
-            _claimsUsername = Guid.NewGuid().ToString();
-            _claimsUserId = new Random().Next(1, int.MaxValue);
-
-            _claimsPrincipalAccessor.Username.Returns(_claimsUsername);
-            _claimsPrincipalAccessor.UserId.Returns(_claimsUserId);
         }
 
         private async Task ThenRequestIsCreated()

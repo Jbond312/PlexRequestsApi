@@ -1,7 +1,6 @@
 using System.Threading;
 using System.Threading.Tasks;
 using MediatR;
-using PlexRequests.Core.Helpers;
 using PlexRequests.Core.Services;
 using PlexRequests.DataAccess;
 using PlexRequests.DataAccess.Dtos;
@@ -14,16 +13,13 @@ namespace PlexRequests.Functions.Features.Issues.Commands
     {
         private readonly IIssueService _issueService;
         private readonly IUnitOfWork _unitOfWork;
-        private readonly IClaimsPrincipalAccessor _claimsPrincipalAccessor;
 
         public CreateIssueCommentCommandHandler(
             IIssueService issueService,
-            IUnitOfWork unitOfWork,
-            IClaimsPrincipalAccessor claimsPrincipalAccessor)
+            IUnitOfWork unitOfWork)
         {
             _issueService = issueService;
             _unitOfWork = unitOfWork;
-            _claimsPrincipalAccessor = claimsPrincipalAccessor;
         }
 
         public async Task<ValidationContext> Handle(CreateIssueCommentCommand command, CancellationToken cancellationToken)
@@ -43,7 +39,7 @@ namespace PlexRequests.Functions.Features.Issues.Commands
 
             var issueComment = new IssueCommentRow
             {
-                UserId = _claimsPrincipalAccessor.UserId,
+                UserId = command.UserInfo.UserId,
                 Comment = command.Comment
             };
 

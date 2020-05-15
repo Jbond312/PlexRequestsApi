@@ -1,6 +1,5 @@
 using MediatR;
 using Microsoft.Extensions.Logging;
-using PlexRequests.Core.Helpers;
 using PlexRequests.Core.Services;
 using PlexRequests.DataAccess;
 using PlexRequests.DataAccess.Dtos;
@@ -16,19 +15,16 @@ namespace PlexRequests.Functions.Features.Requests.Commands
     {
         private readonly ITvRequestService _requestService;
         private readonly IUnitOfWork _unitOfWork;
-        private readonly IClaimsPrincipalAccessor _claimsUserAccessor;
         private readonly ILogger<DeleteTvRequestCommandHandler> _logger;
 
         public DeleteTvRequestCommandHandler(
             ITvRequestService requestService,
             IUnitOfWork unitOfWork,
-            IClaimsPrincipalAccessor claimsUserAccessor,
             ILogger<DeleteTvRequestCommandHandler> logger
             )
         {
             _requestService = requestService;
             _unitOfWork = unitOfWork;
-            _claimsUserAccessor = claimsUserAccessor;
             _logger = logger;
         }
         
@@ -43,7 +39,7 @@ namespace PlexRequests.Functions.Features.Requests.Commands
                 return result;
             }
 
-            var requestUser = request.TvRequestUsers.FirstOrDefault(x => x.UserId == _claimsUserAccessor.UserId);
+            var requestUser = request.TvRequestUsers.FirstOrDefault(x => x.UserId == command.UserInfo.UserId);
 
             if (requestUser != null)
             {
@@ -51,7 +47,7 @@ namespace PlexRequests.Functions.Features.Requests.Commands
             }
             else
             {
-                _logger.LogDebug($"TVRequest for user [{_claimsUserAccessor.UserId}] was not deleted as no matching requests were found");
+                _logger.LogDebug($"TVRequest for user [{command.UserInfo.UserId}] was not deleted as no matching requests were found");
             }
 
             if(!request.TvRequestUsers.Any())
