@@ -1,6 +1,5 @@
 using AutoMapper;
 using MediatR;
-using PlexRequests.Core.Helpers;
 using PlexRequests.Core.Services;
 using PlexRequests.DataAccess;
 using PlexRequests.DataAccess.Dtos;
@@ -12,6 +11,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
+using PlexRequests.Core.Auth;
 using PlexRequests.Functions.Features.Requests.Models.Create;
 
 namespace PlexRequests.Functions.Features.Requests.Commands
@@ -22,20 +22,17 @@ namespace PlexRequests.Functions.Features.Requests.Commands
         private readonly ITvRequestService _requestService;
         private readonly ITheMovieDbService _theMovieDbService;
         private readonly IUnitOfWork _unitOfWork;
-        private readonly IClaimsPrincipalAccessor _claimsPrincipalAccessor;
 
         public CreateTvRequestCommandHandler(
             IMapper mapper,
             ITvRequestService requestService,
             ITheMovieDbService theMovieDbService,
-            IUnitOfWork unitOfWork,
-            IClaimsPrincipalAccessor claimsPrincipalAccessor)
+            IUnitOfWork unitOfWork)
         {
             _mapper = mapper;
             _requestService = requestService;
             _theMovieDbService = theMovieDbService;
             _unitOfWork = unitOfWork;
-            _claimsPrincipalAccessor = claimsPrincipalAccessor;
         }
 
         public async Task<ValidationContext> Handle(CreateTvRequestCommand request, CancellationToken cancellationToken)
@@ -51,7 +48,7 @@ namespace PlexRequests.Functions.Features.Requests.Commands
              var existingUserRequests = new List<TvRequestUserRow>();
              if (existingRequest != null)
              {
-                 existingUserRequests = existingRequest.TvRequestUsers.Where(x => x.UserId == _claimsPrincipalAccessor.UserId).ToList();
+                 existingUserRequests = existingRequest.TvRequestUsers.Where(x => x.UserId == request.UserInfo.UserId).ToList();
              }
 
              var tvDetails = await GetTvDetails(request.TheMovieDbId);
@@ -75,7 +72,7 @@ namespace PlexRequests.Functions.Features.Requests.Commands
                  existingRequest.TvRequestUsers.Add(new TvRequestUserRow
                  {
                      Track = true,
-                     UserId = _claimsPrincipalAccessor.UserId
+                     UserId = request.UserInfo.UserId
                  });
              }
              else
@@ -83,7 +80,7 @@ namespace PlexRequests.Functions.Features.Requests.Commands
                  ValidateAndRemoveExistingEpisodeRequests(existingUserRequests, seasonsToRequest, resultContext);
                  ValidateRequestedEpisodesNotAlreadyInPlex(existingRequest.TvRequestSeasons, seasonsToRequest, resultContext);
                  await AddNewRootLevelRequests(existingRequest, seasonsToRequest);
-                 AddUserRequests(existingRequest, seasonsToRequest);
+                 AddUserRequests(existingRequest, seasonsToRequest, request.UserInfo);
              }
 
              if (!resultContext.IsSuccessful)
@@ -96,9 +93,10 @@ namespace PlexRequests.Functions.Features.Requests.Commands
              return resultContext;
         }
 
-        private void AddUserRequests(TvRequestRow existingRequest, List<TvRequestSeasonRow> seasonsToRequest)
+        private void AddUserRequests(TvRequestRow existingRequest, List<TvRequestSeasonRow> seasonsToRequest,
+            UserInfo userInfo)
         {
-            var userId = _claimsPrincipalAccessor.UserId;
+            var userId = userInfo.UserId;
             foreach (var seasonToRequest in seasonsToRequest)
             {
                 var userRequest = new TvRequestUserRow

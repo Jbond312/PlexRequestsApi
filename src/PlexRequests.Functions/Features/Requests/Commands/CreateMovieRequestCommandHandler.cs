@@ -3,7 +3,6 @@ using System.Threading;
 using System.Threading.Tasks;
 using MediatR;
 using Microsoft.Extensions.Logging;
-using PlexRequests.Core.Helpers;
 using PlexRequests.Core.Services;
 using PlexRequests.DataAccess;
 using PlexRequests.DataAccess.Dtos;
@@ -20,7 +19,6 @@ namespace PlexRequests.Functions.Features.Requests.Commands
         private readonly IMovieRequestService _requestService;
         private readonly IPlexService _plexService;
         private readonly IUnitOfWork _unitOfWork;
-        private readonly IClaimsPrincipalAccessor _claimsPrincipalAccessor;
         private readonly ILogger<CreateRequestCommandHandler> _logger;
 
         public CreateRequestCommandHandler(
@@ -28,14 +26,12 @@ namespace PlexRequests.Functions.Features.Requests.Commands
             IMovieRequestService requestService,
             IPlexService plexService,
             IUnitOfWork unitOfWork,
-            IClaimsPrincipalAccessor claimsPrincipalAccessor,
             ILogger<CreateRequestCommandHandler> logger)
         {
             _theMovieDbService = theMovieDbService;
             _requestService = requestService;
             _plexService = plexService;
             _unitOfWork = unitOfWork;
-            _claimsPrincipalAccessor = claimsPrincipalAccessor;
             _logger = logger;
         }
 
@@ -72,7 +68,7 @@ namespace PlexRequests.Functions.Features.Requests.Commands
         {
             var newRequest = new MovieRequestRow
             {
-                UserId = _claimsPrincipalAccessor.UserId,
+                UserId = request.UserInfo.UserId,
                 Title = movieDetail.Title,
                 AirDateUtc = DateTime.Parse(movieDetail.Release_Date),
                 ImagePath = movieDetail.Poster_Path,

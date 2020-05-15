@@ -5,7 +5,7 @@ using FluentAssertions;
 using MediatR;
 using NSubstitute;
 using NSubstitute.ReturnsExtensions;
-using PlexRequests.Core.Helpers;
+using PlexRequests.Core.Auth;
 using PlexRequests.Core.Services;
 using PlexRequests.DataAccess;
 using PlexRequests.DataAccess.Dtos;
@@ -24,18 +24,17 @@ namespace PlexRequests.UnitTests.Models.Requests
         private DeleteMovieRequestCommand _command;
         private readonly IMovieRequestService _requestService;
         private readonly IUnitOfWork _unitOfWork;
-        private readonly IClaimsPrincipalAccessor _claimsUserAccessor;
 
         private Func<Task<ValidationContext>> _commandAction;
         private MovieRequestRow _request;
+        private int _userId = 123;
 
         public DeleteMovieRequestCommandHandlerTests()
         {
             _requestService = Substitute.For<IMovieRequestService>();
             _unitOfWork = Substitute.For<IUnitOfWork>();
-            _claimsUserAccessor = Substitute.For<IClaimsPrincipalAccessor>();
             
-            _underTest = new DeleteMovieRequestCommandHandler(_requestService, _unitOfWork, _claimsUserAccessor);
+            _underTest = new DeleteMovieRequestCommandHandler(_requestService, _unitOfWork);
         }
 
         [Fact]
@@ -53,8 +52,8 @@ namespace PlexRequests.UnitTests.Models.Requests
         private void Throws_Error_When_Valid_Request_But_User_Is_Not_Requesting_User()
         {
             this.Given(x => x.GivenACommand())
+                .Given(x => x.GivenRequestIsForDifferentUser())
                 .Given(x => x.GivenARequestIsFound())
-                .Given(x=> x.GivenRequestUserIsNotCurrentUser())
                 .When(x => x.WhenCommandActionIsCreated())
                 .Then(x => x.ThenErrorIsThrown("Unable to delete request", "Forbidden access to protected resource."))
                 .Then(x => x.ThenChangesAreNotCommitted())
@@ -66,7 +65,6 @@ namespace PlexRequests.UnitTests.Models.Requests
         {
             this.Given(x => x.GivenACommand())
                 .Given(x => x.GivenARequestIsFound())
-                .Given(x => x.GivenRequestUserIsCurrentUser())
                 .When(x => x.WhenCommandActionIsCreated())
                 .Then(x => x.ThenDeleteIsSuccessful())
                 .Then(x => x.ThenChangesAreCommitted())
@@ -75,7 +73,18 @@ namespace PlexRequests.UnitTests.Models.Requests
 
         private void GivenACommand()
         {
-            _command = new DeleteMovieRequestCommand(1);
+            _command = new DeleteMovieRequestCommand(1)
+            {
+                UserInfo = new UserInfo
+                {
+                    UserId = _userId
+                }
+            };
+        }
+
+        private void GivenRequestIsForDifferentUser()
+        {
+            _command.UserInfo.UserId = int.MaxValue;
         }
 
         private void GivenNoRequestIsFound()
@@ -86,20 +95,11 @@ namespace PlexRequests.UnitTests.Models.Requests
         private void GivenARequestIsFound()
         {
             _request = new MovieRequestRowBuilder().Build();
-            
+            _request.UserId = _userId;
+
             _requestService.GetRequestById(Arg.Any<int>()).Returns(_request);
         }
 
-        private void GivenRequestUserIsNotCurrentUser()
-        {
-            _claimsUserAccessor.UserId.Returns(new Random().Next(1, int.MaxValue));
-        }
-
-        private void GivenRequestUserIsCurrentUser()
-        {
-            _claimsUserAccessor.UserId.Returns(_request.UserId);
-        }
-        
         private void WhenCommandActionIsCreated()
         {
             _commandAction = async () => await _underTest.Handle(_command, CancellationToken.None);

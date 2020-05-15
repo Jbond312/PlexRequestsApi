@@ -4,7 +4,7 @@ using PlexRequests.DataAccess.Enums;
 
 namespace PlexRequests.Functions.Features.Requests.Queries
 {
-    public class GetTvPagedRequestQuery : IRequest<GetTvPagedRequestQueryResult>
+    public class GetTvPagedRequestQuery : BaseRequest, IRequest<GetTvPagedRequestQueryResult>
     {
         public string Title { get; set; }
         public RequestStatuses? Status { get; set; }

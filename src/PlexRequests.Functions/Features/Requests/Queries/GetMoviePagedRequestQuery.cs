@@ -4,7 +4,7 @@ using PlexRequests.DataAccess.Enums;
 
 namespace PlexRequests.Functions.Features.Requests.Queries
 {
-    public class GetMoviePagedRequestQuery : IRequest<GetMoviePagedRequestQueryResult>
+    public class GetMoviePagedRequestQuery : BaseRequest, IRequest<GetMoviePagedRequestQueryResult>
     {
         [MinLength(1)]
         public string Title { get; set; }

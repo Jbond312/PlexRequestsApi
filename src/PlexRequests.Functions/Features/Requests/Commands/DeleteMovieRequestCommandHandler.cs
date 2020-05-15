@@ -1,7 +1,7 @@
 using System.Threading;
 using System.Threading.Tasks;
 using MediatR;
-using PlexRequests.Core.Helpers;
+using PlexRequests.Core.Auth;
 using PlexRequests.Core.Services;
 using PlexRequests.DataAccess;
 using PlexRequests.DataAccess.Dtos;
@@ -14,17 +14,14 @@ namespace PlexRequests.Functions.Features.Requests.Commands
     {
         private readonly IMovieRequestService _requestService;
         private readonly IUnitOfWork _unitOfWork;
-        private readonly IClaimsPrincipalAccessor _claimsUserAccessor;
 
         public DeleteMovieRequestCommandHandler(
             IMovieRequestService requestService,
-            IUnitOfWork unitOfWork,
-            IClaimsPrincipalAccessor claimsUserAccessor
+            IUnitOfWork unitOfWork
             )
         {
             _requestService = requestService;
             _unitOfWork = unitOfWork;
-            _claimsUserAccessor = claimsUserAccessor;
         }
         
         public async Task<ValidationContext> Handle(DeleteMovieRequestCommand command, CancellationToken cancellationToken)
@@ -33,7 +30,7 @@ namespace PlexRequests.Functions.Features.Requests.Commands
 
             var request = await ValidateRequestExists(command, resultContext);
 
-            ValidateUserCanDeleteRequest(request, resultContext);
+            ValidateUserCanDeleteRequest(request, resultContext, command.UserInfo);
 
             if (!resultContext.IsSuccessful)
             {
@@ -47,9 +44,10 @@ namespace PlexRequests.Functions.Features.Requests.Commands
             return resultContext;
         }
 
-        private void ValidateUserCanDeleteRequest(MovieRequestRow request, ValidationContext resultContext)
+        private void ValidateUserCanDeleteRequest(MovieRequestRow request, ValidationContext resultContext,
+            UserInfo userInfo)
         {
-            if (request != null && !request.UserId.Equals(_claimsUserAccessor.UserId))
+            if (request != null && !request.UserId.Equals(userInfo.UserId))
             {
                 resultContext.AddError("Unable to delete request", "Forbidden access to protected resource.");
             }

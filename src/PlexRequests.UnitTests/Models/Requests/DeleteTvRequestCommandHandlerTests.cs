@@ -7,7 +7,7 @@ using MediatR;
 using Microsoft.Extensions.Logging;
 using NSubstitute;
 using NSubstitute.ReturnsExtensions;
-using PlexRequests.Core.Helpers;
+using PlexRequests.Core.Auth;
 using PlexRequests.Core.Services;
 using PlexRequests.DataAccess;
 using PlexRequests.DataAccess.Dtos;
@@ -26,7 +26,6 @@ namespace PlexRequests.UnitTests.Models.Requests
         private DeleteTvRequestCommand _command;
         private readonly ITvRequestService _requestService;
         private readonly IUnitOfWork _unitOfWork;
-        private readonly IClaimsPrincipalAccessor _claimsUserAccessor;
 
         private Func<Task<ValidationContext>> _commandAction;
         private TvRequestRow _request;
@@ -36,10 +35,9 @@ namespace PlexRequests.UnitTests.Models.Requests
         {
             _requestService = Substitute.For<ITvRequestService>();
             _unitOfWork = Substitute.For<IUnitOfWork>();
-            _claimsUserAccessor = Substitute.For<IClaimsPrincipalAccessor>();
             var logger = Substitute.For<ILogger<DeleteTvRequestCommandHandler>>();
             
-            _underTest = new DeleteTvRequestCommandHandler(_requestService, _unitOfWork, _claimsUserAccessor, logger);
+            _underTest = new DeleteTvRequestCommandHandler(_requestService, _unitOfWork, logger);
             
             _requestUserId = new Random().Next(1, int.MaxValue);
         }
@@ -61,7 +59,6 @@ namespace PlexRequests.UnitTests.Models.Requests
             this.Given(x => x.GivenACommand())
                 .Given(x => x.GivenARequestIsFound())
                 .Given(x => x.GivenOnlyASingleUserHasRequestedTvShow())
-                .Given(x => x.GivenRequestUserIsCurrentUser())
                 .When(x => x.WhenCommandActionIsCreated())
                 .Then(x => x.ThenCommandIsSuccessful())
                 .Then(x => x.ThenEntireRequestIsDeleted())
@@ -75,7 +72,6 @@ namespace PlexRequests.UnitTests.Models.Requests
             this.Given(x => x.GivenACommand())
                 .Given(x => x.GivenARequestIsFound())
                 .Given(x => x.GivenMultipleUsersHaveRequestedTvShow())
-                .Given(x => x.GivenRequestUserIsCurrentUser())
                 .When(x => x.WhenCommandActionIsCreated())
                 .Then(x => x.ThenCommandIsSuccessful())
                 .Then(x => x.ThenEntireRequestIsNotDeleted())
@@ -85,7 +81,13 @@ namespace PlexRequests.UnitTests.Models.Requests
 
         private void GivenACommand()
         {
-            _command = new DeleteTvRequestCommand(1);
+            _command = new DeleteTvRequestCommand(1)
+            {
+                UserInfo = new UserInfo
+                {
+                    UserId = _requestUserId
+                }
+            };
         }
 
         private void GivenNoRequestIsFound()
@@ -117,11 +119,6 @@ namespace PlexRequests.UnitTests.Models.Requests
             var requestUser = new TvRequestUserRowBuilder().WithUserId(_requestUserId).Build();
 
             _request.TvRequestUsers.Add(requestUser);
-        }
-        
-        private void GivenRequestUserIsCurrentUser()
-        {
-            _claimsUserAccessor.UserId.Returns(_requestUserId);
         }
         
         private void WhenCommandActionIsCreated()

@@ -1,7 +1,6 @@
 using System.Threading;
 using System.Threading.Tasks;
 using MediatR;
-using PlexRequests.Core.Helpers;
 using PlexRequests.Core.Services;
 using PlexRequests.DataAccess;
 using PlexRequests.DataAccess.Dtos;
@@ -17,18 +16,15 @@ namespace PlexRequests.Functions.Features.Issues.Commands
         private readonly IIssueService _issueService;
         private readonly IPlexService _plexService;
         private readonly IUnitOfWork _unitOfWork;
-        private readonly IClaimsPrincipalAccessor _claimsPrincipalAccessor;
 
         public CreateIssueCommandHandler(
             IIssueService issueService,
             IPlexService plexService,
-            IUnitOfWork unitOfWork,
-            IClaimsPrincipalAccessor claimsPrincipalAccessor)
+            IUnitOfWork unitOfWork)
         {
             _issueService = issueService;
             _plexService = plexService;
             _unitOfWork = unitOfWork;
-            _claimsPrincipalAccessor = claimsPrincipalAccessor;
         }
 
         public async Task<ValidationContext> Handle(CreateIssueCommand command, CancellationToken cancellationToken)
@@ -66,7 +62,7 @@ namespace PlexRequests.Functions.Features.Issues.Commands
                 Title = command.Title,
                 Description = command.Description,
                 IssueStatus = IssueStatuses.Pending,
-                UserId = _claimsPrincipalAccessor.UserId,
+                UserId = command.UserInfo.UserId,
             };
 
             _issueService.Add(issue);

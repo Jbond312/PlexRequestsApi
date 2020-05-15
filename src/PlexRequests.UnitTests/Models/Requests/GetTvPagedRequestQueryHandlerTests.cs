@@ -4,7 +4,7 @@ using System.Threading.Tasks;
 using AutoMapper;
 using FluentAssertions;
 using NSubstitute;
-using PlexRequests.Core.Helpers;
+using PlexRequests.Core.Auth;
 using PlexRequests.Core.Services;
 using PlexRequests.DataAccess;
 using PlexRequests.DataAccess.Dtos;
@@ -22,12 +22,10 @@ namespace PlexRequests.UnitTests.Models.Requests
     {
         private readonly GetTvPagedRequestQueryHandler _underTest;
         private readonly ITvRequestService _requestService;
-        private readonly IClaimsPrincipalAccessor _claimsAccessor;
 
         private GetTvPagedRequestQuery _query;
         private Paged<TvRequestRow> _pagedRequest;
         private Func<Task<GetTvPagedRequestQueryResult>> _queryAction;
-        private int _currentUserId;
 
         public GetTvPagedRequestQueryHandlerTests()
         {
@@ -35,9 +33,8 @@ namespace PlexRequests.UnitTests.Models.Requests
             var mapper = mapperConfig.CreateMapper();
             
             _requestService = Substitute.For<ITvRequestService>();
-            _claimsAccessor = Substitute.For<IClaimsPrincipalAccessor>();
             
-            _underTest = new GetTvPagedRequestQueryHandler(mapper, _requestService, _claimsAccessor);
+            _underTest = new GetTvPagedRequestQueryHandler(mapper, _requestService);
         }
 
         [Fact]
@@ -56,16 +53,17 @@ namespace PlexRequests.UnitTests.Models.Requests
             this.Given(x => x.GivenAQuery())
                 .Given(x => x.GivenCurrentUsersRequestsOnly())
                 .Given(x => x.GivenManyRequests())
-                .Given(x => x.GivenAUsersClaimAccessor())
                 .When(x => x.WhenQueryActionIsCreated())
                 .Then(x => x.ThenQueryReturnsCorrectResponse())
-                .Then(x => x.ThenCurrentUsersUserIdWasUsed())
                 .BDDfy();
         }
 
         private void GivenAQuery()
         {
-            _query = new GetTvPagedRequestQuery();
+            _query = new GetTvPagedRequestQuery
+            {
+                UserInfo = new UserInfo()
+            };
         }
 
         private void GivenCurrentUsersRequestsOnly()
@@ -73,12 +71,6 @@ namespace PlexRequests.UnitTests.Models.Requests
             _query.IncludeCurrentUsersOnly = true;
         }
 
-        private void GivenAUsersClaimAccessor()
-        {
-            _currentUserId = new Random().Next(1, int.MaxValue);
-            _claimsAccessor.UserId.Returns(_currentUserId);
-        }
-        
         private void GivenManyRequests()
         {
             _pagedRequest = new TvRequestRowBuilder().CreatePaged();
@@ -99,11 +91,6 @@ namespace PlexRequests.UnitTests.Models.Requests
             result.Should().NotBeNull();
             result.Items.Count.Should().Be(_pagedRequest.Items.Count);
             result.Should().BeEquivalentTo(_pagedRequest, options => options.ExcludingMissingMembers());
-        }
-
-        private void ThenCurrentUsersUserIdWasUsed()
-        {
-            _requestService.Received().GetPaged(Arg.Any<string>(), Arg.Any<RequestStatuses?>(), Arg.Is<int?>(_currentUserId), Arg.Any<int?>(), Arg.Any<int?>());
         }
     }
 }
