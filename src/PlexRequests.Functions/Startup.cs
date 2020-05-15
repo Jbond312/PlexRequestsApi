@@ -35,17 +35,7 @@ namespace PlexRequests.Functions
             builder.Services.AddAutoMapper(assemblies);
             builder.Services.AddMediatR(assemblies);
 
-            var environmentName = Environment.GetEnvironmentVariable("AZURE_FUNCTIONS_ENVIRONMENT") ?? "Development";
-
-            var configuration = new ConfigurationBuilder()
-#if DEBUG
-                .AddJsonFile("local.settings.json", optional: true, reloadOnChange: true)
-#endif
-                .AddEnvironmentVariables()
-                .AddJsonFile("appsettings.json", false, true)
-                .AddJsonFile($"appsettings.{environmentName}.json", true, true)
-                .AddEnvironmentVariables("APPSETTING_")
-                .Build();
+            var configuration = builder.AddCustomAppConfiguration();
 
             builder.Services.AddOptions<AuthenticationSettings>().Configure<IConfiguration>((settings, optConfig) =>
             {
